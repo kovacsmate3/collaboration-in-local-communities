@@ -12,12 +12,15 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
-
-var summaries = new[]
+// Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080)
+if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), out var inContainer) || !inContainer)
 {
+    app.UseHttpsRedirection();
+}
+
+string[] summaries = [
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+];
 
 app.MapGet("/weatherforecast", () =>
 {
