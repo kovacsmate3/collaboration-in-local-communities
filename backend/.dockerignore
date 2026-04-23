@@ -5,4 +5,4 @@ obj/
 *.user
 *.suo
 Properties/launchSettings.json
-DS_Store
+.DS_Store
