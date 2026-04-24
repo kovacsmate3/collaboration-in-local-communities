@@ -1,0 +1,29 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches: [ main, development ]
+
+jobs:
+  build-test-lint:
+    name: Build · Test · Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      - name: Lint (format check)
+        run: dotnet format --verify-no-changes
