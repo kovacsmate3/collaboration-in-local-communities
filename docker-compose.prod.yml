@@ -14,17 +14,13 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: final
+    image: ghcr.io/kovacsmate3/2gather/backend
     ports:
       - "8080:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB\
-        };Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       CosmosDb__AccountEndpoint: ${COSMOS_ENDPOINT:?COSMOS_ENDPOINT is required}
       CosmosDb__AccountKey: ${COSMOS_KEY:?COSMOS_KEY is required}
     depends_on:
@@ -32,10 +28,7 @@ services:
         condition: service_healthy
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: runner
+    image: ghcr.io/kovacsmate3/2gather/frontend
     ports:
       - "3000:3000"
     environment:
