@@ -12,23 +12,26 @@ Note: the Cosmos DB Linux emulator image is commonly x86_64-only. The compose fi
 
 The backend uses EF Core Code First with PostgreSQL, ASP.NET Core Identity, Npgsql, and NetTopologySuite/PostGIS. The local database compose services use `postgis/postgis:18-3.6-alpine` so the `postgis` extension required by the initial migration is available.
 
-From the repository root, restore the local EF tool and start the backing PostgreSQL service:
+Start the backing PostgreSQL service:
 
 ```powershell
-dotnet tool restore
 docker compose -f docker-compose.db.yml up -d db
+```
+
+If you haven't installed `dotnet-ef` globally yet, run:
+
+```powershell
+dotnet tool install -g dotnet-ef
 ```
 
 Create a new migration when the model changes:
 
 ```powershell
-dotnet tool run dotnet-ef migrations add InitialCreate --project backend --startup-project backend --context AppDbContext --output-dir Infrastructure\Persistence\Migrations
+dotnet ef migrations add InitialCreate --project backend --startup-project backend --context Backend.Infrastructure.Persistence.AppDbContext --output-dir Infrastructure\Persistence\Migrations
 ```
 
 Apply migrations to the configured database:
 
 ```powershell
-dotnet tool run dotnet-ef database update --project backend --startup-project backend --context AppDbContext
+dotnet ef database update --project backend --startup-project backend --context Backend.Infrastructure.Persistence.AppDbContext
 ```
-
-If you use a globally installed EF tool instead, the equivalent commands are `dotnet ef migrations add InitialCreate ...` and `dotnet ef database update ...`.
