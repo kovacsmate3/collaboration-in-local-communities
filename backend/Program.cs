@@ -13,6 +13,7 @@ using Microsoft.Azure.Cosmos;
 var builder = WebApplication.CreateBuilder(args);
 
 
+builder.Services.AddApplicationInsightsTelemetry();
 builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton(_ =>
