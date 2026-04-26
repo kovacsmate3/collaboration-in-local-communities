@@ -112,7 +112,11 @@ app.Run();
 static int GetOptionalPort()
 {
     var value = Environment.GetEnvironmentVariable("AZURE_POSTGRESQL_PORT");
-    return string.IsNullOrWhiteSpace(value) ? 5432 : int.Parse(value);
+    if (string.IsNullOrWhiteSpace(value))
+        return 5432;
+    if (!int.TryParse(value, out var port))
+        throw new InvalidOperationException($"Environment variable 'AZURE_POSTGRESQL_PORT' has an invalid value '{value}'. Expected a valid integer port number.");
+    return port;
 }
 
 static string GetRequiredEnvironmentVariable(string name)
