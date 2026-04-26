@@ -88,6 +88,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         logger.LogError(ex, "Database connection check failed");
+        throw;
     }
 }
 
