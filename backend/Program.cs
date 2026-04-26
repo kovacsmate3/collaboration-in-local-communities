@@ -1,10 +1,53 @@
+using Azure.Identity;
+using Microsoft.Azure.Cosmos;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+builder.Services.AddSingleton(_ =>
+{
+    var azureEndpoint = Environment.GetEnvironmentVariable("AZURE_COSMOS_ENDPOINT");
+
+    if (!string.IsNullOrEmpty(azureEndpoint))
+    {
+        // Azure: use managed identity, no key needed
+        return new CosmosClient(azureEndpoint, new DefaultAzureCredential());
+    }
+
+    // Local: emulator credentials from config; bypass self-signed cert
+    var endpoint = builder.Configuration["CosmosDb:AccountEndpoint"]
+        ?? throw new InvalidOperationException(
+            "No CosmosDB config found. Set AZURE_COSMOS_ENDPOINT (Azure) or CosmosDb:AccountEndpoint (local).");
+    var key = builder.Configuration["CosmosDb:AccountKey"]
+        ?? throw new InvalidOperationException("CosmosDb:AccountKey required for local dev.");
+
+    return new CosmosClient(endpoint, key, new CosmosClientOptions
+    {
+        HttpClientFactory = () => new HttpClient(new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        }),
+        ConnectionMode = ConnectionMode.Gateway
+    });
+});
+
 var app = builder.Build();
+
+{
+    var cosmos = app.Services.GetRequiredService<CosmosClient>();
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var props = await cosmos.ReadAccountAsync();
+        logger.LogInformation("Connected to CosmosDB account: {AccountId}", props.Id);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "CosmosDB connection check failed");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
