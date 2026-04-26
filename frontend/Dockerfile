@@ -11,11 +11,10 @@ RUN npm run build
 
 FROM node:24-alpine AS dev
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-CMD ["npm", "run", "dev"]
+CMD ["sh", "-c", "npm i && npm run dev"]
 
 FROM gcr.io/distroless/nodejs24-debian12:nonroot AS runner
 WORKDIR /app
