@@ -1088,7 +1088,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
                 schema: "data",
                 table: "tasks",
                 column: "created_at",
-                descending: new bool[0],
+                descending: new[] { true },
                 filter: "status = 'Open'");
 
             migrationBuilder.CreateIndex(
