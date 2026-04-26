@@ -15,22 +15,30 @@ builder.Services.AddSingleton(_ =>
         return new CosmosClient(azureEndpoint, new DefaultAzureCredential());
     }
 
-    // Local: emulator credentials from config; bypass self-signed cert
+    // Key-based: Development uses emulator config; other envs must supply explicit config
     var endpoint = builder.Configuration["CosmosDb:AccountEndpoint"]
         ?? throw new InvalidOperationException(
             "No CosmosDB config found. Set AZURE_COSMOS_ENDPOINT (Azure) or CosmosDb:AccountEndpoint (local).");
     var key = builder.Configuration["CosmosDb:AccountKey"]
-        ?? throw new InvalidOperationException("CosmosDb:AccountKey required for local dev.");
+        ?? throw new InvalidOperationException("CosmosDb:AccountKey required when not using managed identity.");
 
-    return new CosmosClient(endpoint, key, new CosmosClientOptions
+    var host = new Uri(endpoint).Host;
+    var isLocalEmulator = host is "localhost" or "127.0.0.1" or "cosmos";
+
+    if (isLocalEmulator || builder.Environment.IsDevelopment())
     {
-        HttpClientFactory = () => new HttpClient(new HttpClientHandler
+        return new CosmosClient(endpoint, key, new CosmosClientOptions
         {
-            ServerCertificateCustomValidationCallback =
-                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-        }),
-        ConnectionMode = ConnectionMode.Gateway
-    });
+            HttpClientFactory = () => new HttpClient(new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            }),
+            ConnectionMode = ConnectionMode.Gateway
+        });
+    }
+
+    return new CosmosClient(endpoint, key);
 });
 
 var app = builder.Build();
@@ -46,6 +54,7 @@ var app = builder.Build();
     catch (Exception ex)
     {
         logger.LogError(ex, "CosmosDB connection check failed");
+        throw;
     }
 }
 
