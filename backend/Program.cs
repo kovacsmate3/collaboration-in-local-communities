@@ -13,7 +13,17 @@ using Microsoft.Azure.Cosmos;
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddApplicationInsightsTelemetry();
+var applicationInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
+{
+    // Only add Application Insights if the connection string is present in configuration
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = applicationInsightsConnectionString;
+    });
+}
+
+
 builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton(_ =>
