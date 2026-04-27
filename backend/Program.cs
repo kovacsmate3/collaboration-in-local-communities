@@ -13,10 +13,14 @@ using Microsoft.Azure.Cosmos;
 var builder = WebApplication.CreateBuilder(args);
 
 
-if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")))
+var applicationInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
 {
-    // Only add Application Insights when the connection string is configured.
-    builder.Services.AddApplicationInsightsTelemetry();
+    // Only add Application Insights if the connection string is present in configuration
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = applicationInsightsConnectionString;
+    });
 }
 
 
