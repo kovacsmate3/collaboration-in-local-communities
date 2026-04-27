@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")))
 {
-    // Only add Application Insights if the connection string is present, as this is not handled by the package
+    // Only add Application Insights when the connection string is configured.
     builder.Services.AddApplicationInsightsTelemetry();
 }
 
