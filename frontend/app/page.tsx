@@ -1,19 +1,55 @@
-import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
-export default function Page() {
+import { Button } from "@/components/ui/button"
+import { APP_NAME, APP_TAGLINE } from "@/lib/constants"
+
+/**
+ * Public landing page. Kept lightweight on purpose: the design choice
+ * is "editorial restraint" - large heading, short copy, two CTAs.
+ *
+ * Marketing-grade content (sections, screenshots, etc.) can be added
+ * later without affecting the rest of the app.
+ */
+export default function HomePage() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
+    <main className="flex min-h-svh flex-col">
+      <header className="flex items-center justify-between border-b border-border px-6 py-4">
+        <span className="text-base font-semibold tracking-tight">
+          {APP_NAME}
+        </span>
+        <nav className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/login">Sign in</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link href="/register">Get started</Link>
+          </Button>
+        </nav>
+      </header>
+
+      <section className="flex flex-1 items-center px-6 py-16">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 text-center">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            {APP_TAGLINE}
+          </p>
+          <h1 className="text-balance text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+            Real help from real neighbours, without the noisy group chats.
+          </h1>
+          <p className="mx-auto max-w-xl text-balance text-base text-muted-foreground">
+            Post a small task or lend a hand nearby. Reputation, transparent
+            compensation, and verified profiles - structured trust for
+            everyday micro-cooperation.
+          </p>
+          <div className="mx-auto flex flex-wrap items-center justify-center gap-2">
+            <Button asChild size="lg">
+              <Link href="/register">Create an account</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/feed">Browse the feed</Link>
+            </Button>
+          </div>
         </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }
