@@ -1,4 +1,3 @@
-import { HugeiconsIcon } from "@hugeicons/react"
 import { InboxIcon } from "@hugeicons/core-free-icons"
 
 import { TaskCard } from "@/components/tasks/task-card"
