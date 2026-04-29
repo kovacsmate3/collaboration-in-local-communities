@@ -2,11 +2,11 @@ name: Backend CI
 
 on:
   pull_request:
-    branches: [ main, development ]
+    branches: [main, development]
 
 jobs:
   build-test-lint:
-    name: Build · Test · Lint
+    name: Build - Test - Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -17,13 +17,17 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Restore
-        run: dotnet restore
+        run: dotnet restore backend.Tests/backend.Tests.csproj
 
+      # `TreatWarningsAsErrors=true` in Directory.Build.props means any StyleCop
+      # or Roslyn analyzer violation fails this step. No extra flags needed.
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build backend.Tests/backend.Tests.csproj --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal
+        run: dotnet test backend.Tests/backend.Tests.csproj --no-build --configuration Release --verbosity normal
 
+      # Whitespace / formatting check. Scoped to the backend project so it
+      # doesn't try to discover a solution at the repo root.
       - name: Lint (format check)
-        run: dotnet format --verify-no-changes
+        run: dotnet format backend/backend.csproj --verify-no-changes --no-restore
