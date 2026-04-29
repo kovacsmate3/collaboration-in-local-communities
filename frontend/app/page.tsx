@@ -29,16 +29,16 @@ export default function HomePage() {
 
       <section className="flex flex-1 items-center px-6 py-16">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 text-center">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-sm font-medium tracking-[0.2em] text-muted-foreground uppercase">
             {APP_TAGLINE}
           </p>
-          <h1 className="text-balance text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+          <h1 className="text-4xl leading-tight font-semibold tracking-tight text-balance sm:text-5xl">
             Real help from real neighbours, without the noisy group chats.
           </h1>
-          <p className="mx-auto max-w-xl text-balance text-base text-muted-foreground">
+          <p className="mx-auto max-w-xl text-base text-balance text-muted-foreground">
             Post a small task or lend a hand nearby. Reputation, transparent
-            compensation, and verified profiles - structured trust for
-            everyday micro-cooperation.
+            compensation, and verified profiles - structured trust for everyday
+            micro-cooperation.
           </p>
           <div className="mx-auto flex flex-wrap items-center justify-center gap-2">
             <Button asChild size="lg">

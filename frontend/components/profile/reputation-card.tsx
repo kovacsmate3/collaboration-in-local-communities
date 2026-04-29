@@ -14,7 +14,7 @@ export function ReputationCard({ reputation }: ReputationCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">
+        <CardTitle className="text-sm tracking-wide text-muted-foreground uppercase">
           Reputation
         </CardTitle>
       </CardHeader>
@@ -41,7 +41,7 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-base font-semibold leading-none">{value}</span>
+      <span className="text-base leading-none font-semibold">{value}</span>
     </div>
   )
 }

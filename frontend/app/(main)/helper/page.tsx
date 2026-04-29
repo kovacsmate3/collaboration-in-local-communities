@@ -20,12 +20,10 @@ import type { Task } from "@/lib/types"
  * now; replace `applyFilters` with a server-side query later.
  */
 export default function HelperPage() {
-  const [filters, setFilters] = React.useState<TaskFiltersState>(DEFAULT_FILTERS)
+  const [filters, setFilters] =
+    React.useState<TaskFiltersState>(DEFAULT_FILTERS)
 
-  const tasks = React.useMemo(
-    () => applyFilters(mockTasks, filters),
-    [filters]
-  )
+  const tasks = React.useMemo(() => applyFilters(mockTasks, filters), [filters])
 
   return (
     <div className="flex flex-col gap-6">

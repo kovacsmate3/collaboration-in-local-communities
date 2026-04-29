@@ -1,22 +1,13 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { APP_NAME, APP_TAGLINE } from "@/lib/constants"
-import { cn } from "@/lib/utils"
-
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
-
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-})
 
 export const metadata: Metadata = {
   title: {
     default: APP_NAME,
-    template: `%s · ${APP_NAME}`,
+    template: `%s | ${APP_NAME}`,
   },
   description: APP_TAGLINE,
 }
@@ -27,16 +18,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn(
-        "antialiased",
-        fontMono.variable,
-        "font-sans",
-        geist.variable
-      )}
-    >
+    <html lang="en" suppressHydrationWarning className="font-sans antialiased">
       <body>
         <ThemeProvider>{children}</ThemeProvider>
       </body>

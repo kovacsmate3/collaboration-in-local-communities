@@ -20,7 +20,12 @@ const SIZES = {
  * Wraps the primitive Avatar to centralize sizing and initial logic so we
  * don't repeat it across every consumer.
  */
-export function UserAvatar({ name, src, size = "md", className }: UserAvatarProps) {
+export function UserAvatar({
+  name,
+  src,
+  size = "md",
+  className,
+}: UserAvatarProps) {
   const initials = name
     .split(/\s+/)
     .map((part) => part[0])

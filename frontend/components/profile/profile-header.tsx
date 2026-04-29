@@ -28,7 +28,7 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
         <UserAvatar size="lg" name={user.name} src={user.avatarUrl} />
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold leading-tight">{user.name}</h1>
+            <h1 className="text-xl leading-tight font-semibold">{user.name}</h1>
             {user.verified ? (
               <Badge variant="success" className="gap-1">
                 <HugeiconsIcon icon={ShieldUserIcon} />

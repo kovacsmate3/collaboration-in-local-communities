@@ -33,11 +33,7 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="name" label="Full name" defaultValue={user.name} required />
-        <Field
-          id="position"
-          label="Role"
-          defaultValue={user.position ?? ""}
-        />
+        <Field id="position" label="Role" defaultValue={user.position ?? ""} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

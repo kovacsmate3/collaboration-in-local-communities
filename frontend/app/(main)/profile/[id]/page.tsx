@@ -2,12 +2,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProfileHeader } from "@/components/profile/profile-header"
 import { ReputationCard } from "@/components/profile/reputation-card"
 import { ReviewsList } from "@/components/profile/reviews-list"
@@ -54,7 +49,9 @@ export default async function PublicProfilePage({
       <Tabs defaultValue="reviews">
         <TabsList>
           <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
-          <TabsTrigger value="history">History ({taskHistory.length})</TabsTrigger>
+          <TabsTrigger value="history">
+            History ({taskHistory.length})
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="reviews">
           <ReviewsList reviews={reviews} />

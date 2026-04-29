@@ -16,10 +16,7 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link
-          href="/feed"
-          className="text-base font-semibold tracking-tight"
-        >
+        <Link href="/feed" className="text-base font-semibold tracking-tight">
           {APP_NAME}
         </Link>
 
