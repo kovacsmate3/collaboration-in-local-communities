@@ -6,8 +6,10 @@ on:
 
 jobs:
   build-test-lint:
-    name: Build - Test - Lint
+    name: Build · Test · Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v6
@@ -27,7 +29,9 @@ jobs:
       - name: Test
         run: dotnet test backend.Tests/backend.Tests.csproj --no-build --configuration Release --verbosity normal
 
-      # Whitespace / formatting check. Scoped to the backend project so it
-      # doesn't try to discover a solution at the repo root.
+      # Whitespace / formatting check. Run for both the app and the test project
+      # so staged changes in either are verified.
       - name: Lint (format check)
-        run: dotnet format backend/backend.csproj --verify-no-changes --no-restore
+        run: |
+          dotnet format backend/backend.csproj --verify-no-changes --no-restore
+          dotnet format backend.Tests/backend.Tests.csproj --verify-no-changes --no-restore
