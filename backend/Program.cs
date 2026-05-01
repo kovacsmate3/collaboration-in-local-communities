@@ -1,17 +1,12 @@
-using Backend.Infrastructure.Identity;
-using Backend.Infrastructure.Persistence;
-
 using Azure.Core;
 using Azure.Identity;
-
+using Backend.Infrastructure.Identity;
+using Backend.Infrastructure.Persistence;
+using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
-
 using Npgsql;
 
-using Microsoft.Azure.Cosmos;
-
 var builder = WebApplication.CreateBuilder(args);
-
 
 var applicationInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
 if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
@@ -22,7 +17,6 @@ if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
         options.ConnectionString = applicationInsightsConnectionString;
     });
 }
-
 
 builder.Services.AddOpenApi();
 
@@ -82,12 +76,16 @@ builder.Services.AddSingleton(_ =>
         dataSourceBuilder = new NpgsqlDataSourceBuilder(azureConnectionString);
         var credential = new DefaultAzureCredential();
 
-        dataSourceBuilder.UsePeriodicPasswordProvider(async (_, ct) =>
-        {
-            var token = await credential.GetTokenAsync(
-                new TokenRequestContext(["https://ossrdbms-aad.database.windows.net/.default"]), ct);
-            return token.Token;
-        }, TimeSpan.FromMinutes(50), TimeSpan.FromSeconds(10));
+        dataSourceBuilder.UsePeriodicPasswordProvider(
+            async (_, ct) =>
+            {
+                var token = await credential.GetTokenAsync(
+                    new TokenRequestContext(["https://ossrdbms-aad.database.windows.net/.default"]),
+                    ct);
+                return token.Token;
+            },
+            TimeSpan.FromMinutes(50),
+            TimeSpan.FromSeconds(10));
     }
     else
     {
@@ -131,8 +129,10 @@ using (var scope = app.Services.CreateScope())
         await using var cmd = db.Database.GetDbConnection().CreateCommand();
         cmd.CommandText = "SELECT version()";
         var version = await cmd.ExecuteScalarAsync();
-        logger.LogInformation("Connected to database at {Host}: {Version}",
-            db.Database.GetDbConnection().DataSource, version);
+        logger.LogInformation(
+            "Connected to database at {Host}: {Version}",
+            db.Database.GetDbConnection().DataSource,
+            version);
     }
     catch (Exception ex)
     {
@@ -180,9 +180,16 @@ static int GetOptionalPort()
 {
     var value = Environment.GetEnvironmentVariable("AZURE_POSTGRESQL_PORT");
     if (string.IsNullOrWhiteSpace(value))
+    {
         return 5432;
+    }
+
     if (!int.TryParse(value, out var port))
-        throw new InvalidOperationException($"Environment variable 'AZURE_POSTGRESQL_PORT' has an invalid value '{value}'. Expected a valid integer port number.");
+    {
+        throw new InvalidOperationException(
+            $"Environment variable 'AZURE_POSTGRESQL_PORT' has an invalid value '{value}'. Expected a valid integer port number.");
+    }
+
     return port;
 }
 

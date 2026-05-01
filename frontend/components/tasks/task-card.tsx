@@ -28,7 +28,7 @@ export function TaskCard({ task, hideStatus, className }: TaskCardProps) {
     <Card className={cn("transition-colors hover:border-ring/40", className)}>
       <Link
         href={`/tasks/${task.id}`}
-        className="flex flex-col gap-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/40 rounded-xl"
+        className="flex flex-col gap-4 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
       >
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
@@ -39,7 +39,7 @@ export function TaskCard({ task, hideStatus, className }: TaskCardProps) {
               {formatRelativeTime(task.createdAt)}
             </span>
           </div>
-          <h3 className="text-base font-semibold leading-snug">{task.title}</h3>
+          <h3 className="text-base leading-snug font-semibold">{task.title}</h3>
         </CardHeader>
 
         <CardContent className="flex flex-col gap-3">

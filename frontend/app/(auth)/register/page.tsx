@@ -14,8 +14,8 @@ export default function RegisterPage() {
           Create your account
         </h1>
         <p className="text-sm text-muted-foreground">
-          You&apos;ll be set up as both a Seeker and a Helper - switch sides
-          any time.
+          You&apos;ll be set up as both a Seeker and a Helper - switch sides any
+          time.
         </p>
       </header>
       <RegisterForm />

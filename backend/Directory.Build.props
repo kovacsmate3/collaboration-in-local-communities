@@ -1,0 +1,40 @@
+<Project>
+
+  <!--
+    Shared MSBuild settings for every project in /backend.
+    Picked up automatically by MSBuild when placed alongside .csproj files.
+  -->
+
+  <PropertyGroup>
+    <!-- Strict mode: any warning, any analyzer hit fails the build. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900</WarningsNotAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+
+    <!-- Surface nullability problems as errors -->
+    <Nullable>enable</Nullable>
+    <NullableContextOptions>enable</NullableContextOptions>
+
+    <!-- XML doc warnings stay warnings (CS1591) — not every internal class needs docs -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <!-- Deterministic builds for CI -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- StyleCop, applied to every project under /backend -->
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <!-- Pull stylecop.json into the build context so analyzers see it -->
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
+  </ItemGroup>
+
+</Project>

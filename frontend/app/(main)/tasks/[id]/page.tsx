@@ -1,18 +1,10 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Calendar03Icon,
-  Location01Icon,
-} from "@hugeicons/core-free-icons"
+import { Calendar03Icon, Location01Icon } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { CategoryBadge } from "@/components/tasks/category-badge"
 import { CompensationBadge } from "@/components/tasks/compensation-badge"
@@ -68,14 +60,14 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
 
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-medium">Description</h2>
-        <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+        <p className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground">
           {task.description}
         </p>
       </section>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">
+          <CardTitle className="text-sm tracking-wide text-muted-foreground uppercase">
             Posted by
           </CardTitle>
         </CardHeader>

@@ -4,4 +4,7 @@
 .vs/
 bin/
 obj/
-*.csproj.user 
+*.csproj.user
+
+node_modules/
+.husky/_

@@ -29,7 +29,7 @@ export function TaskHistory({ tasks }: TaskHistoryProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm uppercase tracking-wide text-muted-foreground">
+        <CardTitle className="text-sm tracking-wide text-muted-foreground uppercase">
           Task history
         </CardTitle>
       </CardHeader>

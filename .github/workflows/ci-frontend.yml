@@ -2,12 +2,14 @@ name: Frontend CI
 
 on:
   pull_request:
-    branches: [ main, development ]
+    branches: [main, development]
 
 jobs:
   lint-build:
     name: Lint · Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: frontend
@@ -32,8 +34,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('frontend/package-lock.json') }}-
 
+      # `npm run lint` runs `eslint --max-warnings=0` (see frontend/package.json),
+      # so any warning fails this step.
       - name: Lint
         run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Build
         run: npm run build

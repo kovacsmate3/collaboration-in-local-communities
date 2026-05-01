@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { HugeiconsIcon } from "@hugeicons/react"
 import { BubbleChatIcon } from "@hugeicons/core-free-icons"
 
 import { UserAvatar } from "@/components/shared/user-avatar"

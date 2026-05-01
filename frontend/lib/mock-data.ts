@@ -110,7 +110,8 @@ export const mockTasks: Task[] = [
   {
     id: "t_004",
     title: "Borrow a power drill for an afternoon",
-    description: "Just need it for 2-3 hours to hang shelves. Will return same day.",
+    description:
+      "Just need it for 2-3 hours to hang shelves. Will return same day.",
     category: "tools",
     location: "Budapest, District VII",
     compensation: { type: "voluntary" },

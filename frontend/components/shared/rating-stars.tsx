@@ -47,7 +47,9 @@ export function RatingStars({
               icon={StarIcon}
               className={cn(
                 sizeCx.icon,
-                filled ? "fill-current" : "fill-transparent text-muted-foreground/40"
+                filled
+                  ? "fill-current"
+                  : "fill-transparent text-muted-foreground/40"
               )}
             />
           )

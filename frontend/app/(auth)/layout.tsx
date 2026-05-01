@@ -26,13 +26,12 @@ export default function AuthLayout({
       </main>
 
       <aside className="hidden flex-col justify-end gap-2 bg-muted p-10 md:flex">
-        <p className="max-w-md text-3xl font-semibold leading-tight tracking-tight text-foreground">
+        <p className="max-w-md text-3xl leading-tight font-semibold tracking-tight text-foreground">
           {APP_TAGLINE}
         </p>
         <p className="max-w-md text-sm text-muted-foreground">
-          Find a hand or lend one. Reputation, transparency, and real
-          neighbours - replacing scattered group chats with structured
-          micro-cooperation.
+          Find a hand or lend one. Reputation, transparency, and real neighbours
+          - replacing scattered group chats with structured micro-cooperation.
         </p>
       </aside>
     </div>

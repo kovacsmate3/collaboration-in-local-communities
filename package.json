@@ -1,0 +1,13 @@
+{
+  "name": "collaboration-in-local-communities",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Monorepo dev tooling (husky + lint-staged). Backend lives in /backend, frontend in /frontend.",
+  "scripts": {
+    "prepare": "husky || true"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10"
+  }
+}
