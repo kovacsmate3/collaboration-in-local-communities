@@ -12,7 +12,7 @@ See the [root AGENTS.md](../AGENTS.md) for monorepo-wide concerns (compose, git 
 - **Auth** — ASP.NET Core Identity (`AddIdentityCore`), backed by EF Core.
 - **Relational** — EF Core 10 + Npgsql + NetTopologySuite (PostGIS). Local dev runs against `postgis/postgis:18-3.6-alpine` because the initial migration depends on the `postgis` extension.
 - **Document** — Cosmos DB (`Microsoft.Azure.Cosmos`). Local dev hits the Linux emulator; Azure uses managed identity (no key).
-- **Telemetry** — Application Insights + OpenTelemetry. AI is only registered if `APPLICATIONINSIGHTS_CONNECTION_STRING` is set.
+- **Telemetry** — Application Insights. AI is only registered if `APPLICATIONINSIGHTS_CONNECTION_STRING` is set.
 
 ## Setup
 
