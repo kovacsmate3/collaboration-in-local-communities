@@ -98,7 +98,7 @@ EF Core migrations live in `Infrastructure/Persistence/Migrations`. Run from the
 dotnet ef migrations add <Name> \
   --project backend --startup-project backend \
   --context Backend.Infrastructure.Persistence.AppDbContext \
-  --output-dir Infrastructure\Persistence\Migrations
+  --output-dir Infrastructure/Persistence/Migrations
 
 # Apply migrations
 dotnet ef database update \
