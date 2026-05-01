@@ -8,6 +8,16 @@
 
 When working under `backend/` or `frontend/`, the nested `AGENTS.md` wins — read that one first. This file covers the repo-wide concerns.
 
+## Project goal
+
+A platform for structured, safe, reputation-based coordination of **local micro-tasks** (moving a box, tutoring, pet sitting, borrowing tools) — replacing the unstructured Facebook-group / WhatsApp / word-of-mouth status quo with identity, reputation, and clear compensation (paid, credit, or barter).
+
+Engineering tiebreakers that fall out of this:
+
+- **Trust and locality are first-class.** Reputation, audit trails, privacy settings, and PostGIS geography live in the domain model — don't bolt them on or shortcut them away.
+- **Three compensation modes coexist** (`CompensationType`: paid, credit, barter). Don't hardcode money assumptions; the credit ledger is a real thing.
+- **Safety beats convenience.** Flows touching verification, payments, or disputes get an audit trail by default.
+
 ## Setup
 
 ```bash
