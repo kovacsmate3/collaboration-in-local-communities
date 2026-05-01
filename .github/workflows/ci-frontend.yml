@@ -51,7 +51,9 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8080
 
       - name: Start server
-        run: npm start &
+        run: |
+          npm start &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
 
       - name: Wait for server
         run: timeout 30 sh -c 'until curl -sf http://localhost:3000 > /dev/null 2>&1; do sleep 1; done'
@@ -65,3 +67,7 @@ jobs:
             http://localhost:3000/login
             http://localhost:3000/register
           fail: true
+
+      - name: Stop server
+        if: always()
+        run: kill "$SERVER_PID" 2>/dev/null || true
