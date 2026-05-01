@@ -26,8 +26,8 @@ dotnet restore                       # restores both backend and backend.Tests v
 Bring up the databases (one of):
 
 ```bash
-docker compose up -d db cosmos             # full stack compose
-docker compose -f docker-compose.db.yml up -d   # databases only
+docker compose up -d db cosmos                  # databases only (using docker-compose.yml)
+docker compose -f docker-compose.db.yml up -d   # databases only (using docker-compose.db.yml)
 ```
 
 ## Build · run · test · lint
