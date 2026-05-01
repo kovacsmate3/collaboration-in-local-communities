@@ -60,7 +60,8 @@ jobs:
         uses: lycheeverse/lychee-action@v2
         with:
           args: >
-            --crawl
             --no-progress
             http://localhost:3000
+            http://localhost:3000/login
+            http://localhost:3000/register
           fail: true
