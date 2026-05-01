@@ -87,7 +87,7 @@ Keep new entity configurations in [`Infrastructure/Persistence/Configurations/`]
 | Cosmos endpoint      | `CosmosDb:AccountEndpoint` + `CosmosDb:AccountKey`   | `AZURE_COSMOS_ENDPOINT` (managed identity, no key)                   |
 | Application Insights | not set                                              | `APPLICATIONINSIGHTS_CONNECTION_STRING`                              |
 
-When the host is `localhost`, `127.0.0.1`, or `cosmos`, the Cosmos client switches to gateway mode and accepts the emulator's self-signed certificate. Don't add that bypass to other environments.
+In `Development`, the Cosmos client switches to gateway mode and accepts the emulator's self-signed certificate for local emulator scenarios. Common local hosts include `localhost`, `127.0.0.1`, and `cosmos`; do not rely on this bypass outside Development.
 
 ## Migrations
 
