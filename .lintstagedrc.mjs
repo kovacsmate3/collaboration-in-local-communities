@@ -34,10 +34,10 @@ export default {
   },
 
   // ---------------------------------------------------------------------
-  // Backend: C# files. dotnet format scoped to staged files.
+  // Backend: C# files in app and tests. dotnet format scoped to staged files.
   // (Build-time analyzers like StyleCop run in CI / on `dotnet build`.)
   // ---------------------------------------------------------------------
-  "backend/**/*.cs": (files) => {
+  "{backend,backend.Tests}/**/*.cs": (files) => {
     const rel = projectRelative("backend")(files)
     return [`dotnet format backend --include ${quote(rel)}`]
   },
