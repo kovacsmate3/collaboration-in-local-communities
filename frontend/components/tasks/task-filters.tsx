@@ -37,6 +37,17 @@ interface TaskFiltersProps {
  * US-09 skill match, US-12 compensation transparency).
  *
  * Controlled component; the parent page owns the filter state.
+ *
+ * Accessibility notes:
+ *  - The search input has only a decorative icon and a placeholder,
+ *    so it needs an explicit `aria-label` to give it an accessible
+ *    name (placeholders don't qualify as labels).
+ *  - The icon is marked `aria-hidden` so screen readers don't try to
+ *    announce it as content.
+ *  - Each Select trigger shows its current value (e.g. "All
+ *    categories"), but without context a screen-reader user can't
+ *    tell which dimension it filters. `aria-label` on the trigger
+ *    fills that gap.
  */
 export function TaskFilters({ value, onChange }: TaskFiltersProps) {
   const update = (patch: Partial<TaskFiltersState>) =>
@@ -47,9 +58,12 @@ export function TaskFilters({ value, onChange }: TaskFiltersProps) {
       <div className="relative">
         <HugeiconsIcon
           icon={Search01Icon}
+          aria-hidden="true"
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
         />
         <Input
+          type="search"
+          aria-label="Search tasks, skills, locations"
           className="pl-9"
           placeholder="Search tasks, skills, locations..."
           value={value.query}
@@ -63,7 +77,7 @@ export function TaskFilters({ value, onChange }: TaskFiltersProps) {
           update({ category: v as TaskFiltersState["category"] })
         }
       >
-        <SelectTrigger className="sm:w-44">
+        <SelectTrigger aria-label="Filter by category" className="sm:w-44">
           <SelectValue placeholder="Category" />
         </SelectTrigger>
         <SelectContent>
@@ -82,7 +96,7 @@ export function TaskFilters({ value, onChange }: TaskFiltersProps) {
           update({ compensation: v as TaskFiltersState["compensation"] })
         }
       >
-        <SelectTrigger className="sm:w-40">
+        <SelectTrigger aria-label="Filter by compensation" className="sm:w-40">
           <SelectValue placeholder="Compensation" />
         </SelectTrigger>
         <SelectContent>
@@ -103,7 +117,7 @@ export function TaskFilters({ value, onChange }: TaskFiltersProps) {
           update({ recency: v as TaskFiltersState["recency"] })
         }
       >
-        <SelectTrigger className="sm:w-40">
+        <SelectTrigger aria-label="Filter by recency" className="sm:w-40">
           <SelectValue placeholder="Recency" />
         </SelectTrigger>
         <SelectContent>
