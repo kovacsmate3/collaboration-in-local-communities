@@ -6,11 +6,10 @@ interface CategoryBadgeProps {
   category: TaskCategory
 }
 
+/**
+ * Visible label for a task's category.
+ *
+ */
 export function CategoryBadge({ category }: CategoryBadgeProps) {
-  const meta = TASK_CATEGORIES[category]
-  return (
-    <Badge variant="muted" aria-label={`Category: ${meta.label}`}>
-      {meta.label}
-    </Badge>
-  )
+  return <Badge variant="muted">{TASK_CATEGORIES[category].label}</Badge>
 }

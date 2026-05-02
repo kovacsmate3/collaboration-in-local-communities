@@ -17,6 +17,11 @@ const VARIANT: Record<
   cancelled: "destructive",
 }
 
+/**
+ * Same accessibility logic as `CategoryBadge`: the visible text
+ * ("Open", "In progress", …) is the information, so name-from-content
+ * is correct - no `aria-label` needed.
+ */
 export function TaskStatusBadge({ status }: TaskStatusBadgeProps) {
   return <Badge variant={VARIANT[status]}>{TASK_STATUS_LABELS[status]}</Badge>
 }

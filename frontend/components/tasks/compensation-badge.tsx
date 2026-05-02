@@ -10,8 +10,6 @@ interface CompensationBadgeProps {
 /**
  * Visual marker for the compensation type of a task.
  *
- * Per US-12 (compensation transparency), this badge is always shown next
- * to a task title so seekers/helpers know the deal up front.
  */
 export function CompensationBadge({ compensation }: CompensationBadgeProps) {
   const variant =
@@ -29,9 +27,7 @@ export function CompensationBadge({ compensation }: CompensationBadgeProps) {
   const ariaLabel =
     compensation.type === "barter" && compensation.barterOffer
       ? `Barter offered: ${compensation.barterOffer}`
-      : compensation.type === "paid" && typeof compensation.amount === "number"
-        ? `Paid: ${formatCurrency(compensation.amount, compensation.currency)}`
-        : `Compensation: ${COMPENSATION_LABELS[compensation.type]}`
+      : undefined
 
   return (
     <Badge variant={variant} aria-label={ariaLabel}>
