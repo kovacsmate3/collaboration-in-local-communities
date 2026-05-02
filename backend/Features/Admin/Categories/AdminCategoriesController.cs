@@ -66,7 +66,7 @@ public sealed class AdminCategoriesController(
         await EvictCategoryListAsync(cancellationToken);
 
         var response = ToResponse(category);
-        return Created($"/api/admin/categories/{category.Id}", response);
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = category.Id }, response);
     }
 
     [HttpPut("{id:guid}")]
