@@ -1,3 +1,4 @@
+using Backend.Application.Categories;
 using Backend.Domain.Entities;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -23,10 +24,12 @@ public sealed class AdminCategoriesController(
     {
         var code = Normalize(request.Code);
         var name = Normalize(request.Name);
+        var icon = Normalize(request.Icon);
         var description = NormalizeOptional(request.Description);
 
         if (!ValidateRequired(nameof(request.Code), code) ||
-            !ValidateRequired(nameof(request.Name), name))
+            !ValidateRequired(nameof(request.Name), name) ||
+            !ValidateIcon(nameof(request.Icon), icon))
         {
             return ValidationProblem(ModelState);
         }
@@ -42,6 +45,7 @@ public sealed class AdminCategoriesController(
         {
             Code = code,
             Name = name,
+            Icon = icon,
             Description = description,
             SortOrder = request.SortOrder,
             IsActive = true
@@ -78,14 +82,17 @@ public sealed class AdminCategoriesController(
         }
 
         var name = Normalize(request.Name);
+        var icon = Normalize(request.Icon);
         var description = NormalizeOptional(request.Description);
 
-        if (!ValidateRequired(nameof(request.Name), name))
+        if (!ValidateRequired(nameof(request.Name), name) ||
+            !ValidateIcon(nameof(request.Icon), icon))
         {
             return ValidationProblem(ModelState);
         }
 
         category.Name = name;
+        category.Icon = icon;
         category.Description = description;
         category.SortOrder = request.SortOrder;
         category.UpdatedAt = DateTimeOffset.UtcNow;
@@ -126,6 +133,7 @@ public sealed class AdminCategoriesController(
             category.Id,
             category.Code,
             category.Name,
+            category.Icon,
             category.Description,
             category.SortOrder,
             category.IsActive);
@@ -167,6 +175,22 @@ public sealed class AdminCategoriesController(
         }
 
         ModelState.AddModelError(fieldName, $"{fieldName} is required.");
+        return false;
+    }
+
+    private bool ValidateIcon(string fieldName, string icon)
+    {
+        if (!ValidateRequired(fieldName, icon))
+        {
+            return false;
+        }
+
+        if (AllowedCategoryIcons.Values.Contains(icon))
+        {
+            return true;
+        }
+
+        ModelState.AddModelError(fieldName, $"{fieldName} is not an allowed category icon.");
         return false;
     }
 

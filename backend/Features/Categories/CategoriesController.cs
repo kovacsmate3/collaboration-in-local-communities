@@ -18,6 +18,7 @@ public sealed class CategoriesController(IListCategoriesQuery listCategoriesQuer
                 category.Id,
                 category.Code,
                 category.Name,
+                category.Icon,
                 category.Description));
 
         return Ok(response);
