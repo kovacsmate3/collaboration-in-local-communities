@@ -1,7 +1,7 @@
-using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
+using Backend.Infrastructure.Persistence;
 
 namespace Backend.Features.Categories;
 
