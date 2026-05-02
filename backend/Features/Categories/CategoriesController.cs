@@ -1,25 +1,25 @@
-using Backend.Infrastructure.Persistence;
-
+using Backend.Application.Categories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
-using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Categories;
 
 [ApiController]
 [Route("api/categories")]
-public sealed class CategoriesController(AppDbContext db) : ControllerBase
+public sealed class CategoriesController(IListCategoriesQuery listCategoriesQuery) : ControllerBase
 {
     [HttpGet]
     [OutputCache(Duration = 300)]
-    public async Task<IActionResult> ListAsync()
+    public async Task<IActionResult> ListAsync(CancellationToken cancellationToken)
     {
-        var categories = await db.Categories
-            .Where(c => c.IsActive)
-            .OrderBy(c => c.SortOrder)
-            .Select(c => new CategoryResponse(c.Id, c.Code, c.Name, c.Description))
-            .ToListAsync();
+        var categories = await listCategoriesQuery.ExecuteAsync(cancellationToken);
+        var response = categories
+            .Select(category => new CategoryResponse(
+                category.Id,
+                category.Code,
+                category.Name,
+                category.Description));
 
-        return Ok(categories);
+        return Ok(response);
     }
 }

@@ -1,7 +1,9 @@
 using Azure.Core;
 using Azure.Identity;
+using Backend.Application.Categories;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Persistence.Queries;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -106,6 +108,7 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
     var dataSource = serviceProvider.GetRequiredService<NpgsqlDataSource>();
     options.UseNpgsql(dataSource, npgsql => npgsql.UseNetTopologySuite());
 });
+builder.Services.AddScoped<IListCategoriesQuery, EfListCategoriesQuery>();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
