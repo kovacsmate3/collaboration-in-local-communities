@@ -57,6 +57,9 @@ public sealed class AdminCategoriesController(
 
         var category = new Category
         {
+            // Ensure the entity has an ID immediately so callers receive it
+            // even before the DB generates values on insert.
+            Id = Guid.NewGuid(),
             Code = code,
             Name = name,
             Icon = icon,
