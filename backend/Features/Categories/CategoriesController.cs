@@ -11,7 +11,7 @@ public sealed class CategoriesController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
     [OutputCache(Duration = 300)]
-    public async Task<IActionResult> List()
+    public async Task<IActionResult> ListAsync()
     {
         var categories = await db.Categories
             .Where(c => c.IsActive)
