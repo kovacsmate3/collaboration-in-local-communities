@@ -121,7 +121,7 @@ One migration per logical change; use a meaningful name (`AddPostgisExtension`, 
 `dotnet format --verify-no-changes` is the CI gate, so formatting is non-negotiable. Beyond that:
 
 - **Namespaces** — file-scoped (`namespace Backend.Foo;`), one per file.
-- **Usings** — outside the namespace; `System.*` first, then third-party, then `Backend.*`.
+- **Usings** — outside the namespace; `System.*` first, then all other imports alphabetically by full namespace. Do not group third-party imports separately from `Backend.*`.
 - **Naming** — types/methods/properties `PascalCase`; interfaces `IPascalCase`; locals/parameters `camelCase`; private fields `_camelCase`; constants `PascalCase`.
 - **Modifiers** — always explicit (`internal class Foo`, never bare `class Foo`).
 - **Nullability** — `Nullable` is enabled. Don't `!`-suppress without a comment justifying why the compiler is wrong.
