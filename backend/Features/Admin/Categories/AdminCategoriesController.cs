@@ -18,6 +18,19 @@ public sealed class AdminCategoriesController(
     IOutputCacheStore outputCacheStore)
     : ControllerBase
 {
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var category = await db.Categories
+            .FirstOrDefaultAsync(category => category.Id == id, cancellationToken);
+        if (category is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(ToResponse(category));
+    }
+
     [HttpPost]
     public async Task<IActionResult> CreateAsync(
         CreateCategoryRequest request,
