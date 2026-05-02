@@ -5,6 +5,7 @@ using Backend.Infrastructure.Persistence;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -162,6 +163,7 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 // Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080)
