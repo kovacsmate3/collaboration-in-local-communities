@@ -13,15 +13,30 @@ const projectRelative = (projectDir) => (files) => {
 const quote = (paths) =>
   paths.map((pathName) => JSON.stringify(pathName)).join(" ")
 
+// ESLint 9 and Prettier resolve file arguments as glob patterns. Convert
+// meta-characters to bracket expressions so Next.js route-group dirs like
+// `(auth)` and dynamic segments like `[id]` are matched as literals
+// (no backslashes — they double-escape through JSON.stringify and break on
+// Windows).
+const quoteForGlob = (paths) =>
+  paths
+    .map((p) =>
+      p.replace(/\[/g, "[[]").replace(/\(/g, "[(]").replace(/\)/g, "[)]")
+    )
+    .map((p) => JSON.stringify(p))
+    .join(" ")
+
 export default {
   // ---------------------------------------------------------------------
   // Frontend: TypeScript / JavaScript. ESLint then Prettier.
   // ---------------------------------------------------------------------
   "frontend/**/*.{ts,tsx,js,jsx,mjs,cjs}": (files) => {
-    const rel = quote(projectRelative("frontend")(files))
+    const rel = projectRelative("frontend")(files)
+    // `npm run --prefix` changes CWD to the package root before exec,
+    // unlike `npm exec --prefix` which only affects binary lookup.
     return [
-      `npm --prefix frontend exec -- eslint --max-warnings=0 --fix ${rel}`,
-      `npm --prefix frontend exec -- prettier --write ${rel}`,
+      `npm --prefix frontend run lint:fix -- ${quoteForGlob(rel)}`,
+      `npm --prefix frontend run format:staged -- ${quoteForGlob(rel)}`,
     ]
   },
 
@@ -29,8 +44,8 @@ export default {
   // Frontend: non-code files. Prettier only.
   // ---------------------------------------------------------------------
   "frontend/**/*.{json,md,css,yml,yaml}": (files) => {
-    const rel = quote(projectRelative("frontend")(files))
-    return [`npm --prefix frontend exec -- prettier --write ${rel}`]
+    const rel = quoteForGlob(projectRelative("frontend")(files))
+    return [`npm --prefix frontend run format:staged -- ${rel}`]
   },
 
   // ---------------------------------------------------------------------

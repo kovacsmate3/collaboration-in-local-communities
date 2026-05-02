@@ -11,6 +11,7 @@
     "lint:fix": "eslint --max-warnings=0 --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,md,css}\"",
+    "format:staged": "prettier --write",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
