@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
+
 using Backend.Infrastructure.Persistence;
 
 namespace Backend.Features.Categories;
@@ -16,7 +17,7 @@ public sealed class CategoriesController(AppDbContext db) : ControllerBase
         var categories = await db.Categories
             .Where(c => c.IsActive)
             .OrderBy(c => c.SortOrder)
-            .Select(c => new CategoryResponse(c.Id, c.Code, c.Name, c.Description, c.SortOrder))
+            .Select(c => new CategoryResponse(c.Id, c.Code, c.Name, c.Description))
             .ToListAsync();
 
         return Ok(categories);
