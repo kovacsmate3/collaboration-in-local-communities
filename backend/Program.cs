@@ -175,6 +175,7 @@ if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAIN
     app.UseHttpsRedirection();
 }
 
+app.UseRouting();
 app.UseOutputCache();
 app.UseAuthentication();
 app.UseAuthorization();
