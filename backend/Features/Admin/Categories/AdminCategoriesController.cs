@@ -1,5 +1,6 @@
 using Backend.Application.Categories;
 using Backend.Domain.Entities;
+using Backend.Features.Categories;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -196,6 +197,6 @@ public sealed class AdminCategoriesController(
 
     private ValueTask EvictCategoryListAsync(CancellationToken cancellationToken)
     {
-        return outputCacheStore.EvictByTagAsync(Backend.Features.Categories.CategoriesCache.Tag, cancellationToken);
+        return outputCacheStore.EvictByTagAsync(CategoriesCache.Tag, cancellationToken);
     }
 }
