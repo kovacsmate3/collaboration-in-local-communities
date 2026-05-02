@@ -60,6 +60,10 @@ We layer Clean-Architecture-lite. Dependencies point inward: API → Application
 ```
 backend/
 ├── Program.cs                       # Composition root, DI wiring, host pipeline
+├── Features/                        # Vertical-slice API layer — one sub-folder per feature
+│   └── Categories/
+│       ├── CategoriesController.cs
+│       └── CategoryResponse.cs
 ├── Domain/                          # Entities + value objects + enums. No external deps.
 │   ├── Entities/
 │   └── Enums/
@@ -74,6 +78,10 @@ backend/
 ├── appsettings.json
 └── appsettings.Development.json     # Local Postgres + Cosmos emulator config
 ```
+
+### Controllers
+
+Controllers live in `Features/{FeatureName}/` alongside their request/response DTOs — **not** in a root `Controllers/` folder. Each feature folder is self-contained: controller, DTOs, and any feature-specific helpers all sit together. Do not create a top-level `Controllers/` directory.
 
 Keep new entity configurations in [`Infrastructure/Persistence/Configurations/`](./Infrastructure/Persistence/Configurations) and register them via `OnModelCreating` reflection if that pattern is already in use — check `AppDbContext.cs` first.
 

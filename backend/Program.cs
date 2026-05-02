@@ -114,6 +114,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddRoles<ApplicationRole>()
     .AddEntityFrameworkStores<AppDbContext>();
 
+builder.Services.AddControllers();
+builder.Services.AddOutputCache();
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
@@ -168,11 +170,14 @@ if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAIN
     app.UseHttpsRedirection();
 }
 
+app.UseOutputCache();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("Health");
+
+app.MapControllers();
 
 app.Run();
 
