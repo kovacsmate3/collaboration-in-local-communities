@@ -7,5 +7,10 @@ interface CategoryBadgeProps {
 }
 
 export function CategoryBadge({ category }: CategoryBadgeProps) {
-  return <Badge variant="muted">{TASK_CATEGORIES[category].label}</Badge>
+  const meta = TASK_CATEGORIES[category]
+  return (
+    <Badge variant="muted" aria-label={`Category: ${meta.label}`}>
+      {meta.label}
+    </Badge>
+  )
 }

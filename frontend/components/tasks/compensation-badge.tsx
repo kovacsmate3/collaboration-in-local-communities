@@ -26,5 +26,16 @@ export function CompensationBadge({ compensation }: CompensationBadgeProps) {
       ? formatCurrency(compensation.amount, compensation.currency)
       : COMPENSATION_LABELS[compensation.type]
 
-  return <Badge variant={variant}>{label}</Badge>
+  const ariaLabel =
+    compensation.type === "barter" && compensation.barterOffer
+      ? `Barter offered: ${compensation.barterOffer}`
+      : compensation.type === "paid" && typeof compensation.amount === "number"
+        ? `Paid: ${formatCurrency(compensation.amount, compensation.currency)}`
+        : `Compensation: ${COMPENSATION_LABELS[compensation.type]}`
+
+  return (
+    <Badge variant={variant} aria-label={ariaLabel}>
+      {label}
+    </Badge>
+  )
 }
