@@ -60,6 +60,10 @@ We layer Clean-Architecture-lite. Dependencies point inward: API → Application
 ```
 backend/
 ├── Program.cs                       # Composition root, DI wiring, host pipeline
+├── Features/                        # Vertical-slice API layer — one sub-folder per feature
+│   └── Categories/
+│       ├── CategoriesController.cs
+│       └── CategoryResponse.cs
 ├── Domain/                          # Entities + value objects + enums. No external deps.
 │   ├── Entities/
 │   └── Enums/
@@ -74,6 +78,10 @@ backend/
 ├── appsettings.json
 └── appsettings.Development.json     # Local Postgres + Cosmos emulator config
 ```
+
+### Controllers
+
+Controllers live in `Features/{FeatureName}/` alongside their request/response DTOs — **not** in a root `Controllers/` folder. Each feature folder is self-contained: controller, DTOs, and any feature-specific helpers all sit together. Do not create a top-level `Controllers/` directory.
 
 Keep new entity configurations in [`Infrastructure/Persistence/Configurations/`](./Infrastructure/Persistence/Configurations) and register them via `OnModelCreating` reflection if that pattern is already in use — check `AppDbContext.cs` first.
 
@@ -113,7 +121,7 @@ One migration per logical change; use a meaningful name (`AddPostgisExtension`, 
 `dotnet format --verify-no-changes` is the CI gate, so formatting is non-negotiable. Beyond that:
 
 - **Namespaces** — file-scoped (`namespace Backend.Foo;`), one per file.
-- **Usings** — outside the namespace; `System.*` first, then third-party, then `Backend.*`.
+- **Usings** — outside the namespace; `System.*` first, then all other imports alphabetically by full namespace. Do not group third-party imports separately from `Backend.*`.
 - **Naming** — types/methods/properties `PascalCase`; interfaces `IPascalCase`; locals/parameters `camelCase`; private fields `_camelCase`; constants `PascalCase`.
 - **Modifiers** — always explicit (`internal class Foo`, never bare `class Foo`).
 - **Nullability** — `Nullable` is enabled. Don't `!`-suppress without a comment justifying why the compiler is wrong.

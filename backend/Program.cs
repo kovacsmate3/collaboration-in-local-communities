@@ -1,10 +1,13 @@
 using Azure.Core;
 using Azure.Identity;
+using Backend.Application.Categories;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Persistence.Queries;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -105,6 +108,7 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
     var dataSource = serviceProvider.GetRequiredService<NpgsqlDataSource>();
     options.UseNpgsql(dataSource, npgsql => npgsql.UseNetTopologySuite());
 });
+builder.Services.AddScoped<IListCategoriesQuery, EfListCategoriesQuery>();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
@@ -114,6 +118,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddRoles<ApplicationRole>()
     .AddEntityFrameworkStores<AppDbContext>();
 
+builder.Services.AddControllers();
+builder.Services.AddOutputCache();
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
@@ -160,6 +166,7 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 // Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080)
@@ -168,11 +175,15 @@ if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAIN
     app.UseHttpsRedirection();
 }
 
+app.UseRouting();
+app.UseOutputCache();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("Health");
+
+app.MapControllers();
 
 app.Run();
 
