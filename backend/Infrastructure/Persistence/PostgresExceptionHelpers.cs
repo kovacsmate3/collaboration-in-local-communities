@@ -22,7 +22,7 @@ public static class PostgresExceptionHelpers
         }
 
         var isUnique = postgresException.SqlState == PostgresErrorCodes.UniqueViolation;
-        
+
         if (constraintName is null)
         {
             return isUnique;
