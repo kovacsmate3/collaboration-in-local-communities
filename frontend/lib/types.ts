@@ -41,6 +41,15 @@ export type TaskCategory =
   | "errands"
   | "other"
 
+export interface Category {
+  id: string
+  code: string
+  name: string
+  description?: string | null
+  /** Hugeicons identifier rendered through `getIconForKey`. */
+  icon: string
+}
+
 export type CompensationType = "paid" | "voluntary" | "barter"
 
 export interface Compensation {
@@ -64,6 +73,8 @@ export interface Task {
   title: string
   description: string
   category: TaskCategory
+  /** Category icon identifier rendered through `getIconForKey`. */
+  icon: string
   location: string
   compensation: Compensation
   status: TaskStatus

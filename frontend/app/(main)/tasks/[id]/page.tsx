@@ -37,7 +37,7 @@ export default async function TaskDetailPage({ params }: TaskDetailPageProps) {
   return (
     <article className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex flex-wrap items-center gap-2">
-        <CategoryBadge category={task.category} />
+        <CategoryBadge category={task.category} icon={task.icon} />
         <CompensationBadge compensation={task.compensation} />
         <TaskStatusBadge status={task.status} />
       </div>

@@ -32,7 +32,7 @@ export function TaskCard({ task, hideStatus, className }: TaskCardProps) {
       >
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
-            <CategoryBadge category={task.category} />
+            <CategoryBadge category={task.category} icon={task.icon} />
             <CompensationBadge compensation={task.compensation} />
             {!hideStatus ? <TaskStatusBadge status={task.status} /> : null}
             <span className="ml-auto text-xs text-muted-foreground">
