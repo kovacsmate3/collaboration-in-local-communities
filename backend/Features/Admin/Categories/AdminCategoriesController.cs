@@ -1,7 +1,5 @@
-using Backend.Application.Categories;
 using Backend.Common;
 using Backend.Domain.Entities;
-using Backend.Features.Categories;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Validation;
 using Microsoft.AspNetCore.Authorization;
@@ -83,7 +81,7 @@ public sealed partial class AdminCategoriesController(
         await EvictCategoryListAsync(cancellationToken);
 
         var response = AdminCategoryResponse.FromCategory(category);
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = category.Id }, response);
+        return CreatedAtAction("GetById", new { id = category.Id }, response);
     }
 
     [HttpPut("{id:guid}")]
