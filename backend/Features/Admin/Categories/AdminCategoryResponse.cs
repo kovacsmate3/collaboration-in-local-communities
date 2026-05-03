@@ -1,3 +1,5 @@
+using Backend.Domain.Entities;
+
 namespace Backend.Features.Admin.Categories;
 
 public sealed record AdminCategoryResponse(
@@ -7,4 +9,20 @@ public sealed record AdminCategoryResponse(
     string Icon,
     string? Description,
     int SortOrder,
-    bool IsActive);
+    bool IsActive)
+{
+    /// <summary>
+    /// Creates an <see cref="AdminCategoryResponse"/> from a <see cref="Category"/> entity.
+    /// </summary>
+    public static AdminCategoryResponse FromCategory(Category category)
+    {
+        return new AdminCategoryResponse(
+            category.Id,
+            category.Code,
+            category.Name,
+            category.Icon,
+            category.Description,
+            category.SortOrder,
+            category.IsActive);
+    }
+}

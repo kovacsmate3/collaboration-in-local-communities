@@ -2,18 +2,19 @@ using Backend.Application.Categories;
 using Backend.Domain.Entities;
 using Backend.Features.Categories;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Validation;
+using Backend.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace Backend.Features.Admin.Categories;
 
 // [Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/admin/categories")]
-public sealed class AdminCategoriesController(
+public sealed partial class AdminCategoriesController(
     AppDbContext db,
     IOutputCacheStore outputCacheStore)
     : ControllerBase
@@ -28,7 +29,7 @@ public sealed class AdminCategoriesController(
             return NotFound();
         }
 
-        return Ok(ToResponse(category));
+        return Ok(AdminCategoryResponse.FromCategory(category));
     }
 
     [HttpPost]
@@ -36,13 +37,13 @@ public sealed class AdminCategoriesController(
         CreateCategoryRequest request,
         CancellationToken cancellationToken)
     {
-        var code = Normalize(request.Code);
-        var name = Normalize(request.Name);
-        var icon = Normalize(request.Icon);
-        var description = NormalizeOptional(request.Description);
+        var code = StringUtilities.Normalize(request.Code);
+        var name = StringUtilities.Normalize(request.Name);
+        var icon = StringUtilities.Normalize(request.Icon);
+        var description = StringUtilities.Normalize(request.Description);
 
-        if (!ValidateRequired(nameof(request.Code), code) ||
-            !ValidateRequired(nameof(request.Name), name) ||
+        if (!FieldValidator.ValidateRequired(ModelState, nameof(request.Code), code) ||
+            !FieldValidator.ValidateRequired(ModelState, nameof(request.Name), name) ||
             !ValidateIcon(nameof(request.Icon), icon))
         {
             return ValidationProblem(ModelState);
@@ -74,14 +75,14 @@ public sealed class AdminCategoriesController(
         {
             await db.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException exception) when (IsDuplicateCategoryCode(exception))
+        catch (DbUpdateException exception) when (PostgresExceptionHelpers.IsDuplicateCategoryCode(exception))
         {
             return DuplicateCodeConflict(code);
         }
 
         await EvictCategoryListAsync(cancellationToken);
 
-        var response = ToResponse(category);
+        var response = AdminCategoryResponse.FromCategory(category);
         return CreatedAtAction(nameof(GetByIdAsync), new { id = category.Id }, response);
     }
 
@@ -98,11 +99,11 @@ public sealed class AdminCategoriesController(
             return NotFound();
         }
 
-        var name = Normalize(request.Name);
-        var icon = Normalize(request.Icon);
-        var description = NormalizeOptional(request.Description);
+        var name = StringUtilities.Normalize(request.Name);
+        var icon = StringUtilities.Normalize(request.Icon);
+        var description = StringUtilities.Normalize(request.Description);
 
-        if (!ValidateRequired(nameof(request.Name), name) ||
+        if (!FieldValidator.ValidateRequired(ModelState, nameof(request.Name), name) ||
             !ValidateIcon(nameof(request.Icon), icon))
         {
             return ValidationProblem(ModelState);
@@ -117,7 +118,7 @@ public sealed class AdminCategoriesController(
         await db.SaveChangesAsync(cancellationToken);
         await EvictCategoryListAsync(cancellationToken);
 
-        return Ok(ToResponse(category));
+        return Ok(AdminCategoryResponse.FromCategory(category));
     }
 
     [HttpDelete("{id:guid}")]
@@ -142,77 +143,5 @@ public sealed class AdminCategoriesController(
         await EvictCategoryListAsync(cancellationToken);
 
         return NoContent();
-    }
-
-    private static AdminCategoryResponse ToResponse(Category category)
-    {
-        return new AdminCategoryResponse(
-            category.Id,
-            category.Code,
-            category.Name,
-            category.Icon,
-            category.Description,
-            category.SortOrder,
-            category.IsActive);
-    }
-
-    private static string Normalize(string value)
-    {
-        return value.Trim();
-    }
-
-    private static string? NormalizeOptional(string? value)
-    {
-        var normalized = value?.Trim();
-        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
-    }
-
-    private static ConflictObjectResult DuplicateCodeConflict(string code)
-    {
-        return new ConflictObjectResult(new ProblemDetails
-        {
-            Title = "Duplicate category code",
-            Detail = $"Category code '{code}' already exists.",
-            Status = StatusCodes.Status409Conflict
-        });
-    }
-
-    private static bool IsDuplicateCategoryCode(DbUpdateException exception)
-    {
-        return exception.InnerException is PostgresException postgresException &&
-            postgresException.SqlState == PostgresErrorCodes.UniqueViolation &&
-            postgresException.ConstraintName == "ux_categories_code";
-    }
-
-    private bool ValidateRequired(string fieldName, string value)
-    {
-        if (!string.IsNullOrWhiteSpace(value))
-        {
-            return true;
-        }
-
-        ModelState.AddModelError(fieldName, $"{fieldName} is required.");
-        return false;
-    }
-
-    private bool ValidateIcon(string fieldName, string icon)
-    {
-        if (!ValidateRequired(fieldName, icon))
-        {
-            return false;
-        }
-
-        if (AllowedCategoryIcons.Values.Contains(icon))
-        {
-            return true;
-        }
-
-        ModelState.AddModelError(fieldName, $"{fieldName} is not an allowed category icon.");
-        return false;
-    }
-
-    private ValueTask EvictCategoryListAsync(CancellationToken cancellationToken)
-    {
-        return outputCacheStore.EvictByTagAsync(CategoriesCache.Tag, cancellationToken);
     }
 }
