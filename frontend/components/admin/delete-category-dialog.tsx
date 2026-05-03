@@ -4,7 +4,10 @@ import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Loading03Icon } from "@hugeicons/core-free-icons"
 
-import { useDeleteCategory, type AdminCategoryResponse } from "@/lib/api/admin/categories"
+import {
+  useDeleteCategory,
+  type AdminCategoryResponse,
+} from "@/lib/api/admin/categories"
 
 import {
   AlertDialog,
@@ -36,19 +39,24 @@ export function DeleteCategoryDialog({
       onOpenChange(false)
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to deactivate category",
+        err instanceof Error ? err.message : "Failed to deactivate category"
       )
     }
   }
 
   return (
-    <AlertDialog open={Boolean(category)} onOpenChange={(o) => { if (!isPending) onOpenChange(o) }}>
+    <AlertDialog
+      open={Boolean(category)}
+      onOpenChange={(o) => {
+        if (!isPending) onOpenChange(o)
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Deactivate category?</AlertDialogTitle>
           <AlertDialogDescription>
             This will soft-delete <strong>{category?.name}</strong> (code:{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+            <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
               {category?.code}
             </code>
             ). Existing tasks that reference it will be unaffected, but the

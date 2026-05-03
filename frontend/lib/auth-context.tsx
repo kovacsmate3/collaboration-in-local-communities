@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null | undefined>(
     // Start as null (loading) then settle to the stub after a tick so RSC
     // hydration is clean.
-    null,
+    null
   )
 
   React.useEffect(() => {

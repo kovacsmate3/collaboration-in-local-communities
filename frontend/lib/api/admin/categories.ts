@@ -62,8 +62,7 @@ export const categoryKeys = {
 export function useAdminCategories() {
   return useQuery({
     queryKey: categoryKeys.lists(),
-    queryFn: () =>
-      apiClient.get<AdminCategoryResponse[]>("/admin/categories"),
+    queryFn: () => apiClient.get<AdminCategoryResponse[]>("/admin/categories"),
   })
 }
 
@@ -90,17 +89,8 @@ export function useCreateCategory() {
 export function useUpdateCategory() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string
-      data: UpdateCategoryRequest
-    }) =>
-      apiClient.put<AdminCategoryResponse>(
-        `/admin/categories/${id}`,
-        data,
-      ),
+    mutationFn: ({ id, data }: { id: string; data: UpdateCategoryRequest }) =>
+      apiClient.put<AdminCategoryResponse>(`/admin/categories/${id}`, data),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: categoryKeys.lists() })
     },
@@ -115,8 +105,7 @@ export function useUpdateCategory() {
 export function useDeleteCategory() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) =>
-      apiClient.delete(`/admin/categories/${id}`),
+    mutationFn: (id: string) => apiClient.delete(`/admin/categories/${id}`),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: categoryKeys.lists() })
     },

@@ -11,7 +11,10 @@ export default function AdminSkillsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Skills</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Manage the curated skill catalog that helpers can add to their profiles.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage the curated skill catalog that helpers can add to their
+          profiles.
+        </p>
       </div>
 
       <Card className="border-dashed">
@@ -23,10 +26,13 @@ export default function AdminSkillsPage() {
               strokeWidth={1.5}
             />
           </div>
-          <div className="space-y-1.5 max-w-sm">
+          <div className="max-w-sm space-y-1.5">
             <p className="font-medium">Skills not yet available</p>
             <p className="text-sm text-muted-foreground">
-              Once the skills endpoint (issue #119) ships, this page will allow you to create, rename, and deactivate skills in the catalog. Helpers will be able to add skills from this list to their profiles.
+              Once the skills endpoint (issue #119) ships, this page will allow
+              you to create, rename, and deactivate skills in the catalog.
+              Helpers will be able to add skills from this list to their
+              profiles.
             </p>
           </div>
           <Badge variant="outline" className="gap-1.5 text-xs">

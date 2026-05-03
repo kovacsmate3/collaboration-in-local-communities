@@ -27,10 +27,12 @@ export function IconPicker({ value, onChange, disabled }: IconPickerProps) {
 
   const allIcons = Object.entries(ICON_REGISTRY)
   const filtered = allIcons.filter(([name]) =>
-    name.toLowerCase().includes(search.toLowerCase()),
+    name.toLowerCase().includes(search.toLowerCase())
   )
 
-  const selectedIcon = value ? ICON_REGISTRY[value as keyof typeof ICON_REGISTRY] : undefined
+  const selectedIcon = value
+    ? ICON_REGISTRY[value as keyof typeof ICON_REGISTRY]
+    : undefined
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -43,7 +45,11 @@ export function IconPicker({ value, onChange, disabled }: IconPickerProps) {
         >
           {selectedIcon ? (
             <>
-              <HugeiconsIcon icon={selectedIcon} className="size-4 shrink-0" strokeWidth={1.5} />
+              <HugeiconsIcon
+                icon={selectedIcon}
+                className="size-4 shrink-0"
+                strokeWidth={1.5}
+              />
               <span className="truncate text-sm">{value}</span>
             </>
           ) : (
@@ -64,7 +70,7 @@ export function IconPicker({ value, onChange, disabled }: IconPickerProps) {
           onChange={(e) => setSearch(e.target.value)}
           autoFocus
         />
-        <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1">
+        <div className="grid max-h-64 grid-cols-4 gap-2 overflow-y-auto pr-1">
           {filtered.map(([name, icon]) => (
             <button
               key={name}
@@ -75,11 +81,11 @@ export function IconPicker({ value, onChange, disabled }: IconPickerProps) {
               }}
               className={cn(
                 "flex flex-col items-center gap-1.5 rounded-md border p-2.5 text-center transition-colors hover:bg-muted",
-                value === name && "border-primary bg-primary/10 text-primary",
+                value === name && "border-primary bg-primary/10 text-primary"
               )}
             >
               <HugeiconsIcon icon={icon} className="size-5" strokeWidth={1.5} />
-              <span className="text-[9px] leading-tight text-muted-foreground truncate w-full">
+              <span className="w-full truncate text-[9px] leading-tight text-muted-foreground">
                 {name.replace("Icon", "")}
               </span>
             </button>

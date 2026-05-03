@@ -35,11 +35,15 @@ function Breadcrumb({ pathname }: { pathname: string }) {
     <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm">
       <Link
         href={meta.parent}
-        className="text-muted-foreground hover:text-foreground transition-colors"
+        className="text-muted-foreground transition-colors hover:text-foreground"
       >
         {parentMeta?.label ?? "Admin"}
       </Link>
-      <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+      <HugeiconsIcon
+        icon={ArrowRight01Icon}
+        className="size-3.5 text-muted-foreground"
+        strokeWidth={1.5}
+      />
       <span className="font-medium">{meta.label}</span>
     </nav>
   )

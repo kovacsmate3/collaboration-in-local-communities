@@ -11,7 +11,10 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
-        <p className="mt-1 text-sm text-muted-foreground">View and manage user accounts, verification status, and profile health.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          View and manage user accounts, verification status, and profile
+          health.
+        </p>
       </div>
 
       <Card className="border-dashed">
@@ -23,10 +26,13 @@ export default function AdminUsersPage() {
               strokeWidth={1.5}
             />
           </div>
-          <div className="space-y-1.5 max-w-sm">
+          <div className="max-w-sm space-y-1.5">
             <p className="font-medium">Users not yet available</p>
             <p className="text-sm text-muted-foreground">
-              User management, email verification review, and account health tooling will appear here. Suspension/ban actions require a separate backend authorization and audit design before they can be added.
+              User management, email verification review, and account health
+              tooling will appear here. Suspension/ban actions require a
+              separate backend authorization and audit design before they can be
+              added.
             </p>
           </div>
           <Badge variant="outline" className="gap-1.5 text-xs">

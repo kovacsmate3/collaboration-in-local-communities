@@ -11,7 +11,10 @@ export default function AdminAuditLogPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Audit Log</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Explore the audit trail for admin and safety actions across the platform.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Explore the audit trail for admin and safety actions across the
+          platform.
+        </p>
       </div>
 
       <Card className="border-dashed">
@@ -23,10 +26,12 @@ export default function AdminAuditLogPage() {
               strokeWidth={1.5}
             />
           </div>
-          <div className="space-y-1.5 max-w-sm">
+          <div className="max-w-sm space-y-1.5">
             <p className="font-medium">Audit Log not yet available</p>
             <p className="text-sm text-muted-foreground">
-              Every admin mutation, safety action, verification event, and terms acceptance will appear in a searchable audit trail once the backend audit event model is wired up (issue #67).
+              Every admin mutation, safety action, verification event, and terms
+              acceptance will appear in a searchable audit trail once the
+              backend audit event model is wired up (issue #67).
             </p>
           </div>
           <Badge variant="outline" className="gap-1.5 text-xs">

@@ -21,7 +21,10 @@ import {
   InformationCircleIcon,
 } from "@hugeicons/core-free-icons"
 
-import { useAdminCategories, type AdminCategoryResponse } from "@/lib/api/admin/categories"
+import {
+  useAdminCategories,
+  type AdminCategoryResponse,
+} from "@/lib/api/admin/categories"
 import { ICON_REGISTRY } from "@/lib/icon-registry"
 
 import {
@@ -37,7 +40,11 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { CreateCategoryDialog } from "./category-form-dialog"
 import { EditCategoryDialog } from "./category-form-dialog"
 import { DeleteCategoryDialog } from "./delete-category-dialog"
@@ -50,19 +57,27 @@ function IconCell({ iconName }: { iconName: string }) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
-            <HugeiconsIcon icon={InformationCircleIcon} className="size-4" strokeWidth={1.5} />
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <HugeiconsIcon
+              icon={InformationCircleIcon}
+              className="size-4"
+              strokeWidth={1.5}
+            />
             Unknown
           </span>
         </TooltipTrigger>
-        <TooltipContent>Icon &ldquo;{iconName}&rdquo; not in registry</TooltipContent>
+        <TooltipContent>
+          Icon &ldquo;{iconName}&rdquo; not in registry
+        </TooltipContent>
       </Tooltip>
     )
   }
   return (
     <span className="flex items-center gap-2">
       <HugeiconsIcon icon={icon} className="size-5" strokeWidth={1.5} />
-      <span className="hidden text-xs text-muted-foreground xl:inline">{iconName}</span>
+      <span className="hidden text-xs text-muted-foreground xl:inline">
+        {iconName}
+      </span>
     </span>
   )
 }
@@ -79,15 +94,13 @@ function SortButton({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1 hover:text-foreground transition-colors"
+      className="flex items-center gap-1 transition-colors hover:text-foreground"
     >
       {children}
       <HugeiconsIcon
         icon={ArrowUpDownIcon}
         className={
-          sorted
-            ? "size-3.5 text-primary"
-            : "size-3.5 text-muted-foreground/50"
+          sorted ? "size-3.5 text-primary" : "size-3.5 text-muted-foreground/50"
         }
         strokeWidth={1.5}
       />
@@ -103,10 +116,14 @@ export function CategoriesManager() {
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: "sortOrder", desc: false },
   ])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  )
   const [createOpen, setCreateOpen] = React.useState(false)
-  const [editTarget, setEditTarget] = React.useState<AdminCategoryResponse | null>(null)
-  const [deleteTarget, setDeleteTarget] = React.useState<AdminCategoryResponse | null>(null)
+  const [editTarget, setEditTarget] =
+    React.useState<AdminCategoryResponse | null>(null)
+  const [deleteTarget, setDeleteTarget] =
+    React.useState<AdminCategoryResponse | null>(null)
 
   const columns = React.useMemo<ColumnDef<AdminCategoryResponse>[]>(
     () => [
@@ -130,7 +147,7 @@ export function CategoriesManager() {
           <div>
             <span className="font-medium">{row.original.name}</span>
             {row.original.description && (
-              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
                 {row.original.description}
               </p>
             )}
@@ -142,7 +159,7 @@ export function CategoriesManager() {
         accessorKey: "code",
         header: "Code",
         cell: ({ row }) => (
-          <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
             {row.original.code}
           </code>
         ),
@@ -158,7 +175,7 @@ export function CategoriesManager() {
           </SortButton>
         ),
         cell: ({ row }) => (
-          <span className="tabular-nums text-sm">{row.original.sortOrder}</span>
+          <span className="text-sm tabular-nums">{row.original.sortOrder}</span>
         ),
       },
       {
@@ -166,9 +183,13 @@ export function CategoriesManager() {
         header: "Status",
         cell: ({ row }) =>
           row.original.isActive ? (
-            <Badge variant="success" className="text-xs">Active</Badge>
+            <Badge variant="success" className="text-xs">
+              Active
+            </Badge>
           ) : (
-            <Badge variant="destructive" className="text-xs">Inactive</Badge>
+            <Badge variant="destructive" className="text-xs">
+              Inactive
+            </Badge>
           ),
       },
       {
@@ -186,7 +207,11 @@ export function CategoriesManager() {
                     className="size-8"
                     onClick={() => setEditTarget(cat)}
                   >
-                    <HugeiconsIcon icon={Edit02Icon} className="size-4" strokeWidth={1.5} />
+                    <HugeiconsIcon
+                      icon={Edit02Icon}
+                      className="size-4"
+                      strokeWidth={1.5}
+                    />
                     <span className="sr-only">Edit {cat.name}</span>
                   </Button>
                 </TooltipTrigger>
@@ -201,7 +226,11 @@ export function CategoriesManager() {
                     onClick={() => setDeleteTarget(cat)}
                     disabled={!cat.isActive}
                   >
-                    <HugeiconsIcon icon={Delete02Icon} className="size-4" strokeWidth={1.5} />
+                    <HugeiconsIcon
+                      icon={Delete02Icon}
+                      className="size-4"
+                      strokeWidth={1.5}
+                    />
                     <span className="sr-only">Deactivate {cat.name}</span>
                   </Button>
                 </TooltipTrigger>
@@ -215,7 +244,7 @@ export function CategoriesManager() {
         enableSorting: false,
       },
     ],
-    [],
+    []
   )
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -268,10 +297,10 @@ export function CategoriesManager() {
       <div className="rounded-lg border bg-card">
         {/* Toolbar */}
         <div className="flex items-center gap-3 border-b px-4 py-3">
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative max-w-sm flex-1">
             <HugeiconsIcon
               icon={SearchIcon}
-              className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
               strokeWidth={1.5}
             />
             <Input
@@ -301,7 +330,7 @@ export function CategoriesManager() {
                       ? null
                       : flexRender(
                           header.column.columnDef.header,
-                          header.getContext(),
+                          header.getContext()
                         )}
                   </TableHead>
                 ))}
@@ -312,11 +341,21 @@ export function CategoriesManager() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell className="pl-4"><Skeleton className="size-5 rounded" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
+                  <TableCell className="pl-4">
+                    <Skeleton className="size-5 rounded" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-8" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-14 rounded-full" />
+                  </TableCell>
                   <TableCell className="pr-4" />
                 </TableRow>
               ))
@@ -339,7 +378,10 @@ export function CategoriesManager() {
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="first:pl-4 last:pr-4">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -353,11 +395,15 @@ export function CategoriesManager() {
       <CreateCategoryDialog open={createOpen} onOpenChange={setCreateOpen} />
       <EditCategoryDialog
         category={editTarget}
-        onOpenChange={(o) => { if (!o) setEditTarget(null) }}
+        onOpenChange={(o) => {
+          if (!o) setEditTarget(null)
+        }}
       />
       <DeleteCategoryDialog
         category={deleteTarget}
-        onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}
+        onOpenChange={(o) => {
+          if (!o) setDeleteTarget(null)
+        }}
       />
     </div>
   )

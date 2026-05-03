@@ -7,17 +7,14 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
-    public readonly body?: unknown,
+    public readonly body?: unknown
   ) {
     super(message)
     this.name = "ApiError"
   }
 }
 
-async function request<T>(
-  path: string,
-  options?: RequestInit,
-): Promise<T> {
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
     headers: {
       "Content-Type": "application/json",

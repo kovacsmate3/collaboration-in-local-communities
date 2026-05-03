@@ -138,7 +138,9 @@ function SidebarItem({
   onNavigate?: () => void
 }) {
   const pathname = usePathname()
-  const isActive = item.matches ? item.matches(pathname) : pathname === item.href
+  const isActive = item.matches
+    ? item.matches(pathname)
+    : pathname === item.href
 
   const inner = (
     <span
@@ -147,20 +149,22 @@ function SidebarItem({
         isActive
           ? "bg-primary/10 text-primary"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
-        item.disabled && "pointer-events-none opacity-50",
+        item.disabled && "pointer-events-none opacity-50"
       )}
     >
       <HugeiconsIcon
         icon={item.icon}
         className={cn(
           "size-4 shrink-0",
-          isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
+          isActive
+            ? "text-primary"
+            : "text-muted-foreground group-hover:text-foreground"
         )}
         strokeWidth={isActive ? 2 : 1.5}
       />
       <span className="flex-1 truncate">{item.label}</span>
       {item.badge && (
-        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+        <Badge variant="secondary" className="h-4 px-1.5 py-0 text-[10px]">
           {item.badge}
         </Badge>
       )}
@@ -197,17 +201,23 @@ function SidebarUserProfile() {
           className={cn(
             "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm",
             "text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           )}
         >
           <Avatar size="sm">
-            {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt={user.name} />}
+            {user.avatarUrl && (
+              <AvatarImage src={user.avatarUrl} alt={user.name} />
+            )}
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
 
           <div className="flex min-w-0 flex-1 flex-col items-start leading-none">
-            <span className="truncate font-medium text-foreground">{user.name}</span>
-            <span className="truncate text-[11px] text-muted-foreground">{user.email}</span>
+            <span className="truncate font-medium text-foreground">
+              {user.name}
+            </span>
+            <span className="truncate text-[11px] text-muted-foreground">
+              {user.email}
+            </span>
           </div>
 
           <HugeiconsIcon
@@ -226,8 +236,12 @@ function SidebarUserProfile() {
       >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col gap-0.5">
-            <span className="truncate text-sm font-medium text-foreground">{user.name}</span>
-            <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+            <span className="truncate text-sm font-medium text-foreground">
+              {user.name}
+            </span>
+            <span className="truncate text-xs text-muted-foreground">
+              {user.email}
+            </span>
           </div>
         </DropdownMenuLabel>
 
@@ -236,7 +250,11 @@ function SidebarUserProfile() {
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link href="/admin/profile">
-              <HugeiconsIcon icon={UserCircle02Icon} className="size-4" strokeWidth={1.5} />
+              <HugeiconsIcon
+                icon={UserCircle02Icon}
+                className="size-4"
+                strokeWidth={1.5}
+              />
               Account
             </Link>
           </DropdownMenuItem>
@@ -244,11 +262,12 @@ function SidebarUserProfile() {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          variant="destructive"
-          onSelect={() => logout()}
-        >
-          <HugeiconsIcon icon={Logout01Icon} className="size-4" strokeWidth={1.5} />
+        <DropdownMenuItem variant="destructive" onSelect={() => logout()}>
+          <HugeiconsIcon
+            icon={Logout01Icon}
+            className="size-4"
+            strokeWidth={1.5}
+          />
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -264,7 +283,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       {/* Logo / branding */}
       <div className="flex items-center gap-2 px-4 py-5">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-          <HugeiconsIcon icon={BriefcaseIcon} className="size-4 text-primary-foreground" strokeWidth={2} />
+          <HugeiconsIcon
+            icon={BriefcaseIcon}
+            className="size-4 text-primary-foreground"
+            strokeWidth={2}
+          />
         </div>
         <div className="flex flex-col leading-none">
           <span className="text-sm font-semibold">Admin Console</span>
@@ -279,7 +302,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <div className="space-y-6">
           {NAV.map((section) => (
             <div key={section.title}>
-              <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                 {section.title}
               </p>
               <div className="space-y-0.5">
@@ -327,7 +350,11 @@ export function AdminMobileSidebar({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-60 p-0" aria-describedby={undefined}>
+      <SheetContent
+        side="left"
+        className="w-60 p-0"
+        aria-describedby={undefined}
+      >
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         <SidebarContent onNavigate={() => onOpenChange(false)} />
       </SheetContent>
@@ -336,11 +363,7 @@ export function AdminMobileSidebar({
 }
 
 /** Mobile menu trigger button */
-export function AdminMobileMenuButton({
-  onClick,
-}: {
-  onClick: () => void
-}) {
+export function AdminMobileMenuButton({ onClick }: { onClick: () => void }) {
   return (
     <Button
       variant="ghost"

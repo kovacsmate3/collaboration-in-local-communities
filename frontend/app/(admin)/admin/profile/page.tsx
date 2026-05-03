@@ -1,7 +1,13 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { useAuth } from "@/lib/auth-context"
@@ -18,7 +24,7 @@ export default function AdminProfilePage() {
         <UserAvatar name={user.name} src={user.avatarUrl} size="lg" />
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold leading-tight">{user.name}</h1>
+            <h1 className="text-xl leading-tight font-semibold">{user.name}</h1>
             <Badge variant="secondary">{user.role}</Badge>
           </div>
           <p className="text-sm text-muted-foreground">{user.email}</p>

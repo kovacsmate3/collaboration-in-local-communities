@@ -11,7 +11,10 @@ export default function AdminDataLibraryPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Data Library</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Manage reference data: terms versions, icon lists, and other configuration.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage reference data: terms versions, icon lists, and other
+          configuration.
+        </p>
       </div>
 
       <Card className="border-dashed">
@@ -23,10 +26,12 @@ export default function AdminDataLibraryPage() {
               strokeWidth={1.5}
             />
           </div>
-          <div className="space-y-1.5 max-w-sm">
+          <div className="max-w-sm space-y-1.5">
             <p className="font-medium">Data Library not yet available</p>
             <p className="text-sm text-muted-foreground">
-              Reference data management — terms versions (#116 / #23), icon lists (#125), and other configuration tables — will be accessible here without requiring migrations or redeploys.
+              Reference data management — terms versions (#116 / #23), icon
+              lists (#125), and other configuration tables — will be accessible
+              here without requiring migrations or redeploys.
             </p>
           </div>
           <Badge variant="outline" className="gap-1.5 text-xs">

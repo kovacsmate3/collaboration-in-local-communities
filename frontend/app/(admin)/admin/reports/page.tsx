@@ -11,7 +11,9 @@ export default function AdminReportsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Trust and safety reports, disputes, and cancelled-task review queue.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Trust and safety reports, disputes, and cancelled-task review queue.
+        </p>
       </div>
 
       <Card className="border-dashed">
@@ -23,10 +25,13 @@ export default function AdminReportsPage() {
               strokeWidth={1.5}
             />
           </div>
-          <div className="space-y-1.5 max-w-sm">
+          <div className="max-w-sm space-y-1.5">
             <p className="font-medium">Reports not yet available</p>
             <p className="text-sm text-muted-foreground">
-              The reports queue will surface trust-and-safety flags, user disputes, and cancelled task reasons once backend support is in place (issue #55). No placeholder actions are shown — real report data will drive this interface.
+              The reports queue will surface trust-and-safety flags, user
+              disputes, and cancelled task reasons once backend support is in
+              place (issue #55). No placeholder actions are shown — real report
+              data will drive this interface.
             </p>
           </div>
           <Badge variant="outline" className="gap-1.5 text-xs">

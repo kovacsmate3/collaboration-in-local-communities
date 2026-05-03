@@ -84,14 +84,19 @@ export function CreateCategoryDialog({
         })
       } else {
         toast.error(
-          err instanceof Error ? err.message : "Failed to create category",
+          err instanceof Error ? err.message : "Failed to create category"
         )
       }
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!isPending) onOpenChange(o) }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!isPending) onOpenChange(o)
+      }}
+    >
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Create category</DialogTitle>
@@ -133,7 +138,11 @@ export function CreateCategoryDialog({
                   <FormLabel>Name</FormLabel>
                   <FormControl>
                     <div>
-                      <Input id={field.name} placeholder="e.g. Garden Work" {...field} />
+                      <Input
+                        id={field.name}
+                        placeholder="e.g. Garden Work"
+                        {...field}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -148,7 +157,10 @@ export function CreateCategoryDialog({
                   <FormLabel>Icon</FormLabel>
                   <FormControl>
                     <div>
-                      <IconPicker value={field.value} onChange={field.onChange} />
+                      <IconPicker
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -160,7 +172,12 @@ export function CreateCategoryDialog({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                  <FormLabel>
+                    Description{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (optional)
+                    </span>
+                  </FormLabel>
                   <FormControl>
                     <div>
                       <Textarea
@@ -258,7 +275,7 @@ export function EditCategoryDialog({
       onOpenChange(false)
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Failed to update category",
+        err instanceof Error ? err.message : "Failed to update category"
       )
     }
   }
@@ -266,7 +283,9 @@ export function EditCategoryDialog({
   return (
     <Dialog
       open={Boolean(category)}
-      onOpenChange={(o) => { if (!isPending) onOpenChange(o) }}
+      onOpenChange={(o) => {
+        if (!isPending) onOpenChange(o)
+      }}
     >
       <DialogContent className="max-w-lg">
         <DialogHeader>
@@ -304,7 +323,10 @@ export function EditCategoryDialog({
                   <FormLabel>Icon</FormLabel>
                   <FormControl>
                     <div>
-                      <IconPicker value={field.value} onChange={field.onChange} />
+                      <IconPicker
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -316,7 +338,12 @@ export function EditCategoryDialog({
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                  <FormLabel>
+                    Description{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (optional)
+                    </span>
+                  </FormLabel>
                   <FormControl>
                     <div>
                       <Textarea

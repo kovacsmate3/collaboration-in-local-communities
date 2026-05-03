@@ -99,8 +99,7 @@ function FormLabel({
 }
 
 function FormControl({ ...props }: React.ComponentProps<"div">) {
-  const { error, formItemId, formDescriptionId, formMessageId } =
-    useFormField()
+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
   const Slot = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
     ({ ...p }, ref) => <div ref={ref} {...p} />
   )
@@ -133,7 +132,11 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
   )
 }
 
-function FormMessage({ className, children, ...props }: React.ComponentProps<"p">) {
+function FormMessage({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<"p">) {
   const { error, formMessageId } = useFormField()
   const body = error ? String(error?.message ?? "") : children
 

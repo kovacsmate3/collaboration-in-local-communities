@@ -12,7 +12,13 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { useAdminKpi, type KpiCurrent } from "@/lib/api/admin/analytics"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -35,7 +41,11 @@ function KpiCard({ title, value, description, icon, isLoading }: KpiCardProps) {
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <HugeiconsIcon icon={icon} className="size-4 text-muted-foreground" strokeWidth={1.5} />
+        <HugeiconsIcon
+          icon={icon}
+          className="size-4 text-muted-foreground"
+          strokeWidth={1.5}
+        />
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -58,8 +68,7 @@ function KpiCards({
   data?: KpiCurrent
   isLoading: boolean
 }) {
-  const fmt = (n?: number) =>
-    n === undefined ? "—" : n.toLocaleString()
+  const fmt = (n?: number) => (n === undefined ? "—" : n.toLocaleString())
   const pct = (n?: number) =>
     n === undefined ? "—" : `${(n * 100).toFixed(1)}%`
 
@@ -121,7 +130,7 @@ function BarChart({
           <span className="w-28 shrink-0 truncate text-sm text-muted-foreground">
             {row.label}
           </span>
-          <div className="flex-1 overflow-hidden rounded-full bg-muted h-2">
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
             <div
               className={`h-full rounded-full ${colorClass} transition-all`}
               style={{ width: `${row.pct}%` }}
@@ -163,8 +172,12 @@ const COMPENSATION_DATA = [
 
 function PlaceholderBadge() {
   return (
-    <Badge variant="outline" className="text-[10px] gap-1">
-      <HugeiconsIcon icon={InformationCircleIcon} className="size-3" strokeWidth={1.5} />
+    <Badge variant="outline" className="gap-1 text-[10px]">
+      <HugeiconsIcon
+        icon={InformationCircleIcon}
+        className="size-3"
+        strokeWidth={1.5}
+      />
       Placeholder data
     </Badge>
   )
@@ -265,8 +278,10 @@ export function AdminDashboard() {
               className="mt-0.5 size-4 shrink-0 text-muted-foreground"
               strokeWidth={1.5}
             />
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">More analytics coming soon</p>
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">
+                More analytics coming soon
+              </p>
               <p>
                 User growth trend, reputation distribution, cancellation reasons
                 (#55), and message volume will appear here once their backend
