@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Backend.Shared;
+namespace Backend.Common;
 
 /// <summary>
 /// Utilities for normalizing string values.

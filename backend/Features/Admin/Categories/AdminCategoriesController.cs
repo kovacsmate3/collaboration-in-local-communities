@@ -1,9 +1,9 @@
 using Backend.Application.Categories;
+using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Features.Categories;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Validation;
-using Backend.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
