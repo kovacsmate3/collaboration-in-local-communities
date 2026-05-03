@@ -78,6 +78,7 @@ export const mockTasks: Task[] = [
     description:
       "Need one extra pair of hands for ~30 minutes. The building has no elevator. Pizza included.",
     category: "moving",
+    icon: "DeliveryTruck01Icon",
     location: "Budapest, District XI",
     compensation: { type: "barter", barterOffer: "Pizza + a beer" },
     status: "open",
@@ -90,6 +91,7 @@ export const mockTasks: Task[] = [
     description:
       "Looking for help with calculus and linear algebra, two sessions before the exam.",
     category: "tutoring",
+    icon: "Mortarboard02Icon",
     location: "Online",
     compensation: { type: "paid", amount: 8000, currency: "HUF" },
     status: "open",
@@ -101,6 +103,7 @@ export const mockTasks: Task[] = [
     title: "Dog sitting this weekend",
     description: "Friendly border collie, two short walks per day. Sat–Sun.",
     category: "petcare",
+    icon: "Bone01Icon",
     location: "Budapest, District V",
     compensation: { type: "voluntary" },
     status: "open",
@@ -113,6 +116,7 @@ export const mockTasks: Task[] = [
     description:
       "Just need it for 2-3 hours to hang shelves. Will return same day.",
     category: "tools",
+    icon: "Wrench01Icon",
     location: "Budapest, District VII",
     compensation: { type: "voluntary" },
     status: "in_progress",
