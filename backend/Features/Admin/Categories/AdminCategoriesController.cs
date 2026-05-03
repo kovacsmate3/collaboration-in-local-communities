@@ -83,7 +83,7 @@ public sealed partial class AdminCategoriesController(
         await EvictCategoryListAsync(cancellationToken);
 
         var response = AdminCategoryResponse.FromCategory(category);
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = category.Id }, response);
+        return CreatedAtAction("GetById", new { id = category.Id }, response);
     }
 
     [HttpPut("{id:guid}")]
