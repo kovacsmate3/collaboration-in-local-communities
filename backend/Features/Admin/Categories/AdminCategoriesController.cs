@@ -1,7 +1,5 @@
-using Backend.Application.Categories;
 using Backend.Common;
 using Backend.Domain.Entities;
-using Backend.Features.Categories;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Validation;
 using Microsoft.AspNetCore.Authorization;
