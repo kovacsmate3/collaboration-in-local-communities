@@ -17,6 +17,18 @@ public sealed partial class AdminCategoriesController(
     IOutputCacheStore outputCacheStore)
     : ControllerBase
 {
+    [HttpGet]
+    public async Task<IActionResult> GetAllAsync(CancellationToken cancellationToken)
+    {
+        var categories = await db.Categories
+            .OrderBy(category => category.SortOrder)
+            .ThenBy(category => category.Name)
+            .Select(category => AdminCategoryResponse.FromCategory(category))
+            .ToListAsync(cancellationToken);
+
+        return Ok(categories);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
