@@ -14,6 +14,10 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(category => category.Code).HasMaxLength(64).IsRequired();
         builder.Property(category => category.Name).HasMaxLength(120).IsRequired();
         builder.Property(category => category.Description).HasMaxLength(500);
+        builder.Property(category => category.Icon)
+            .HasMaxLength(64)
+            .HasDefaultValue(Category.DefaultIcon)
+            .IsRequired();
         builder.Property(category => category.SortOrder).HasDefaultValue(0);
         builder.Property(category => category.IsActive).HasDefaultValue(true);
         builder.HasCreatedAt(category => category.CreatedAt);
@@ -30,23 +34,24 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .HasDatabaseName("ix_categories_sort_order");
 
         builder.HasData(
-            SeedCategory("00000000-0000-0000-0000-000000000101", "moving", "Moving", 10),
-            SeedCategory("00000000-0000-0000-0000-000000000102", "tutoring", "Tutoring", 20),
-            SeedCategory("00000000-0000-0000-0000-000000000103", "repairs", "Repairs", 30),
-            SeedCategory("00000000-0000-0000-0000-000000000104", "shopping", "Shopping", 40),
-            SeedCategory("00000000-0000-0000-0000-000000000105", "pet_care", "Pet Care", 50),
-            SeedCategory("00000000-0000-0000-0000-000000000106", "cleaning", "Cleaning", 60),
-            SeedCategory("00000000-0000-0000-0000-000000000107", "errands", "Errands", 70),
-            SeedCategory("00000000-0000-0000-0000-000000000108", "other", "Other", 80));
+            SeedCategory("00000000-0000-0000-0000-000000000101", "moving", "Moving", "DeliveryTruck01Icon", 10),
+            SeedCategory("00000000-0000-0000-0000-000000000102", "tutoring", "Tutoring", "Mortarboard02Icon", 20),
+            SeedCategory("00000000-0000-0000-0000-000000000103", "repairs", "Repairs", "Wrench01Icon", 30),
+            SeedCategory("00000000-0000-0000-0000-000000000104", "shopping", "Shopping", "ShoppingBag03Icon", 40),
+            SeedCategory("00000000-0000-0000-0000-000000000105", "pet_care", "Pet Care", "Bone01Icon", 50),
+            SeedCategory("00000000-0000-0000-0000-000000000106", "cleaning", "Cleaning", "SparklesIcon", 60),
+            SeedCategory("00000000-0000-0000-0000-000000000107", "errands", "Errands", "RunningShoesIcon", 70),
+            SeedCategory("00000000-0000-0000-0000-000000000108", "other", "Other", Category.DefaultIcon, 80));
     }
 
-    private static Category SeedCategory(string id, string code, string name, int sortOrder)
+    private static Category SeedCategory(string id, string code, string name, string icon, int sortOrder)
     {
         return new Category
         {
             Id = Guid.Parse(id),
             Code = code,
             Name = name,
+            Icon = icon,
             SortOrder = sortOrder,
             IsActive = true,
             CreatedAt = ConfigurationHelpers.SeedTimestamp,

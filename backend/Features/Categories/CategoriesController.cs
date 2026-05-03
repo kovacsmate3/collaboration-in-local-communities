@@ -9,7 +9,7 @@ namespace Backend.Features.Categories;
 public sealed class CategoriesController(IListCategoriesQuery listCategoriesQuery) : ControllerBase
 {
     [HttpGet]
-    [OutputCache(Duration = 300)]
+    [OutputCache(Duration = 300, Tags = [CategoriesCache.Tag])]
     public async Task<IActionResult> ListAsync(CancellationToken cancellationToken)
     {
         var categories = await listCategoriesQuery.ExecuteAsync(cancellationToken);
@@ -18,6 +18,7 @@ public sealed class CategoriesController(IListCategoriesQuery listCategoriesQuer
                 category.Id,
                 category.Code,
                 category.Name,
+                category.Icon,
                 category.Description));
 
         return Ok(response);

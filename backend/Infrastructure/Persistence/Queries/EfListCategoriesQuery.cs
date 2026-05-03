@@ -14,6 +14,7 @@ internal sealed class EfListCategoriesQuery(AppDbContext db) : IListCategoriesQu
                 category.Id,
                 category.Code,
                 category.Name,
+                category.Icon,
                 category.Description))
             .ToListAsync(cancellationToken);
     }
