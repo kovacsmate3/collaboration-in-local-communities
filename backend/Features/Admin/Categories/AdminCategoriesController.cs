@@ -20,11 +20,15 @@ public sealed partial class AdminCategoriesController(
     [HttpGet]
     public async Task<IActionResult> GetAllAsync(CancellationToken cancellationToken)
     {
-        var categories = await db.Categories
+        var categoryEntities = await db.Categories
+            .AsNoTracking()
             .OrderBy(category => category.SortOrder)
             .ThenBy(category => category.Name)
-            .Select(category => AdminCategoryResponse.FromCategory(category))
             .ToListAsync(cancellationToken);
+
+        var categories = categoryEntities
+            .Select(category => AdminCategoryResponse.FromCategory(category))
+            .ToList();
 
         return Ok(categories);
     }
