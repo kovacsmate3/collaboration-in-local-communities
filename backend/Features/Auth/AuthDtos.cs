@@ -16,7 +16,7 @@ public sealed record LoginRequest(
     [Required, EmailAddress] string Email,
     [Required] string Password);
 
-public sealed record RefreshRequest([Required] string RefreshToken);
+public sealed record RefreshRequest(string? RefreshToken);
 
 public sealed record LogoutRequest(string? RefreshToken);
 
@@ -26,5 +26,4 @@ public sealed record AuthResponse(
     string TokenType,
     string AccessToken,
     DateTimeOffset AccessTokenExpiresAt,
-    string RefreshToken,
     DateTimeOffset RefreshTokenExpiresAt);
