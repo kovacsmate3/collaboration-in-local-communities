@@ -242,7 +242,14 @@ public sealed class AuthController(
         await db.SaveChangesAsync(cancellationToken);
 
         SetRefreshTokenCookie(tokens);
+        SetTokenResponseHeaders();
         return Ok(ToResponse(refreshToken.User, tokens));
+    }
+
+    private void SetTokenResponseHeaders()
+    {
+        Response.Headers.CacheControl = "no-store";
+        Response.Headers.Pragma = "no-cache";
     }
 
     private static AuthResponse ToResponse(ApplicationUser user, AuthTokenResult tokens)
