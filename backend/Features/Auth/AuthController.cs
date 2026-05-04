@@ -154,15 +154,13 @@ public sealed class AuthController(
         var now = DateTimeOffset.UtcNow;
         var clientIp = GetClientIp();
 
-        var activeTokens = await db.RefreshTokens
+        await db.RefreshTokens
             .Where(token => token.UserId == userId.Value && token.RevokedAt == null && token.ExpiresAt > now)
-            .ToListAsync(cancellationToken);
-
-        foreach (var token in activeTokens)
-        {
-            token.RevokedAt = now;
-            token.RevokedByIp = clientIp;
-        }
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(t => t.RevokedAt, now)
+                    .SetProperty(t => t.RevokedByIp, clientIp),
+                cancellationToken);
 
         AddAuditEvent(userId.Value, "auth.logout", "ApplicationUser", userId.Value, null);
         await db.SaveChangesAsync(cancellationToken);
