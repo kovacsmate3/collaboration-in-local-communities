@@ -1,5 +1,6 @@
 "use client"
 
+import type { CSSProperties } from "react"
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
@@ -21,7 +22,7 @@ function Toaster({ ...props }: ToasterProps) {
           "--error-bg": "var(--popover)",
           "--error-border": "var(--border)",
           "--error-text": "var(--popover-foreground)",
-        } as React.CSSProperties
+        } as CSSProperties
       }
       {...props}
     />
