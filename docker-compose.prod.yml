@@ -23,6 +23,7 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       CosmosDb__AccountEndpoint: ${COSMOS_ENDPOINT:?COSMOS_ENDPOINT is required}
       CosmosDb__AccountKey: ${COSMOS_KEY:?COSMOS_KEY is required}
+      AUTH_SIGNING_KEY: ${AUTH_SIGNING_KEY:?AUTH_SIGNING_KEY is required}
     depends_on:
       db:
         condition: service_healthy
