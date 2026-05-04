@@ -40,8 +40,10 @@ function useFormField() {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
   const { getFieldState } = useFormContext()
-  // Always call hooks unconditionally (Rules of Hooks); use optional chaining with
-  // a fallback so the call is safe even when the context is null.
+  // React's Rules of Hooks require hooks to be called unconditionally, so
+  // useFormState must run before the null-guard throws below. The fallback ""
+  // is a safe placeholder: if fieldContext is null the throw that follows
+  // discards this result before it is ever used.
   const formState = useFormState({
     name: (fieldContext?.name ?? "") as FieldPath<FieldValues>,
   })
