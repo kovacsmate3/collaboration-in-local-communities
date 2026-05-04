@@ -1,6 +1,6 @@
 /**
  * Base API client for all backend requests.
- * All paths are relative — Next.js rewrites them to the backend via /api/* → BACKEND_URL/api/*.
+ * All paths are relative - the App Router API proxy forwards /api/* to the backend.
  */
 
 export class ApiError extends Error {
