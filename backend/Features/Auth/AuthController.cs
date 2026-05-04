@@ -151,16 +151,21 @@ public sealed class AuthController(
             return Unauthorized();
         }
 
-        var now = DateTimeOffset.UtcNow;
-        var clientIp = GetClientIp();
+        var rawRefreshToken = Request.Cookies[RefreshTokenCookieName];
 
-        await db.RefreshTokens
-            .Where(token => token.UserId == userId.Value && token.RevokedAt == null && token.ExpiresAt > now)
-            .ExecuteUpdateAsync(
-                setters => setters
-                    .SetProperty(t => t.RevokedAt, now)
-                    .SetProperty(t => t.RevokedByIp, clientIp),
-                cancellationToken);
+        if (!string.IsNullOrWhiteSpace(rawRefreshToken)
+            && TryHashRefreshToken(rawRefreshToken, out var refreshTokenHash))
+        {
+            var refreshToken = await db.RefreshTokens
+                .Where(token => token.UserId == userId.Value && token.TokenHash == refreshTokenHash)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (refreshToken is not null && refreshToken.RevokedAt is null)
+            {
+                refreshToken.RevokedAt = DateTimeOffset.UtcNow;
+                refreshToken.RevokedByIp = GetClientIp();
+            }
+        }
 
         AddAuditEvent(userId.Value, "auth.logout", "ApplicationUser", userId.Value, null);
         await db.SaveChangesAsync(cancellationToken);
@@ -205,9 +210,26 @@ public sealed class AuthController(
         }
 
         var tokens = await tokenService.CreateTokenPairAsync(refreshToken.User, cancellationToken);
-        refreshToken.RevokedAt = DateTimeOffset.UtcNow;
-        refreshToken.RevokedByIp = GetClientIp();
-        refreshToken.ReplacedByTokenHash = tokenService.HashRefreshToken(tokens.RefreshToken);
+        var revokedAt = DateTimeOffset.UtcNow;
+        var clientIp = GetClientIp();
+        var replacedByHash = tokenService.HashRefreshToken(tokens.RefreshToken);
+
+        // Atomic revocation: only one concurrent request can win the WHERE revoked_at IS NULL predicate.
+        // PostgreSQL re-checks the predicate after acquiring the row lock, so rowsRevoked == 0 means
+        // another request already revoked this token in the race window.
+        var rowsRevoked = await db.RefreshTokens
+            .Where(t => t.TokenHash == currentTokenHash && t.RevokedAt == null)
+            .ExecuteUpdateAsync(
+                s => s
+                    .SetProperty(t => t.RevokedAt, revokedAt)
+                    .SetProperty(t => t.RevokedByIp, clientIp)
+                    .SetProperty(t => t.ReplacedByTokenHash, replacedByHash),
+                cancellationToken);
+
+        if (rowsRevoked == 0)
+        {
+            return Unauthorized();
+        }
 
         db.RefreshTokens.Add(CreateRefreshToken(refreshToken.UserId, tokens, null));
         AddAuditEvent(
