@@ -7,6 +7,7 @@ using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Auth;
@@ -18,6 +19,8 @@ public sealed class AuthController(
     UserManager<ApplicationUser> userManager,
     IAuthTokenService tokenService) : ControllerBase
 {
+    private const string RefreshTokenCookieName = "refreshToken";
+
     [HttpPost("register")]
     [AllowAnonymous]
     public async Task<IActionResult> RegisterAsync(
@@ -95,6 +98,7 @@ public sealed class AuthController(
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
+        SetRefreshTokenCookie(tokens);
         return Ok(ToResponse(user, tokens));
     }
 
@@ -134,13 +138,14 @@ public sealed class AuthController(
         AddAuditEvent(user.Id, "auth.login_succeeded", "ApplicationUser", user.Id, new { user.Email });
         await db.SaveChangesAsync(cancellationToken);
 
+        SetRefreshTokenCookie(tokens);
         return Ok(ToResponse(user, tokens));
     }
 
     [HttpPost("logout")]
     [Authorize]
     public async Task<IActionResult> LogoutAsync(
-        LogoutRequest request,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] LogoutRequest? request,
         CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
@@ -149,8 +154,10 @@ public sealed class AuthController(
             return Unauthorized();
         }
 
-        if (!string.IsNullOrWhiteSpace(request.RefreshToken)
-            && TryHashRefreshToken(request.RefreshToken, out var refreshTokenHash))
+        var rawRefreshToken = request?.RefreshToken ?? Request.Cookies[RefreshTokenCookieName];
+
+        if (!string.IsNullOrWhiteSpace(rawRefreshToken)
+            && TryHashRefreshToken(rawRefreshToken, out var refreshTokenHash))
         {
             var refreshToken = await db.RefreshTokens
                 .Where(token => token.UserId == userId.Value && token.TokenHash == refreshTokenHash)
@@ -166,16 +173,19 @@ public sealed class AuthController(
         AddAuditEvent(userId.Value, "auth.logout", "ApplicationUser", userId.Value, null);
         await db.SaveChangesAsync(cancellationToken);
 
+        ClearRefreshTokenCookie();
         return Ok();
     }
 
     [HttpPost("refresh")]
     [AllowAnonymous]
     public async Task<IActionResult> RefreshAsync(
-        RefreshRequest request,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] RefreshRequest? request,
         CancellationToken cancellationToken)
     {
-        if (!TryHashRefreshToken(request.RefreshToken, out var currentTokenHash))
+        var rawRefreshToken = request?.RefreshToken ?? Request.Cookies[RefreshTokenCookieName];
+        if (string.IsNullOrWhiteSpace(rawRefreshToken)
+            || !TryHashRefreshToken(rawRefreshToken, out var currentTokenHash))
         {
             return Unauthorized();
         }
@@ -219,6 +229,7 @@ public sealed class AuthController(
 
         await db.SaveChangesAsync(cancellationToken);
 
+        SetRefreshTokenCookie(tokens);
         return Ok(ToResponse(refreshToken.User, tokens));
     }
 
@@ -230,7 +241,6 @@ public sealed class AuthController(
             "Bearer",
             tokens.AccessToken,
             tokens.AccessTokenExpiresAt,
-            tokens.RefreshToken,
             tokens.RefreshTokenExpiresAt);
     }
 
@@ -291,6 +301,33 @@ public sealed class AuthController(
     private string? GetClientIp()
     {
         return HttpContext.Connection.RemoteIpAddress?.ToString();
+    }
+
+    private void SetRefreshTokenCookie(AuthTokenResult tokens)
+    {
+        Response.Cookies.Append(
+            RefreshTokenCookieName,
+            tokens.RefreshToken,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = Request.IsHttps,
+                SameSite = SameSiteMode.Strict,
+                Expires = tokens.RefreshTokenExpiresAt,
+                Path = "/api/auth"
+            });
+    }
+
+    private void ClearRefreshTokenCookie()
+    {
+        Response.Cookies.Delete(
+            RefreshTokenCookieName,
+            new CookieOptions
+            {
+                Secure = Request.IsHttps,
+                SameSite = SameSiteMode.Strict,
+                Path = "/api/auth"
+            });
     }
 
     private ActionResult IdentityValidationProblem(IdentityResult result)
