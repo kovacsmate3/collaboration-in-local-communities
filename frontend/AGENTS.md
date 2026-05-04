@@ -47,7 +47,7 @@ npm run format       # prettier --write "**/*.{ts,tsx}"
 npm run typecheck    # tsc --noEmit
 ```
 
-The `NEXT_PUBLIC_API_URL` env var points at the backend; compose sets it to `http://localhost:8080` and that's the local default.
+The server-only `API_URL` env var points at the backend. The frontend calls relative `/api/*` URLs, and the App Router proxy reads `API_URL` at runtime. Docker Compose sets it to `http://backend:8080`; local non-Docker development defaults to `http://localhost:5073`.
 
 ## Directory layout
 
