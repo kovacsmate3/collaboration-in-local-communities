@@ -7,7 +7,6 @@ using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Auth;
@@ -144,9 +143,7 @@ public sealed class AuthController(
 
     [HttpPost("logout")]
     [Authorize]
-    public async Task<IActionResult> LogoutAsync(
-        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] LogoutRequest? request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> LogoutAsync(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         if (userId is null)
@@ -154,7 +151,7 @@ public sealed class AuthController(
             return Unauthorized();
         }
 
-        var rawRefreshToken = request?.RefreshToken ?? Request.Cookies[RefreshTokenCookieName];
+        var rawRefreshToken = Request.Cookies[RefreshTokenCookieName];
 
         if (!string.IsNullOrWhiteSpace(rawRefreshToken)
             && TryHashRefreshToken(rawRefreshToken, out var refreshTokenHash))
@@ -179,11 +176,9 @@ public sealed class AuthController(
 
     [HttpPost("refresh")]
     [AllowAnonymous]
-    public async Task<IActionResult> RefreshAsync(
-        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] RefreshRequest? request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> RefreshAsync(CancellationToken cancellationToken)
     {
-        var rawRefreshToken = request?.RefreshToken ?? Request.Cookies[RefreshTokenCookieName];
+        var rawRefreshToken = Request.Cookies[RefreshTokenCookieName];
         if (string.IsNullOrWhiteSpace(rawRefreshToken)
             || !TryHashRefreshToken(rawRefreshToken, out var currentTokenHash))
         {
