@@ -145,7 +145,7 @@ function BarChart({
   )
 }
 
-// ── Stub chart data (isolated placeholders until real endpoints exist) ───────���
+// ── Stub chart data (isolated placeholders until real endpoints exist) ───────
 
 const TASK_STATUS_DATA = [
   { label: "Open", value: 124, pct: 62 },
