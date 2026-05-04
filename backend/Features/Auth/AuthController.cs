@@ -151,20 +151,17 @@ public sealed class AuthController(
             return Unauthorized();
         }
 
-        var rawRefreshToken = Request.Cookies[RefreshTokenCookieName];
+        var now = DateTimeOffset.UtcNow;
+        var clientIp = GetClientIp();
 
-        if (!string.IsNullOrWhiteSpace(rawRefreshToken)
-            && TryHashRefreshToken(rawRefreshToken, out var refreshTokenHash))
+        var activeTokens = await db.RefreshTokens
+            .Where(token => token.UserId == userId.Value && token.RevokedAt == null && token.ExpiresAt > now)
+            .ToListAsync(cancellationToken);
+
+        foreach (var token in activeTokens)
         {
-            var refreshToken = await db.RefreshTokens
-                .Where(token => token.UserId == userId.Value && token.TokenHash == refreshTokenHash)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (refreshToken is not null && refreshToken.RevokedAt is null)
-            {
-                refreshToken.RevokedAt = DateTimeOffset.UtcNow;
-                refreshToken.RevokedByIp = GetClientIp();
-            }
+            token.RevokedAt = now;
+            token.RevokedByIp = clientIp;
         }
 
         AddAuditEvent(userId.Value, "auth.logout", "ApplicationUser", userId.Value, null);
