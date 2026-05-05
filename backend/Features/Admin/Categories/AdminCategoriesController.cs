@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Admin.Categories;
 
-// [Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/admin/categories")]
 public sealed partial class AdminCategoriesController(

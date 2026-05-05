@@ -1,6 +1,7 @@
 using Azure.Core;
 using Azure.Identity;
 using Backend.Application.Categories;
+using Backend.Features.Auth;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
@@ -109,18 +110,13 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
     options.UseNpgsql(dataSource, npgsql => npgsql.UseNetTopologySuite());
 });
 builder.Services.AddScoped<IListCategoriesQuery, EfListCategoriesQuery>();
+builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
 
-builder.Services.AddIdentityCore<ApplicationUser>(options =>
-    {
-        options.User.RequireUniqueEmail = true;
-        options.Password.RequiredLength = 8;
-    })
-    .AddRoles<ApplicationRole>()
-    .AddEntityFrameworkStores<AppDbContext>();
+builder.Services.AddApplicationIdentity();
 
 builder.Services.AddControllers();
 builder.Services.AddOutputCache();
-builder.Services.AddAuthentication();
+builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
