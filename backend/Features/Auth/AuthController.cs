@@ -1,5 +1,3 @@
-using System.Security.Claims;
-using System.Text.Json;
 using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Infrastructure.Identity;
