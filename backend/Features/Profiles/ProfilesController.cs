@@ -16,7 +16,7 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
     /// <param name="id">The profile ID to retrieve.</param>
     /// <param name="cancellationToken">The cancellation token for the request.</param>
     /// <returns>
-    /// 200 OK with the public profile. Fields hidden by privacy settings will be null.
+    /// 200 OK with the public profile. Fields hidden by privacy settings are omitted from the response.
     /// 404 Not Found if the profile does not exist.
     /// </returns>
     [HttpGet("{id:guid}")]
