@@ -124,7 +124,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             .Include(t => t.Category)
             .FirstAsync(t => t.Id == task.Id, cancellationToken);
 
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = task.Id }, TaskResponse.FromTask(created));
+        return CreatedAtAction("GetById", new { id = task.Id }, TaskResponse.FromTask(created));
     }
 
     [HttpPatch("{id:guid}")]
