@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Backend.Features.Profiles;
 
 /// <summary>
@@ -5,8 +7,15 @@ namespace Backend.Features.Profiles;
 /// </summary>
 public sealed record UpdateProfilePrivacySettingsRequest
 {
-    public required bool ShowWorkplace { get; init; }
-    public required bool ShowPosition { get; init; }
-    public required bool ShowLocation { get; init; }
-    public required bool ShowAvailability { get; init; }
+    [Required]
+    public bool? ShowWorkplace { get; init; }
+
+    [Required]
+    public bool? ShowPosition { get; init; }
+
+    [Required]
+    public bool? ShowLocation { get; init; }
+
+    [Required]
+    public bool? ShowAvailability { get; init; }
 }

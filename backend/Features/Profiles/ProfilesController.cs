@@ -255,10 +255,10 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             return NotFound();
         }
 
-        privacySettings.ShowWorkplace = request.ShowWorkplace;
-        privacySettings.ShowPosition = request.ShowPosition;
-        privacySettings.ShowLocation = request.ShowLocation;
-        privacySettings.ShowAvailability = request.ShowAvailability;
+        privacySettings.ShowWorkplace = request.ShowWorkplace!.Value;
+        privacySettings.ShowPosition = request.ShowPosition!.Value;
+        privacySettings.ShowLocation = request.ShowLocation!.Value;
+        privacySettings.ShowAvailability = request.ShowAvailability!.Value;
         privacySettings.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(cancellationToken);
