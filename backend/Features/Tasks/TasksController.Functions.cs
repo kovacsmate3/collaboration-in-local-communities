@@ -9,24 +9,6 @@ namespace Backend.Features.Tasks;
 
 public sealed partial class TasksController
 {
-    private async Task<UserProfile?> GetCurrentProfileAsync(CancellationToken cancellationToken)
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return null;
-        }
-
-        return await db.Profiles
-            .FirstOrDefaultAsync(p => p.UserId == userId.Value, cancellationToken);
-    }
-
-    private Guid? GetCurrentUserId()
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return Guid.TryParse(claim, out var id) ? id : null;
-    }
-
     private static bool TryParseCompensationType(string value, out CompensationType result)
     {
         return Enum.TryParse(value, ignoreCase: true, out result);
@@ -45,5 +27,23 @@ public sealed partial class TasksController
         }
 
         return new Point(longitude.Value, latitude.Value) { SRID = 4326 };
+    }
+
+    private async Task<UserProfile?> GetCurrentProfileAsync(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return null;
+        }
+
+        return await db.Profiles
+            .FirstOrDefaultAsync(p => p.UserId == userId.Value, cancellationToken);
+    }
+
+    private Guid? GetCurrentUserId()
+    {
+        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(claim, out var id) ? id : null;
     }
 }
