@@ -8,6 +8,7 @@ namespace Backend.Features.Profiles;
 
 [ApiController]
 [Route("api/profiles")]
+[Authorize]
 public sealed class ProfilesController(AppDbContext db) : ControllerBase
 {
     /// <summary>
@@ -20,7 +21,6 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
     /// 404 Not Found if the profile does not exist.
     /// </returns>
     [HttpGet("{id:guid}")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetPublicProfileAsync(Guid id, CancellationToken cancellationToken)
     {
         var profile = await db.Profiles
@@ -61,7 +61,6 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpGet("me/privacy")]
-    [Authorize]
     public async Task<IActionResult> GetPrivacySettingsAsync(CancellationToken cancellationToken)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -100,7 +99,6 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpGet("me")]
-    [Authorize]
     public async Task<IActionResult> GetOwnProfileAsync(CancellationToken cancellationToken)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -161,7 +159,6 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpPut("me")]
-    [Authorize]
     public async Task<IActionResult> UpdateOwnProfileAsync(
         UpdateOwnProfileRequest request,
         CancellationToken cancellationToken)
@@ -233,7 +230,6 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
     /// 404 Not Found if the user has no profile or privacy settings.
     /// 401 Unauthorized if not authenticated.
     /// </returns>
-    [Authorize]
     [HttpPut("me/privacy")]
     public async Task<IActionResult> UpdatePrivacySettingsAsync(
         UpdateProfilePrivacySettingsRequest request,
