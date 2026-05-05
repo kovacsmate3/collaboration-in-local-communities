@@ -72,7 +72,6 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
 
         var privacySettings = await db.ProfilePrivacySettings
             .AsNoTracking()
-            .Include(p => p.Profile)
             .FirstOrDefaultAsync(p => p.Profile.UserId == userIdGuid, cancellationToken);
 
         if (privacySettings is null)
