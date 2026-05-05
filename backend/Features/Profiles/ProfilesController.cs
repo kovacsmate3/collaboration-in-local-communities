@@ -231,7 +231,7 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
     /// <param name="cancellationToken">The cancellation token for the request.</param>
     /// <returns>
     /// 200 OK with updated privacy settings.
-    /// 404 Not Found if the user has no profile.
+    /// 404 Not Found if the user has no profile or privacy settings.
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpPut("me/privacy")]
