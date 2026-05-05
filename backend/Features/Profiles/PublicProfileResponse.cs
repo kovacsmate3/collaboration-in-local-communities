@@ -1,4 +1,4 @@
-﻿namespace Backend.Features.Profiles;
+namespace Backend.Features.Profiles;
 
 /// <summary>
 /// Public profile response that respects privacy settings.
