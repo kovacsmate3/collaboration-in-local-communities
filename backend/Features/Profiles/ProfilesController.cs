@@ -234,6 +234,7 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
     /// 404 Not Found if the user has no profile or privacy settings.
     /// 401 Unauthorized if not authenticated.
     /// </returns>
+    [Authorize]
     [HttpPut("me/privacy")]
     public async Task<IActionResult> UpdatePrivacySettingsAsync(
         UpdateProfilePrivacySettingsRequest request,
