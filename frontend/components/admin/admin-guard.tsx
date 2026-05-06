@@ -1,26 +1,52 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
+import { usePathname, useRouter } from "next/navigation"
+
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/lib/auth-context"
+import {
+  APP_AUTH_ROUTES,
+  APP_HOME_ROUTES,
+} from "@/lib/auth/constants"
 
 /**
- * Wraps all /admin/* routes. While the session is loading it shows a
- * skeleton; once settled it redirects non-admin visitors to /feed.
+ * Defence-in-depth guard for all /admin/* routes.
  *
- * TODO: once real auth ships, ensure the redirect target is the post-login
- * landing page for the user's role (currently /feed for regular users).
+ * The edge middleware (middleware.ts → proxy.ts) is the primary gate: it
+ * checks the access-token cookie, refreshes when stale, and redirects
+ * unauthenticated users to /login and signed-in non-admins to /feed before
+ * the page even renders. This client-side guard exists for the cases the
+ * edge can't cover cleanly:
+ *
+ *  - The session expiring while the user is sat on /admin (next nav will
+ *    hit middleware, but in-page activity won't).
+ *  - Local development with the dev server hot-reloading the middleware.
+ *  - Any future scenario where role data on the client diverges from the
+ *    cookie (e.g. multi-tab logout).
+ *
+ * While the session is loading we render a skeleton; once settled we
+ * redirect unauthenticated visitors to /login (preserving the original
+ * target as ?next=) and signed-in non-admins to /feed.
  */
 export function AdminGuard({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAdmin } = useAuth()
+  const { isLoading, user, isAdmin } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   React.useEffect(() => {
-    if (!isLoading && !isAdmin) {
-      router.replace("/feed")
+    if (isLoading) return
+
+    if (!user) {
+      const next = encodeURIComponent(pathname || APP_HOME_ROUTES.admin)
+      router.replace(`${APP_AUTH_ROUTES.login}?next=${next}`)
+      return
     }
-  }, [isLoading, isAdmin, router])
+
+    if (!isAdmin) {
+      router.replace(APP_HOME_ROUTES.user)
+    }
+  }, [isLoading, user, isAdmin, router, pathname])
 
   if (isLoading) {
     return (
@@ -38,8 +64,8 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!isAdmin) {
-    // Will redirect via useEffect; render nothing in the meantime
+  if (!user || !isAdmin) {
+    // Redirect is in flight; render nothing to avoid flashing admin chrome.
     return null
   }
 

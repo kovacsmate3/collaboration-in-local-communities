@@ -1,16 +1,22 @@
 import Link from "next/link"
 
+import { AdminHeaderLink } from "@/components/layout/admin-header-link"
 import { Button } from "@/components/ui/button"
 import { MainNav } from "@/components/layout/main-nav"
 import { UserMenu } from "@/components/layout/user-menu"
 import { APP_NAME } from "@/lib/constants"
-import { currentUser } from "@/lib/mock-data"
 
 /**
  * Header shown on every authenticated page.
  *
  * The mobile bottom bar lives in a separate component (`MobileNav`)
  * rendered from the same layout - this header focuses on desktop.
+ *
+ * Admins also see an "Admin" shortcut (rendered via the small client
+ * component <AdminHeaderLink />) so they can jump into /admin from
+ * anywhere on the user-facing site. This is the unified admin UX: admins
+ * remain full participants on the main site rather than being walled off
+ * in the back office.
  */
 export function AppHeader() {
   return (
@@ -23,11 +29,11 @@ export function AppHeader() {
         <MainNav className="hidden md:flex" />
 
         <div className="ml-auto flex items-center gap-2">
+          <AdminHeaderLink />
           <Button asChild size="sm" className="hidden sm:inline-flex">
             <Link href="/post-task">Post a task</Link>
           </Button>
-          {/* TODO: replace `currentUser` with the authenticated user from session */}
-          <UserMenu user={currentUser} />
+          <UserMenu />
         </div>
       </div>
     </header>
