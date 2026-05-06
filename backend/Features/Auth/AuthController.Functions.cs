@@ -94,9 +94,20 @@ public sealed partial class AuthController
             {
                 HttpOnly = true,
                 Secure = Request.IsHttps,
-                SameSite = SameSiteMode.Strict,
+
+                // Lax (not Strict) so the refresh cookie is sent on top-level cross-site
+                // navigations into the app (e.g. clicking a link from email back into the
+                // site). Refresh requests themselves are explicit POSTs from same-origin
+                // application code; combined with cookie rotation and the opaque token
+                // value this keeps the CSRF surface acceptable while avoiding the
+                // spurious re-login UX of Strict.
+                SameSite = SameSiteMode.Lax,
                 Expires = tokens.RefreshTokenExpiresAt,
-                Path = "/api/auth"
+
+                // Path "/" (not "/api/auth") so the Next.js edge middleware can see the
+                // cookie and gate protected pages without an extra round-trip. The
+                // cookie remains HttpOnly so it is still inaccessible to JavaScript.
+                Path = "/"
             });
     }
 
@@ -107,8 +118,8 @@ public sealed partial class AuthController
             new CookieOptions
             {
                 Secure = Request.IsHttps,
-                SameSite = SameSiteMode.Strict,
-                Path = "/api/auth"
+                SameSite = SameSiteMode.Lax,
+                Path = "/"
             });
     }
 

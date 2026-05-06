@@ -96,6 +96,7 @@ public sealed partial class AuthController(
         await transaction.CommitAsync(cancellationToken);
 
         SetRefreshTokenCookie(tokens);
+        SetTokenResponseHeaders();
         return Ok(ToResponse(user, tokens));
     }
 
@@ -136,6 +137,7 @@ public sealed partial class AuthController(
         await db.SaveChangesAsync(cancellationToken);
 
         SetRefreshTokenCookie(tokens);
+        SetTokenResponseHeaders();
         return Ok(ToResponse(user, tokens));
     }
 

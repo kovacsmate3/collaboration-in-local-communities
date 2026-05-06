@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
 
 export function ForgotPasswordForm() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -35,7 +36,7 @@ export function ForgotPasswordForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         <Link
-          href="/login"
+          href={APP_AUTH_ROUTES.login}
           className="font-medium text-foreground hover:underline"
         >
           Back to sign in

@@ -1,13 +1,14 @@
 import Link from "next/link"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { BriefcaseIcon } from "@hugeicons/core-free-icons"
 
-import { APP_NAME, APP_TAGLINE } from "@/lib/constants"
+import { APP_NAME } from "@/lib/constants"
 
 /**
  * Layout for `/login` and `/register`.
  *
- * Kept minimal on purpose so the auth screens stay focused. Marketing
- * copy lives in the right column on `md+`, the form takes the full
- * width on small screens.
+ * Uses the shadcn login-03/signup-03 shell: muted background, centered
+ * brand mark, and a compact form surface.
  */
 export default function AuthLayout({
   children,
@@ -15,25 +16,25 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="grid min-h-svh md:grid-cols-2">
-      <main className="flex items-center justify-center p-6 sm:p-10">
-        <div className="flex w-full max-w-sm flex-col gap-6">
-          <Link href="/" className="text-base font-semibold tracking-tight">
+    <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
+      <div className="flex w-full max-w-sm flex-col gap-6">
+        <Link
+          href="/"
+          className="flex items-center gap-2 self-center font-medium"
+        >
+          <span className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <HugeiconsIcon
+              icon={BriefcaseIcon}
+              className="size-4"
+              strokeWidth={2}
+            />
+          </span>
+          <span className="text-sm font-semibold tracking-tight">
             {APP_NAME}
-          </Link>
-          {children}
-        </div>
-      </main>
-
-      <aside className="hidden flex-col justify-end gap-2 bg-muted p-10 md:flex">
-        <p className="max-w-md text-3xl leading-tight font-semibold tracking-tight text-foreground">
-          {APP_TAGLINE}
-        </p>
-        <p className="max-w-md text-sm text-muted-foreground">
-          Find a hand or lend one. Reputation, transparency, and real neighbours
-          - replacing scattered group chats with structured micro-cooperation.
-        </p>
-      </aside>
-    </div>
+          </span>
+        </Link>
+        {children}
+      </div>
+    </main>
   )
 }
