@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Xunit;
 
 namespace backend.Tests;
@@ -142,8 +143,85 @@ public sealed class TermsControllerTests
         Assert.IsType<OkResult>(result);
 
         var acceptance = await db.UserTermsAcceptances.SingleAsync(cancellationToken);
+        Assert.NotEqual(Guid.Empty, acceptance.Id);
         Assert.Equal(userId, acceptance.UserId);
         Assert.Equal(currentTerms.Id, acceptance.TermsVersionId);
+    }
+
+    [Fact]
+    public async Task AcceptTermsAsync_RejectsMissingTermsVersionId()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var controller = CreateController(db, Guid.NewGuid());
+
+        var result = await controller.AcceptTermsAsync(
+            new AcceptTermsRequest { TermsVersionId = null },
+            cancellationToken);
+
+        var validationProblem = Assert.IsAssignableFrom<ObjectResult>(result);
+        var problemDetails = Assert.IsType<ValidationProblemDetails>(validationProblem.Value);
+        var error = Assert.Single(problemDetails.Errors[nameof(AcceptTermsRequest.TermsVersionId)]);
+        Assert.Equal("Terms version ID is required.", error);
+        Assert.Empty(db.UserTermsAcceptances);
+    }
+
+    [Fact]
+    public async Task AcceptTermsAsync_IsIdempotentForExistingAcceptance()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var now = DateTimeOffset.UtcNow;
+        var currentTerms = new TermsVersion
+        {
+            Id = Guid.NewGuid(),
+            Version = "1.1",
+            Title = "Current",
+            IsActive = true,
+            EffectiveFrom = now.AddDays(-1),
+            CreatedAt = now.AddDays(-1),
+            UpdatedAt = now.AddDays(-1)
+        };
+
+        db.TermsVersions.Add(currentTerms);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateController(db, Guid.NewGuid());
+        var request = new AcceptTermsRequest { TermsVersionId = currentTerms.Id };
+
+        var firstResult = await controller.AcceptTermsAsync(request, cancellationToken);
+        var secondResult = await controller.AcceptTermsAsync(request, cancellationToken);
+
+        Assert.IsType<OkResult>(firstResult);
+        Assert.IsType<OkResult>(secondResult);
+        Assert.Equal(1, await db.UserTermsAcceptances.CountAsync(cancellationToken));
+    }
+
+    [Fact]
+    public void IsDuplicateUserTermsAcceptance_MatchesUniqueConstraint()
+    {
+        var postgresException = new PostgresException(
+            "duplicate key value violates unique constraint",
+            "ERROR",
+            "ERROR",
+            PostgresErrorCodes.UniqueViolation,
+            detail: null,
+            hint: null,
+            position: 0,
+            internalPosition: 0,
+            internalQuery: null,
+            where: null,
+            schemaName: null,
+            tableName: "user_terms_acceptances",
+            columnName: null,
+            dataTypeName: null,
+            constraintName: "ux_user_terms_acceptances_user_terms",
+            file: null,
+            line: null,
+            routine: null);
+        var exception = new DbUpdateException("Duplicate acceptance.", postgresException);
+
+        Assert.True(PostgresExceptionHelpers.IsDuplicateUserTermsAcceptance(exception));
     }
 
     [Fact]

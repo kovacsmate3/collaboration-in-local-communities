@@ -80,6 +80,7 @@ public sealed partial class AuthController(
         {
             db.UserTermsAcceptances.Add(new UserTermsAcceptance
             {
+                Id = Guid.NewGuid(),
                 UserId = user.Id,
                 TermsVersionId = activeTerms.Id,
                 AcceptedAt = now,

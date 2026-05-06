@@ -63,7 +63,11 @@ public sealed class TermsController(AppDbContext db) : ControllerBase
             return Unauthorized();
         }
 
-        var termsVersionId = request.TermsVersionId!.Value;
+        if (request.TermsVersionId is not { } termsVersionId)
+        {
+            ModelState.AddModelError(nameof(request.TermsVersionId), "Terms version ID is required.");
+            return ValidationProblem(ModelState);
+        }
 
         var activeTerms = await db.TermsVersions
             .AsNoTracking()
@@ -90,13 +94,21 @@ public sealed class TermsController(AppDbContext db) : ControllerBase
 
         db.UserTermsAcceptances.Add(new UserTermsAcceptance
         {
+            Id = Guid.NewGuid(),
             UserId = userIdGuid,
             TermsVersionId = termsVersionId,
             AcceptedAt = DateTimeOffset.UtcNow,
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
         });
 
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (PostgresExceptionHelpers.IsDuplicateUserTermsAcceptance(exception))
+        {
+            return Ok();
+        }
 
         return Ok();
     }
