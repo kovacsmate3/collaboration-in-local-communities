@@ -7,6 +7,8 @@ bin/
 obj/
 *.csproj.user
 
+*.DotSettings.user
+
 node_modules/
 .husky/_
 
