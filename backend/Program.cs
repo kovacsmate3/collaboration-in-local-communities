@@ -168,6 +168,8 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 
     using var seedScope = app.Services.CreateScope();
+    var db = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
     await seedScope.ServiceProvider.RunDataSeedersAsync();
 }
 
