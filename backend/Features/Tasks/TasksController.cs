@@ -80,6 +80,12 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             return Unauthorized();
         }
 
+        if (!FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Title), request.Title, 3, 160, out var title)
+            || !FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Description), request.Description, 10, 3000, out var description))
+        {
+            return ValidationProblem(ModelState);
+        }
+
         var categoryExists = await db.Categories
             .AnyAsync(c => c.Id == request.CategoryId && c.IsActive, cancellationToken);
         if (!categoryExists)
@@ -105,8 +111,8 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             Id = Guid.NewGuid(),
             SeekerProfileId = profile.Id,
             CategoryId = request.CategoryId,
-            Title = request.Title.Trim(),
-            Description = request.Description.Trim(),
+            Title = title,
+            Description = description,
             Location = BuildLocation(request.Latitude, request.Longitude),
             LocationText = StringUtilities.Normalize(request.LocationText),
             CompensationType = compensationType,
@@ -167,8 +173,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         if (request.Title is not null)
         {
-            var title = request.Title.Trim();
-            if (!FieldValidator.ValidateRequired(ModelState, nameof(request.Title), title))
+            if (!FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Title), request.Title, 3, 160, out var title))
             {
                 return ValidationProblem(ModelState);
             }
@@ -179,8 +184,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         if (request.Description is not null)
         {
-            var description = request.Description.Trim();
-            if (!FieldValidator.ValidateRequired(ModelState, nameof(request.Description), description))
+            if (!FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Description), request.Description, 10, 3000, out var description))
             {
                 return ValidationProblem(ModelState);
             }
