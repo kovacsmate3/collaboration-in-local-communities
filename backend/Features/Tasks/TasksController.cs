@@ -106,6 +106,12 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             return ValidationProblem(ModelState);
         }
 
+        if (request.Latitude.HasValue != request.Longitude.HasValue)
+        {
+            ModelState.AddModelError("Location", "Both Latitude and Longitude must be provided together.");
+            return ValidationProblem(ModelState);
+        }
+
         var task = new CommunityTask
         {
             Id = Guid.NewGuid(),
@@ -225,6 +231,12 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             anyChange = true;
         }
 
+        if (task.CompensationType == CompensationType.Paid && task.CompensationAmount is null)
+        {
+            ModelState.AddModelError(nameof(request.CompensationAmount), "CompensationAmount is required for Paid tasks.");
+            return ValidationProblem(ModelState);
+        }
+
         if (request.LocationText is not null)
         {
             task.LocationText = StringUtilities.Normalize(request.LocationText);
@@ -233,13 +245,19 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         if (request.Latitude.HasValue || request.Longitude.HasValue)
         {
+            if (request.Latitude.HasValue != request.Longitude.HasValue)
+            {
+                ModelState.AddModelError("Location", "Both Latitude and Longitude must be provided together.");
+                return ValidationProblem(ModelState);
+            }
+
             task.Location = BuildLocation(request.Latitude, request.Longitude);
             anyChange = true;
         }
 
         if (request.Status is not null)
         {
-            if (request.Status != nameof(DomainTaskStatus.Cancelled))
+            if (!string.Equals(request.Status, nameof(DomainTaskStatus.Cancelled), StringComparison.OrdinalIgnoreCase))
             {
                 ModelState.AddModelError(nameof(request.Status), "Status can only be changed to 'Cancelled'.");
                 return ValidationProblem(ModelState);

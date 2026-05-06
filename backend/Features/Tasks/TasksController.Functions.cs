@@ -11,12 +11,14 @@ public sealed partial class TasksController
 {
     private static bool TryParseCompensationType(string value, out CompensationType result)
     {
-        return Enum.TryParse(value, ignoreCase: true, out result);
+        result = default;
+        return !int.TryParse(value, out _) && Enum.TryParse(value, ignoreCase: true, out result);
     }
 
     private static bool TryParseTaskStatus(string value, out DomainTaskStatus result)
     {
-        return Enum.TryParse(value, ignoreCase: true, out result);
+        result = default;
+        return !int.TryParse(value, out _) && Enum.TryParse(value, ignoreCase: true, out result);
     }
 
     private static Point? BuildLocation(double? latitude, double? longitude)

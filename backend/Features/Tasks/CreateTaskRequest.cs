@@ -4,11 +4,11 @@ namespace Backend.Features.Tasks;
 
 public sealed record CreateTaskRequest(
     [Required]
-    [StringLength(160, MinimumLength = 3)]
+    [StringLength(160)]
     string Title,
 
     [Required]
-    [StringLength(3000, MinimumLength = 10)]
+    [StringLength(3000)]
     string Description,
 
     [Required]
