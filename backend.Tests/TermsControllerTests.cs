@@ -15,6 +15,7 @@ public sealed class TermsControllerTests
     [Fact]
     public async Task GetCurrentAsync_IgnoresFutureAndInactiveVersions()
     {
+        var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
         var now = new DateTimeOffset(2026, 05, 06, 12, 00, 00, TimeSpan.Zero);
 
@@ -60,11 +61,11 @@ public sealed class TermsControllerTests
                 UpdatedAt = now.AddDays(-90)
             });
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(cancellationToken);
 
         var current = await db.TermsVersions
             .AsNoTracking()
-            .GetCurrentAsync(now, CancellationToken.None);
+            .GetCurrentAsync(now, cancellationToken);
 
         Assert.NotNull(current);
         Assert.Equal("1.1", current.Version);
@@ -73,6 +74,7 @@ public sealed class TermsControllerTests
     [Fact]
     public async Task AcceptTermsAsync_RejectsExistingNonCurrentVersion()
     {
+        var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
         var now = DateTimeOffset.UtcNow;
         var previousTerms = new TermsVersion
@@ -97,13 +99,13 @@ public sealed class TermsControllerTests
         };
 
         db.TermsVersions.AddRange(previousTerms, currentTerms);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(cancellationToken);
 
         var controller = CreateController(db, Guid.NewGuid());
 
         var result = await controller.AcceptTermsAsync(
             new AcceptTermsRequest { TermsVersionId = previousTerms.Id },
-            CancellationToken.None);
+            cancellationToken);
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Only the current active terms version can be accepted.", badRequest.Value);
@@ -113,6 +115,7 @@ public sealed class TermsControllerTests
     [Fact]
     public async Task AcceptTermsAsync_AcceptsCurrentVersion()
     {
+        var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
         var now = DateTimeOffset.UtcNow;
         var currentTerms = new TermsVersion
@@ -127,18 +130,18 @@ public sealed class TermsControllerTests
         };
 
         db.TermsVersions.Add(currentTerms);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(cancellationToken);
 
         var userId = Guid.NewGuid();
         var controller = CreateController(db, userId);
 
         var result = await controller.AcceptTermsAsync(
             new AcceptTermsRequest { TermsVersionId = currentTerms.Id },
-            CancellationToken.None);
+            cancellationToken);
 
         Assert.IsType<OkResult>(result);
 
-        var acceptance = await db.UserTermsAcceptances.SingleAsync();
+        var acceptance = await db.UserTermsAcceptances.SingleAsync(cancellationToken);
         Assert.Equal(userId, acceptance.UserId);
         Assert.Equal(currentTerms.Id, acceptance.TermsVersionId);
     }
@@ -149,9 +152,7 @@ public sealed class TermsControllerTests
         var method = typeof(TermsController).GetMethod(nameof(TermsController.GetActiveTermsAsync));
 
         Assert.NotNull(method);
-        Assert.Contains(
-            method!.GetCustomAttributes<AllowAnonymousAttribute>(inherit: true),
-            _ => true);
+        Assert.True(method!.IsDefined(typeof(AllowAnonymousAttribute), inherit: true));
     }
 
     private static AppDbContext CreateDbContext()
