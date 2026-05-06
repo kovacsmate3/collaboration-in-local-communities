@@ -5,10 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/lib/auth-context"
-import {
-  APP_AUTH_ROUTES,
-  APP_HOME_ROUTES,
-} from "@/lib/auth/constants"
+import { APP_AUTH_ROUTES, APP_HOME_ROUTES } from "@/lib/auth/constants"
 
 /**
  * Defence-in-depth guard for all /admin/* routes.
