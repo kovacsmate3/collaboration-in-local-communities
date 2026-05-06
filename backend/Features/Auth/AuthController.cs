@@ -1,5 +1,6 @@
 using Backend.Common;
 using Backend.Domain.Entities;
+using Backend.Features.Terms;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -73,14 +74,13 @@ public sealed partial class AuthController(
         db.Profiles.Add(profile);
 
         var activeTerms = await db.TermsVersions
-            .Where(terms => terms.IsActive)
-            .OrderByDescending(terms => terms.EffectiveFrom)
-            .FirstOrDefaultAsync(cancellationToken);
+            .GetCurrentAsync(now, cancellationToken);
 
         if (activeTerms is not null)
         {
             db.UserTermsAcceptances.Add(new UserTermsAcceptance
             {
+                Id = Guid.NewGuid(),
                 UserId = user.Id,
                 TermsVersionId = activeTerms.Id,
                 AcceptedAt = now,

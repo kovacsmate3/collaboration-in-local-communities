@@ -40,4 +40,14 @@ public static class PostgresExceptionHelpers
     {
         return IsUniqueConstraintViolation(exception, "ux_categories_code");
     }
+
+    /// <summary>
+    /// Checks if a DbUpdateException is a duplicate user terms acceptance violation.
+    /// </summary>
+    /// <param name="exception">The DbUpdateException to check.</param>
+    /// <returns>True if the exception is a duplicate user terms acceptance violation, false otherwise.</returns>
+    public static bool IsDuplicateUserTermsAcceptance(DbUpdateException exception)
+    {
+        return IsUniqueConstraintViolation(exception, "ux_user_terms_acceptances_user_terms");
+    }
 }
