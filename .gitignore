@@ -1,10 +1,29 @@
 .vscode/
 .env
+!.env.example
 .idea/
 .vs/
 bin/
 obj/
 *.csproj.user
 
+*.DotSettings.user
+
 node_modules/
 .husky/_
+
+# Claude local/runtime files
+.claude/cache/
+.claude/logs/
+.claude/tmp/
+.claude/history/
+.claude/sessions/
+.claude/worktrees/
+
+# Local-only overrides
+.claude/*.local.*
+.claude/local/
+
+# Claude secrets/state
+.claude/secrets*
+.claude/state*
