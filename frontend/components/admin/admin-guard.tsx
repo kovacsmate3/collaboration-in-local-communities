@@ -1,11 +1,9 @@
 "use client"
 
-import * as React from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-import { Skeleton } from "@/components/ui/skeleton"
-import { useAuth } from "@/lib/auth-context"
-import { APP_AUTH_ROUTES, APP_HOME_ROUTES } from "@/lib/auth/constants"
+import { AdminGuardInner } from "./admin-guard-inner"
+import { AdminGuardSkeleton } from "./admin-guard-skeleton"
 
 /**
  * Defence-in-depth guard for all /admin/* routes.
@@ -26,58 +24,14 @@ import { APP_AUTH_ROUTES, APP_HOME_ROUTES } from "@/lib/auth/constants"
  * redirect unauthenticated visitors to /login (preserving the original
  * target as ?next=) and signed-in non-admins to /feed.
  */
-const AdminGuardSkeleton = (
-  <div className="flex h-svh flex-col gap-4 p-8">
-    <Skeleton className="h-8 w-48" />
-    <div className="flex flex-1 gap-4">
-      <Skeleton className="h-full w-56" />
-      <div className="flex-1 space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-32 w-full" />
-      </div>
-    </div>
-  </div>
-)
-
-export function AdminGuard({ children }: { children: React.ReactNode }) {
+export function AdminGuard({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <React.Suspense fallback={AdminGuardSkeleton}>
+    <Suspense fallback={<AdminGuardSkeleton />}>
       <AdminGuardInner>{children}</AdminGuardInner>
-    </React.Suspense>
+    </Suspense>
   )
-}
-
-function AdminGuardInner({ children }: { children: React.ReactNode }) {
-  const { isLoading, user, isAdmin } = useAuth()
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-
-  React.useEffect(() => {
-    if (isLoading) return
-
-    if (!user) {
-      const search = searchParams.toString()
-      const returnTo = `${pathname}${search ? `?${search}` : ""}` || APP_HOME_ROUTES.admin
-      const next = encodeURIComponent(returnTo)
-      router.replace(`${APP_AUTH_ROUTES.login}?next=${next}`)
-      return
-    }
-
-    if (!isAdmin) {
-      router.replace(APP_HOME_ROUTES.user)
-    }
-  }, [isLoading, user, isAdmin, router, pathname, searchParams])
-
-  if (isLoading) {
-    return AdminGuardSkeleton
-  }
-
-  if (!user || !isAdmin) {
-    // Redirect is in flight; render nothing to avoid flashing admin chrome.
-    return null
-  }
-
-  return <>{children}</>
 }
