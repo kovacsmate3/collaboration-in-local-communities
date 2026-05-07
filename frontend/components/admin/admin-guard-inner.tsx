@@ -8,11 +8,7 @@ import { APP_AUTH_ROUTES, APP_HOME_ROUTES } from "@/lib/auth/constants"
 
 import { AdminGuardSkeleton } from "./admin-guard-skeleton"
 
-export function AdminGuardInner({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export function AdminGuardInner({ children }: { children: React.ReactNode }) {
   const { isLoading, user, isAdmin } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
@@ -24,12 +20,9 @@ export function AdminGuardInner({
     if (!user) {
       const search = searchParams.toString()
       const returnTo =
-        `${pathname}${search ? `?${search}` : ""}` ||
-        APP_HOME_ROUTES.admin
+        `${pathname}${search ? `?${search}` : ""}` || APP_HOME_ROUTES.admin
       const next = encodeURIComponent(returnTo)
-      router.replace(
-        `${APP_AUTH_ROUTES.login}?next=${next}`
-      )
+      router.replace(`${APP_AUTH_ROUTES.login}?next=${next}`)
       return
     }
 

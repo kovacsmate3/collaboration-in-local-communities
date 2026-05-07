@@ -24,11 +24,7 @@ import { AdminGuardSkeleton } from "./admin-guard-skeleton"
  * redirect unauthenticated visitors to /login (preserving the original
  * target as ?next=) and signed-in non-admins to /feed.
  */
-export function AdminGuard({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export function AdminGuard({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={<AdminGuardSkeleton />}>
       <AdminGuardInner>{children}</AdminGuardInner>
