@@ -1,11 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server"
 
-import {
-  ACCESS_TOKEN_COOKIE,
-  getExpiredCookieOptions,
-} from "@/lib/auth/cookies"
+import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/cookies"
 import {
   appendBackendSetCookie,
+  clearAuthCookies,
   refreshBackendToken,
   setAccessTokenCookie,
 } from "@/lib/auth/backend"
@@ -56,11 +54,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const response = NextResponse.redirect(
       getLoginRedirectUrl(request.url, pathname, request.nextUrl.search)
     )
-    response.cookies.set(
-      ACCESS_TOKEN_COOKIE,
-      "",
-      getExpiredCookieOptions(request.url)
-    )
+    clearAuthCookies(response, request.url)
     return response
   }
 

@@ -126,6 +126,11 @@ public sealed class UserSeedingHelper(
 
         if (!profile.IsProfileCompleted)
         {
+            profile.DisplayName = account.DisplayName;
+            profile.Workplace = account.Workplace;
+            profile.Position = account.Position;
+            profile.LocationText = account.LocationText;
+            profile.Bio = account.Bio;
             profile.IsProfileCompleted = true;
             profile.UpdatedAt = now;
             changed = true;
