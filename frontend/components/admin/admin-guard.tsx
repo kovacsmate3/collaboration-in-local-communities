@@ -26,7 +26,29 @@ import { APP_AUTH_ROUTES, APP_HOME_ROUTES } from "@/lib/auth/constants"
  * redirect unauthenticated visitors to /login (preserving the original
  * target as ?next=) and signed-in non-admins to /feed.
  */
+const AdminGuardSkeleton = (
+  <div className="flex h-svh flex-col gap-4 p-8">
+    <Skeleton className="h-8 w-48" />
+    <div className="flex flex-1 gap-4">
+      <Skeleton className="h-full w-56" />
+      <div className="flex-1 space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    </div>
+  </div>
+)
+
 export function AdminGuard({ children }: { children: React.ReactNode }) {
+  return (
+    <React.Suspense fallback={AdminGuardSkeleton}>
+      <AdminGuardInner>{children}</AdminGuardInner>
+    </React.Suspense>
+  )
+}
+
+function AdminGuardInner({ children }: { children: React.ReactNode }) {
   const { isLoading, user, isAdmin } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
@@ -49,19 +71,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   }, [isLoading, user, isAdmin, router, pathname, searchParams])
 
   if (isLoading) {
-    return (
-      <div className="flex h-svh flex-col gap-4 p-8">
-        <Skeleton className="h-8 w-48" />
-        <div className="flex flex-1 gap-4">
-          <Skeleton className="h-full w-56" />
-          <div className="flex-1 space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-        </div>
-      </div>
-    )
+    return AdminGuardSkeleton
   }
 
   if (!user || !isAdmin) {
