@@ -1,0 +1,185 @@
+version: 2
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 3
+    versioning-strategy: "increase-if-necessary"
+    commit-message:
+      prefix: "chore(repo)"
+      prefix-development: "chore(repo)"
+    groups:
+      root-dev-tooling:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:10"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 5
+    versioning-strategy: "increase-if-necessary"
+    commit-message:
+      prefix: "chore(frontend)"
+      prefix-development: "chore(frontend)"
+    groups:
+      frontend-framework:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "eslint-config-next"
+          - "@types/react"
+          - "@types/react-dom"
+        update-types:
+          - "minor"
+          - "patch"
+      frontend-ui:
+        patterns:
+          - "@hugeicons/*"
+          - "class-variance-authority"
+          - "clsx"
+          - "next-themes"
+          - "radix-ui"
+          - "shadcn"
+          - "sonner"
+          - "tailwind-merge"
+          - "tw-animate-css"
+        update-types:
+          - "minor"
+          - "patch"
+      frontend-runtime:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      frontend-tooling:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "nuget"
+    directories:
+      - "/backend"
+      - "/backend.Tests"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:20"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(backend)"
+    groups:
+      aspnetcore:
+        patterns:
+          - "Microsoft.AspNetCore.*"
+        update-types:
+          - "minor"
+          - "patch"
+      entity-framework-postgres:
+        patterns:
+          - "Microsoft.EntityFrameworkCore.*"
+          - "Npgsql.EntityFrameworkCore.*"
+        update-types:
+          - "minor"
+          - "patch"
+      azure-observability:
+        patterns:
+          - "Azure.*"
+          - "Microsoft.ApplicationInsights.*"
+          - "Microsoft.Azure.*"
+          - "OpenTelemetry.*"
+        update-types:
+          - "minor"
+          - "patch"
+      backend-test-tooling:
+        patterns:
+          - "coverlet.collector"
+          - "Microsoft.NET.Test.Sdk"
+          - "StyleCop.Analyzers"
+          - "xunit*"
+        update-types:
+          - "minor"
+          - "patch"
+      backend-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "docker"
+    directories:
+      - "/backend"
+      - "/frontend"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:30"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(docker)"
+    groups:
+      app-base-images:
+        patterns:
+          - "gcr.io/distroless/nodejs*"
+          - "mcr.microsoft.com/dotnet/*"
+          - "node"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:40"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(infra)"
+    groups:
+      compose-images:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:50"
+      timezone: "Europe/Budapest"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      github-actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
