@@ -69,3 +69,23 @@ jobs:
       - name: Stop server
         if: always()
         run: kill "$SERVER_PID" 2>/dev/null || true
+
+  qodana:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: 'Qodana Scan'
+        uses: JetBrains/qodana-action@v2026.1
+        with:
+          project-dir: ${{ github.workspace }}/frontend
+          args: --config,${{ github.workspace }}/qodana-frontend.yaml
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_FRONTEND }}
+          QODANA_ENDPOINT: 'https://qodana.cloud'
