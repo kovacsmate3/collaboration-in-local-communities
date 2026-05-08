@@ -84,8 +84,8 @@ jobs:
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2026.1
         with:
-          project-dir: ${{ github.workspace }}/frontend
-          args: --config,${{ github.workspace }}/qodana-frontend.yaml
+          args: --config qodana-frontend.yaml -d frontend
+          pr-mode: false
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_FRONTEND }}
           QODANA_ENDPOINT: 'https://qodana.cloud'
