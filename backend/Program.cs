@@ -5,6 +5,7 @@ using Backend.Features.Auth;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
+using Backend.Infrastructure.Persistence.Seeding;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -119,6 +120,8 @@ builder.Services.AddOutputCache();
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
+builder.Services.AddDevelopmentDataSeeders(builder.Configuration, builder.Environment);
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -163,6 +166,11 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+
+    using var seedScope = app.Services.CreateScope();
+    var db = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+    await seedScope.ServiceProvider.RunDataSeedersAsync();
 }
 
 // Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080)

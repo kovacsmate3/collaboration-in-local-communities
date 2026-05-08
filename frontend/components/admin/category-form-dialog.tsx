@@ -1,11 +1,8 @@
 "use client"
 
-import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Loading03Icon } from "@hugeicons/core-free-icons"
 
 import {
   createCategorySchema,
@@ -20,31 +17,19 @@ import {
 } from "@/lib/api/admin/categories"
 import { ApiError } from "@/lib/api/client"
 import { ICON_REGISTRY } from "@/lib/icon-registry"
-
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog"
+import { Form } from "@/components/ui/form"
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { IconPicker } from "./icon-picker"
-
-// ── Create dialog ─────────────────────────────────────────────────────────────
+  CategoryFormActions,
+  CategoryFormFields,
+} from "@/components/admin/category-form-fields"
 
 interface CreateCategoryDialogProps {
   open: boolean
@@ -93,8 +78,10 @@ export function CreateCategoryDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(o) => {
-        if (!isPending) onOpenChange(o)
+      onOpenChange={(nextOpen) => {
+        if (!isPending) {
+          onOpenChange(nextOpen)
+        }
       }}
     >
       <DialogContent className="max-w-lg">
@@ -107,136 +94,22 @@ export function CreateCategoryDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Code</FormLabel>
-                  <FormControl>
-                    <div>
-                      <Input
-                        id={field.name}
-                        placeholder="e.g. garden_work"
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormDescription>
-                    Lowercase letters, numbers, hyphens, underscores. Immutable
-                    after creation.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <CategoryFormFields
+              includeCode
+              namePlaceholder="e.g. Garden Work"
+              descriptionPlaceholder="Brief description for seekers..."
             />
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <div>
-                      <Input
-                        id={field.name}
-                        placeholder="e.g. Garden Work"
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <CategoryFormActions
+              isPending={isPending}
+              onCancel={() => onOpenChange(false)}
+              submitLabel="Create category"
             />
-            <FormField
-              control={form.control}
-              name="icon"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Icon</FormLabel>
-                  <FormControl>
-                    <div>
-                      <IconPicker
-                        value={field.value}
-                        onChange={field.onChange}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Description{" "}
-                    <span className="font-normal text-muted-foreground">
-                      (optional)
-                    </span>
-                  </FormLabel>
-                  <FormControl>
-                    <div>
-                      <Textarea
-                        id={field.name}
-                        placeholder="Brief description for seekers…"
-                        className="resize-none"
-                        rows={2}
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="sortOrder"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sort order</FormLabel>
-                  <FormControl>
-                    <div>
-                      <Input id={field.name} type="number" min={0} {...field} />
-                    </div>
-                  </FormControl>
-                  <FormDescription>Lower numbers appear first.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isPending}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending && (
-                  <HugeiconsIcon
-                    icon={Loading03Icon}
-                    className="size-4 animate-spin"
-                    strokeWidth={2}
-                  />
-                )}
-                Create category
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   )
 }
-
-// ── Edit dialog ───────────────────────────────────────────────────────────────
 
 interface EditCategoryDialogProps {
   category: AdminCategoryResponse | null
@@ -262,7 +135,10 @@ export function EditCategoryDialog({
   })
 
   async function onSubmit(values: UpdateCategoryFormValues) {
-    if (!category) return
+    if (!category) {
+      return
+    }
+
     try {
       await mutateAsync({
         id: category.id,
@@ -283,8 +159,10 @@ export function EditCategoryDialog({
   return (
     <Dialog
       open={Boolean(category)}
-      onOpenChange={(o) => {
-        if (!isPending) onOpenChange(o)
+      onOpenChange={(nextOpen) => {
+        if (!isPending) {
+          onOpenChange(nextOpen)
+        }
       }}
     >
       <DialogContent className="max-w-lg">
@@ -300,100 +178,12 @@ export function EditCategoryDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <div>
-                      <Input id={field.name} {...field} />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <CategoryFormFields />
+            <CategoryFormActions
+              isPending={isPending}
+              onCancel={() => onOpenChange(false)}
+              submitLabel="Save changes"
             />
-            <FormField
-              control={form.control}
-              name="icon"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Icon</FormLabel>
-                  <FormControl>
-                    <div>
-                      <IconPicker
-                        value={field.value}
-                        onChange={field.onChange}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Description{" "}
-                    <span className="font-normal text-muted-foreground">
-                      (optional)
-                    </span>
-                  </FormLabel>
-                  <FormControl>
-                    <div>
-                      <Textarea
-                        id={field.name}
-                        className="resize-none"
-                        rows={2}
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="sortOrder"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sort order</FormLabel>
-                  <FormControl>
-                    <div>
-                      <Input id={field.name} type="number" min={0} {...field} />
-                    </div>
-                  </FormControl>
-                  <FormDescription>Lower numbers appear first.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isPending}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending && (
-                  <HugeiconsIcon
-                    icon={Loading03Icon}
-                    className="size-4 animate-spin"
-                    strokeWidth={2}
-                  />
-                )}
-                Save changes
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

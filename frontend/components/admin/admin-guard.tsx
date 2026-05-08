@@ -1,47 +1,33 @@
 "use client"
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Suspense } from "react"
+
+import { AdminGuardInner } from "./admin-guard-inner"
+import { AdminGuardSkeleton } from "./admin-guard-skeleton"
 
 /**
- * Wraps all /admin/* routes. While the session is loading it shows a
- * skeleton; once settled it redirects non-admin visitors to /feed.
+ * Defence-in-depth guard for all /admin/* routes.
  *
- * TODO: once real auth ships, ensure the redirect target is the post-login
- * landing page for the user's role (currently /feed for regular users).
+ * The edge middleware (middleware.ts → proxy.ts) is the primary gate: it
+ * checks the access-token cookie, refreshes when stale, and redirects
+ * unauthenticated users to /login and signed-in non-admins to /feed before
+ * the page even renders. This client-side guard exists for the cases the
+ * edge can't cover cleanly:
+ *
+ *  - The session expiring while the user is sat on /admin (next nav will
+ *    hit middleware, but in-page activity won't).
+ *  - Local development with the dev server hot-reloading the middleware.
+ *  - Any future scenario where role data on the client diverges from the
+ *    cookie (e.g. multi-tab logout).
+ *
+ * While the session is loading we render a skeleton; once settled we
+ * redirect unauthenticated visitors to /login (preserving the original
+ * target as ?next=) and signed-in non-admins to /feed.
  */
 export function AdminGuard({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAdmin } = useAuth()
-  const router = useRouter()
-
-  React.useEffect(() => {
-    if (!isLoading && !isAdmin) {
-      router.replace("/feed")
-    }
-  }, [isLoading, isAdmin, router])
-
-  if (isLoading) {
-    return (
-      <div className="flex h-svh flex-col gap-4 p-8">
-        <Skeleton className="h-8 w-48" />
-        <div className="flex flex-1 gap-4">
-          <Skeleton className="h-full w-56" />
-          <div className="flex-1 space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAdmin) {
-    // Will redirect via useEffect; render nothing in the meantime
-    return null
-  }
-
-  return <>{children}</>
+  return (
+    <Suspense fallback={<AdminGuardSkeleton />}>
+      <AdminGuardInner>{children}</AdminGuardInner>
+    </Suspense>
+  )
 }

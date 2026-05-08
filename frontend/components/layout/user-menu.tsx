@@ -1,13 +1,16 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Logout01Icon,
   Settings02Icon,
   UserCircleIcon,
 } from "@hugeicons/core-free-icons"
+import { toast } from "sonner"
 
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { UserAvatar } from "@/components/shared/user-avatar"
-import type { User } from "@/lib/types"
-
-interface UserMenuProps {
-  user: Pick<User, "name" | "avatarUrl">
-}
+import { useAuth } from "@/lib/auth-context"
+import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
 
 /**
  * Header drop-down with quick links to profile, settings and logout.
@@ -29,7 +29,25 @@ interface UserMenuProps {
  * Accepts only the user fields it actually displays so we don't tightly
  * couple it to the full `User` shape.
  */
-export function UserMenu({ user }: UserMenuProps) {
+export function UserMenu() {
+  const { user, logout } = useAuth()
+  const router = useRouter()
+
+  if (!user) {
+    return (
+      <Button asChild size="sm" variant="outline">
+        <Link href={APP_AUTH_ROUTES.login}>Sign in</Link>
+      </Button>
+    )
+  }
+
+  async function handleLogout() {
+    await logout()
+    toast.success("Signed out")
+    router.replace(APP_AUTH_ROUTES.login)
+    router.refresh()
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -54,11 +72,15 @@ export function UserMenu({ user }: UserMenuProps) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/login">
-            <HugeiconsIcon icon={Logout01Icon} className="size-4" />
-            Log out
-          </Link>
+        <DropdownMenuItem
+          variant="destructive"
+          onSelect={(event) => {
+            event.preventDefault()
+            void handleLogout()
+          }}
+        >
+          <HugeiconsIcon icon={Logout01Icon} className="size-4" />
+          Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
