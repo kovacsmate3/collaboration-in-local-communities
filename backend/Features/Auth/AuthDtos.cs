@@ -12,6 +12,8 @@ public sealed record RegisterRequest(
     [MaxLength(1000)] string? Bio,
     bool AcceptTerms);
 
+public sealed record RegisterResponse(string Message);
+
 public sealed record LoginRequest(
     [Required, EmailAddress] string Email,
     [Required] string Password);
@@ -23,3 +25,10 @@ public sealed record AuthResponse(
     string AccessToken,
     DateTimeOffset AccessTokenExpiresAt,
     DateTimeOffset RefreshTokenExpiresAt);
+
+public sealed record ConfirmEmailRequest(
+    [Required] Guid UserId,
+    [Required] string Token);
+
+public sealed record ResendVerificationEmailRequest(
+    [Required, EmailAddress] string Email);

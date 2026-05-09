@@ -1,12 +1,16 @@
+using System.Text;
 using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Features.Terms;
+using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Backend.Features.Auth;
 
@@ -15,7 +19,10 @@ namespace Backend.Features.Auth;
 public sealed partial class AuthController(
     AppDbContext db,
     UserManager<ApplicationUser> userManager,
-    IAuthTokenService tokenService) : ControllerBase
+    IAuthTokenService tokenService,
+    IEmailSender emailSender,
+    IOptions<EmailOptions> emailOptions,
+    ILogger<AuthController> logger) : ControllerBase
 {
     private const string RefreshTokenCookieName = "refreshToken";
 
@@ -88,16 +95,22 @@ public sealed partial class AuthController(
             });
         }
 
-        var tokens = await tokenService.CreateTokenPairAsync(user, cancellationToken);
-        db.RefreshTokens.Add(CreateRefreshToken(user.Id, tokens, null));
         AddAuditEvent(user.Id, "auth.registered", "ApplicationUser", user.Id, new { user.Email });
 
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        SetRefreshTokenCookie(tokens);
-        SetTokenResponseHeaders();
-        return Ok(ToResponse(user, tokens));
+        try
+        {
+            await SendVerificationEmailAsync(user, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to send verification email to {Email}", user.Email);
+        }
+
+        return Ok(new RegisterResponse(
+            "Registration successful. Please check your email to verify your account."));
     }
 
     [HttpPost("login")]
@@ -129,6 +142,16 @@ public sealed partial class AuthController(
             return Unauthorized();
         }
 
+        if (!user.EmailConfirmed)
+        {
+            AddAuditEvent(user.Id, "auth.login_email_not_confirmed", "ApplicationUser", user.Id, new { user.Email });
+            await db.SaveChangesAsync(cancellationToken);
+            return Problem(
+                title: "Email Not Verified",
+                detail: "Please verify your email address before logging in.",
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
         await userManager.ResetAccessFailedCountAsync(user);
 
         var tokens = await tokenService.CreateTokenPairAsync(user, cancellationToken);
@@ -139,6 +162,66 @@ public sealed partial class AuthController(
         SetRefreshTokenCookie(tokens);
         SetTokenResponseHeaders();
         return Ok(ToResponse(user, tokens));
+    }
+
+    [HttpPost("confirm-email")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ConfirmEmailAsync(
+        ConfirmEmailRequest request,
+        CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(request.UserId.ToString());
+        if (user is null)
+        {
+            return BadRequest("Invalid confirmation link.");
+        }
+
+        byte[] tokenBytes;
+        try
+        {
+            tokenBytes = WebEncoders.Base64UrlDecode(request.Token);
+        }
+        catch (FormatException)
+        {
+            return BadRequest("Invalid confirmation link.");
+        }
+
+        var token = Encoding.UTF8.GetString(tokenBytes);
+        var result = await userManager.ConfirmEmailAsync(user, token);
+        if (!result.Succeeded)
+        {
+            return BadRequest("Invalid or expired confirmation link.");
+        }
+
+        AddAuditEvent(user.Id, "auth.email_confirmed", "ApplicationUser", user.Id, new { user.Email });
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok();
+    }
+
+    [HttpPost("resend-verification")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResendVerificationEmailAsync(
+        ResendVerificationEmailRequest request,
+        CancellationToken cancellationToken)
+    {
+        // Always return 200 to prevent email enumeration.
+        var user = await userManager.FindByEmailAsync(request.Email.Trim());
+        if (user is null || user.EmailConfirmed)
+        {
+            return Ok();
+        }
+
+        try
+        {
+            await SendVerificationEmailAsync(user, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to resend verification email to {Email}", user.Email);
+        }
+
+        return Ok();
     }
 
     [HttpPost("logout")]

@@ -1,9 +1,12 @@
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using Backend.Domain.Entities;
+using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace Backend.Features.Auth;
 
@@ -18,6 +21,31 @@ public sealed partial class AuthController
             tokens.AccessToken,
             tokens.AccessTokenExpiresAt,
             tokens.RefreshTokenExpiresAt);
+    }
+
+    private static string BuildVerificationEmailHtml(string confirmationLink)
+    {
+        return $"""
+            <!DOCTYPE html>
+            <html lang="en">
+            <head><meta charset="utf-8" /></head>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+              <h2>Verify your email address</h2>
+              <p>Welcome to 2gather! Please click the button below to verify your email address and activate your account.</p>
+              <p style="margin: 32px 0;">
+                <a href="{confirmationLink}"
+                   style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                  Verify Email
+                </a>
+              </p>
+              <p style="color: #666; font-size: 14px;">
+                Or copy and paste this link into your browser:<br />
+                <a href="{confirmationLink}" style="color: #2563eb;">{confirmationLink}</a>
+              </p>
+              <p style="color: #666; font-size: 14px;">This link expires in 24 hours. If you did not create an account, you can safely ignore this email.</p>
+            </body>
+            </html>
+            """;
     }
 
     private void SetTokenResponseHeaders()
@@ -131,5 +159,18 @@ public sealed partial class AuthController
         }
 
         return ValidationProblem(ModelState);
+    }
+
+    private async Task SendVerificationEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var link = $"{emailOptions.Value.FrontendBaseUrl}/verify-email?userId={user.Id}&token={encodedToken}";
+
+        await emailSender.SendEmailAsync(
+            user.Email!,
+            "2gather - Verify your email address",
+            BuildVerificationEmailHtml(link),
+            cancellationToken);
     }
 }

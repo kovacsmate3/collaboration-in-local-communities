@@ -14,6 +14,7 @@ public static class IdentityServiceCollectionExtensions
                 options.Password.RequiredLength = 8;
             })
             .AddRoles<ApplicationRole>()
-            .AddEntityFrameworkStores<AppDbContext>();
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
     }
 }

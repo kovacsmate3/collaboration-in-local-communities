@@ -2,6 +2,7 @@ using Azure.Core;
 using Azure.Identity;
 using Backend.Application.Categories;
 using Backend.Features.Auth;
+using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
@@ -114,6 +115,7 @@ builder.Services.AddScoped<IListCategoriesQuery, EfListCategoriesQuery>();
 builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
 
 builder.Services.AddApplicationIdentity();
+builder.Services.AddEmailSender(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddOutputCache();
