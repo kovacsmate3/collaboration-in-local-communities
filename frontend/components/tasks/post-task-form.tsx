@@ -1,6 +1,9 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,54 +16,123 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  COMPENSATION_LABELS,
-  TASK_CATEGORIES,
-  TASK_CATEGORY_LIST,
-} from "@/lib/constants"
-import type { CompensationType, TaskCategory } from "@/lib/types"
+import { RichTextEditor } from "@/components/shared/rich-text-editor"
+import { useAuth } from "@/lib/auth-context"
+import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
+import { resendVerificationEmail } from "@/lib/auth/functions"
+import { useCategories } from "@/lib/api/categories"
+import { useCreateTask } from "@/lib/api/tasks"
+import { COMPENSATION_LABELS } from "@/lib/constants"
+import type { CompensationType } from "@/lib/types"
 
 interface PostTaskFormState {
   title: string
   description: string
-  category: TaskCategory | ""
-  location: string
+  categoryId: string
+  locationText: string
   compensationType: CompensationType
   compensationAmount: string
-  barterOffer: string
 }
 
 const INITIAL: PostTaskFormState = {
   title: "",
   description: "",
-  category: "",
-  location: "",
+  categoryId: "",
+  locationText: "",
   compensationType: "voluntary",
   compensationAmount: "",
-  barterOffer: "",
 }
 
-/**
- * Skeleton task-creation form. Hooks up local state only; replace the
- * submit handler with a server action / mutation when the API is ready.
- *
- * Validation is intentionally minimal here - production should use a
- * schema layer (e.g. zod) so backend and frontend stay aligned.
- */
 export function PostTaskForm() {
+  const { user } = useAuth()
+  const router = useRouter()
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useCategories()
+  const { mutate: createTask, isPending } = useCreateTask()
   const [form, setForm] = React.useState<PostTaskFormState>(INITIAL)
+  const [isResending, setIsResending] = React.useState(false)
 
   const update = <K extends keyof PostTaskFormState>(
     key: K,
     value: PostTaskFormState[K]
   ) => setForm((prev) => ({ ...prev, [key]: value }))
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  async function handleResend() {
+    if (!user?.email) return
+    setIsResending(true)
+    try {
+      await resendVerificationEmail(user.email)
+      toast.success("Verification email sent — check your inbox.")
+    } catch {
+      toast.error("Could not send the email. Please try again.")
+    } finally {
+      setIsResending(false)
+    }
+  }
+
+  if (user && !user.emailVerified) {
+    return (
+      <div className="rounded-md border border-amber-200 bg-amber-50 px-5 py-4 dark:border-amber-900 dark:bg-amber-950">
+        <p className="font-medium text-amber-800 dark:text-amber-200">
+          Email verification required
+        </p>
+        <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+          You need to verify your email address before posting tasks. Check your
+          inbox for the verification link.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isResending}
+            onClick={handleResend}
+            className="border-amber-300 bg-transparent text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900"
+          >
+            {isResending ? "Sending..." : "Resend verification email"}
+          </Button>
+          <Button size="sm" variant="ghost" asChild>
+            <Link href={APP_AUTH_ROUTES.verifyEmail}>Already verified?</Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    // TODO: replace with real submission once the API exists.
-    // eslint-disable-next-line no-console
-    console.log("Submit task:", form)
+
+    const plainText = form.description.replace(/<[^>]*>/g, "").trim()
+    if (plainText.length < 10) {
+      toast.error("Description must be at least 10 characters.")
+      return
+    }
+
+    const amount =
+      form.compensationType === "paid" && form.compensationAmount
+        ? Number(form.compensationAmount)
+        : undefined
+
+    createTask(
+      {
+        title: form.title,
+        description: form.description,
+        categoryId: form.categoryId,
+        compensationType: form.compensationType,
+        compensationAmount: amount,
+        locationText: form.locationText || undefined,
+      },
+      {
+        onSuccess: (task) => {
+          toast.success("Task posted!")
+          router.push(`/tasks/${task.id}`)
+        },
+        onError: (err) => {
+          const message =
+            err instanceof Error ? err.message : "Could not post the task."
+          toast.error(message)
+        },
+      }
+    )
   }
 
   return (
@@ -70,7 +142,7 @@ export function PostTaskForm() {
         <Input
           id="title"
           required
-          maxLength={120}
+          maxLength={160}
           placeholder="e.g. Help carrying boxes to my new apartment"
           value={form.title}
           onChange={(e) => update("title", e.target.value)}
@@ -78,14 +150,11 @@ export function PostTaskForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          required
-          rows={5}
-          placeholder="Describe what you need help with, when, and any constraints."
+        <Label>Description</Label>
+        <RichTextEditor
           value={form.description}
-          onChange={(e) => update("description", e.target.value)}
+          onChange={(html) => update("description", html)}
+          placeholder="Describe what you need help with, when, and any constraints."
         />
       </div>
 
@@ -93,16 +162,22 @@ export function PostTaskForm() {
         <div className="flex flex-col gap-2">
           <Label htmlFor="category">Category</Label>
           <Select
-            value={form.category}
-            onValueChange={(v) => update("category", v as TaskCategory)}
+            required
+            value={form.categoryId}
+            onValueChange={(v) => update("categoryId", v)}
+            disabled={categoriesLoading}
           >
             <SelectTrigger id="category">
-              <SelectValue placeholder="Pick a category" />
+              <SelectValue
+                placeholder={
+                  categoriesLoading ? "Loading…" : "Pick a category"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {TASK_CATEGORY_LIST.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {TASK_CATEGORIES[c].label}
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -110,13 +185,12 @@ export function PostTaskForm() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="location">Location</Label>
+          <Label htmlFor="locationText">Location</Label>
           <Input
-            id="location"
-            required
+            id="locationText"
             placeholder="District, neighbourhood, or 'Online'"
-            value={form.location}
-            onChange={(e) => update("location", e.target.value)}
+            value={form.locationText}
+            onChange={(e) => update("locationText", e.target.value)}
           />
         </div>
       </div>
@@ -153,31 +227,22 @@ export function PostTaskForm() {
               id="amount"
               type="number"
               min={0}
+              required
               placeholder="e.g. 5000"
               value={form.compensationAmount}
               onChange={(e) => update("compensationAmount", e.target.value)}
             />
           </div>
         ) : null}
-
-        {form.compensationType === "barter" ? (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="barter">What do you offer in exchange?</Label>
-            <Input
-              id="barter"
-              placeholder="e.g. Coffee + lunch / Help with my Spanish homework"
-              value={form.barterOffer}
-              onChange={(e) => update("barterOffer", e.target.value)}
-            />
-          </div>
-        ) : null}
       </fieldset>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost">
-          Cancel
+        <Button type="button" variant="ghost" asChild>
+          <Link href="/feed">Cancel</Link>
         </Button>
-        <Button type="submit">Post task</Button>
+        <Button type="submit" disabled={isPending || !form.categoryId}>
+          {isPending ? "Posting…" : "Post task"}
+        </Button>
       </div>
     </form>
   )

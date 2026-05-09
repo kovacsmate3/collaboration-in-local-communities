@@ -8,7 +8,7 @@ public sealed record CreateTaskRequest(
     string Title,
 
     [Required]
-    [StringLength(3000)]
+    [StringLength(50_000)]
     string Description,
 
     [Required]

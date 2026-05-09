@@ -1,16 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RatingStars } from "@/components/shared/rating-stars"
-import type { Reputation } from "@/lib/types"
 
 interface ReputationCardProps {
-  reputation: Reputation
+  averageRating: number
+  reviewCount: number
+  completedTaskCount: number
 }
 
-/**
- * Snapshot of a user's reputation (US-10/11/14): points, rating, reviews,
- * completed tasks. Read-only - editing happens elsewhere.
- */
-export function ReputationCard({ reputation }: ReputationCardProps) {
+export function ReputationCard({
+  averageRating,
+  reviewCount,
+  completedTaskCount,
+}: ReputationCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -18,20 +19,19 @@ export function ReputationCard({ reputation }: ReputationCardProps) {
           Reputation
         </CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label="Points" value={reputation.points.toString()} />
+      <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <Stat
           label="Rating"
           value={
             <RatingStars
               size="md"
-              value={reputation.averageRating}
-              reviewCount={reputation.reviewCount}
+              value={averageRating}
+              reviewCount={reviewCount}
             />
           }
         />
-        <Stat label="Reviews" value={reputation.reviewCount.toString()} />
-        <Stat label="Completed" value={reputation.completedTasks.toString()} />
+        <Stat label="Reviews" value={reviewCount.toString()} />
+        <Stat label="Completed" value={completedTaskCount.toString()} />
       </CardContent>
     </Card>
   )

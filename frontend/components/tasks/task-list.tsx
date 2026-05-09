@@ -2,22 +2,15 @@ import { InboxIcon } from "@hugeicons/core-free-icons"
 
 import { TaskCard } from "@/components/tasks/task-card"
 import { EmptyState } from "@/components/shared/empty-state"
-import type { Task } from "@/lib/types"
+import type { ApiTask } from "@/lib/api/tasks"
 
 interface TaskListProps {
-  tasks: Task[]
+  tasks: ApiTask[]
   emptyTitle?: string
   emptyDescription?: string
-  /** Hide the status badge on cards (useful on the public feeds). */
   hideStatus?: boolean
 }
 
-/**
- * Renders a vertical list of TaskCards or an empty state.
- *
- * Stays presentation-only - data fetching/filtering happens at the page
- * level so this component is trivial to reuse.
- */
 export function TaskList({
   tasks,
   emptyTitle = "No tasks yet",

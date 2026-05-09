@@ -1,3 +1,6 @@
+"use client"
+
+import * as React from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 
@@ -7,57 +10,55 @@ import { ProfileHeader } from "@/components/profile/profile-header"
 import { ReputationCard } from "@/components/profile/reputation-card"
 import { ReviewsList } from "@/components/profile/reviews-list"
 import { TaskHistory } from "@/components/profile/task-history"
-import { currentUser, mockReviews, mockTasks } from "@/lib/mock-data"
+import { usePublicProfile } from "@/lib/api/profiles"
 
 interface PublicProfilePageProps {
   params: Promise<{ id: string }>
 }
 
-/**
- * Public profile view at `/profile/[id]`.
- *
- * Mirrors the self-profile but swaps the primary action to "Message".
- * Once the API is wired we'll fetch the user by id; for now we just
- * fall back to the current user as a placeholder so the page renders.
- */
-export default async function PublicProfilePage({
-  params,
-}: PublicProfilePageProps) {
-  const { id } = await params
+export default function PublicProfilePage({ params }: PublicProfilePageProps) {
+  const { id } = React.use(params)
+  const { data: profile, isLoading, isError } = usePublicProfile(id)
 
-  // TODO: fetch by id from the API
-  const user = id === currentUser.id ? currentUser : null
-  if (!user) notFound()
+  if (isLoading) {
+    return <p className="text-sm text-muted-foreground">Loading…</p>
+  }
 
-  const reviews = mockReviews.filter((r) => r.targetUserId === user.id)
-  const taskHistory = mockTasks.filter(
-    (t) => t.seeker.id === user.id || t.helper?.id === user.id
-  )
+  if (isError || !profile) {
+    notFound()
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <ProfileHeader
-        user={user}
+        displayName={profile.displayName}
+        bio={profile.bio}
+        workplace={profile.workplace}
+        position={profile.position}
+        locationText={profile.locationText}
+        photoUrl={profile.photoUrl}
         actions={
           <Button asChild>
             <Link href="/messages">Message</Link>
           </Button>
         }
       />
-      <ReputationCard reputation={user.reputation} />
+      <ReputationCard
+        averageRating={profile.averageRating}
+        reviewCount={profile.reviewCount}
+        completedTaskCount={profile.completedTaskCount}
+      />
 
       <Tabs defaultValue="reviews">
         <TabsList>
-          <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
-          <TabsTrigger value="history">
-            History ({taskHistory.length})
-          </TabsTrigger>
+          <TabsTrigger value="reviews">Reviews</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
         <TabsContent value="reviews">
-          <ReviewsList reviews={reviews} />
+          <ReviewsList reviews={[]} />
         </TabsContent>
         <TabsContent value="history">
-          <TaskHistory tasks={taskHistory} />
+          <TaskHistory tasks={[]} />
         </TabsContent>
       </Tabs>
     </div>

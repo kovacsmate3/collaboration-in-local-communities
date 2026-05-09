@@ -6,7 +6,7 @@ public sealed record UpdateTaskRequest(
     [StringLength(160)]
     string? Title,
 
-    [StringLength(3000)]
+    [StringLength(50_000)]
     string? Description,
 
     Guid? CategoryId,

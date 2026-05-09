@@ -55,6 +55,7 @@ export function toAuthUser(
     id: claims.userId,
     name: profile?.displayName ?? claims.email,
     email: claims.email,
+    emailVerified: claims.emailVerified,
     role: isAdmin ? "Admin" : "User",
     roles,
     avatarUrl: profile?.photoUrl ?? undefined,

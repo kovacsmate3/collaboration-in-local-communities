@@ -3,6 +3,7 @@ using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Validation;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -74,14 +75,27 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         CreateTaskRequest request,
         CancellationToken cancellationToken)
     {
+        if (!User.HasClaim("email_verified", "true"))
+        {
+            return Problem(
+                title: "Email Not Verified",
+                detail: "Please verify your email address to post tasks.",
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
         var profile = await GetCurrentProfileAsync(cancellationToken);
         if (profile is null)
         {
             return Unauthorized();
         }
 
-        if (!FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Title), request.Title, 3, 160, out var title)
-            || !FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Description), request.Description, 10, 3000, out var description))
+        if (!FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Title), request.Title, 3, 160, out var title))
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var description = SanitizeDescription(request.Description);
+        if (!ValidateDescriptionPlainText(description, nameof(request.Description)))
         {
             return ValidationProblem(ModelState);
         }
@@ -190,7 +204,8 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         if (request.Description is not null)
         {
-            if (!FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Description), request.Description, 10, 3000, out var description))
+            var description = SanitizeDescription(request.Description);
+            if (!ValidateDescriptionPlainText(description, nameof(request.Description)))
             {
                 return ValidationProblem(ModelState);
             }

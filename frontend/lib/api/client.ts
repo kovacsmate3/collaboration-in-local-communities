@@ -61,6 +61,13 @@ export const apiClient = {
       ...init,
     }),
 
+  patch: <T>(path: string, data: unknown, init?: RequestInit) =>
+    request<T>(path, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+      ...init,
+    }),
+
   delete: <T = void>(path: string, init?: RequestInit) =>
     request<T>(path, { method: "DELETE", ...init }),
 }

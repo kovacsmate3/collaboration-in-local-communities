@@ -9,21 +9,19 @@ import {
   type TaskFiltersState,
 } from "@/components/tasks/task-filters"
 import { TaskList } from "@/components/tasks/task-list"
-import { mockTasks } from "@/lib/mock-data"
-import type { Task } from "@/lib/types"
+import { useTaskList } from "@/lib/api/tasks"
+import type { ApiTask } from "@/lib/api/tasks"
 
-/**
- * Helper Feed (US-01, US-02, US-04, US-09).
- *
- * Dedicated surface for helpers: open tasks only, surfaced through a
- * filtered search. Skill-matching ordering is mocked as a no-op for
- * now; replace `applyFilters` with a server-side query later.
- */
 export default function HelperPage() {
   const [filters, setFilters] =
     React.useState<TaskFiltersState>(DEFAULT_FILTERS)
 
-  const tasks = React.useMemo(() => applyFilters(mockTasks, filters), [filters])
+  const { data: allTasks = [], isLoading, isError } = useTaskList({ status: "Open" })
+
+  const tasks = React.useMemo(
+    () => applyFilters(allTasks, filters),
+    [allTasks, filters]
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -32,34 +30,43 @@ export default function HelperPage() {
         description="Open requests filtered by your skills, location, and availability."
       />
       <TaskFilters value={filters} onChange={setFilters} />
-      <TaskList
-        tasks={tasks}
-        emptyTitle="No tasks match your filters"
-        emptyDescription="Try widening the category or recency range."
-        hideStatus
-      />
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Loading tasks…</p>
+      ) : isError ? (
+        <p className="text-sm text-destructive">
+          Could not load tasks. Please try again.
+        </p>
+      ) : (
+        <TaskList
+          tasks={tasks}
+          emptyTitle="No tasks match your filters"
+          emptyDescription="Try widening the category or recency range."
+          hideStatus
+        />
+      )}
     </div>
   )
 }
 
-function applyFilters(tasks: Task[], filters: TaskFiltersState): Task[] {
+function applyFilters(tasks: ApiTask[], filters: TaskFiltersState): ApiTask[] {
   return tasks
-    .filter((t) => t.status === "open")
     .filter((t) => {
       if (!filters.query) return true
       const q = filters.query.toLowerCase()
       return (
         t.title.toLowerCase().includes(q) ||
         t.description.toLowerCase().includes(q) ||
-        t.location.toLowerCase().includes(q)
+        (t.locationText ?? "").toLowerCase().includes(q)
       )
     })
     .filter((t) =>
-      filters.category === "all" ? true : t.category === filters.category
+      filters.category === "all"
+        ? true
+        : t.categoryName.toLowerCase() === filters.category.toLowerCase()
     )
     .filter((t) =>
       filters.compensation === "all"
         ? true
-        : t.compensation.type === filters.compensation
+        : t.compensationType.toLowerCase() === filters.compensation.toLowerCase()
     )
 }

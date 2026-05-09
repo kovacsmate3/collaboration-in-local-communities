@@ -1,12 +1,15 @@
 import {
   APP_AUTH_ROUTES,
   APP_HOME_ROUTES,
+  AUTH_API_PATHS,
   PROTECTED_ROUTE_PREFIXES,
 } from "@/lib/auth/constants"
 import { getJwtRoles } from "@/lib/auth/jwt"
 import type { LoginInput, RegisterInput } from "@/lib/auth/types"
 
 export type RegistrationStep = "account" | "profile"
+
+export const EMAIL_NOT_VERIFIED_ERROR = "email_not_verified"
 
 export function getPostAuthRedirectPath(
   nextPath: string | null,
@@ -76,6 +79,19 @@ export function getLoginRedirectUrl(
   return loginUrl
 }
 
+export async function resendVerificationEmail(email: string): Promise<void> {
+  const response = await fetch(AUTH_API_PATHS.resendVerification, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+    cache: "no-store",
+  })
+
+  if (!response.ok) {
+    throw new Error("Failed to resend verification email.")
+  }
+}
+
 export async function authMutation(
   path: string,
   input: LoginInput | RegisterInput
@@ -116,6 +132,7 @@ async function readAuthError(response: Response): Promise<string> {
     return validationError ?? body.title ?? response.statusText
   }
 
+  if (response.status === 403) return EMAIL_NOT_VERIFIED_ERROR
   return response.status === 401
     ? "The email or password is incorrect."
     : response.statusText

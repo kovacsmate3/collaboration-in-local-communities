@@ -2,91 +2,213 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import type { User } from "@/lib/types"
+import { Separator } from "@/components/ui/separator"
+import {
+  useUpdateProfile,
+  useUpdatePrivacySettings,
+  type ApiOwnProfile,
+  type ApiPrivacySettings,
+} from "@/lib/api/profiles"
 
 interface ProfileEditFormProps {
-  user: User
+  profile: ApiOwnProfile
 }
 
-/**
- * Editable profile form (US-18 privacy partial: visibility toggles per
- * field will be added in a follow-up - they live alongside each input
- * once we integrate them).
- *
- * Submit handler is a stub: replace with a server action / mutation.
- */
-export function ProfileEditForm({ user }: ProfileEditFormProps) {
+export function ProfileEditForm({ profile }: ProfileEditFormProps) {
   const router = useRouter()
+  const { mutateAsync: updateProfile } = useUpdateProfile()
+  const { mutateAsync: updatePrivacy } = useUpdatePrivacySettings()
+  const [isPending, setIsPending] = React.useState(false)
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const [form, setForm] = React.useState({
+    displayName: profile.displayName,
+    bio: profile.bio ?? "",
+    workplace: profile.workplace ?? "",
+    position: profile.position ?? "",
+    availability: profile.availability ?? "",
+    locationText: profile.locationText ?? "",
+  })
+
+  const [privacy, setPrivacy] = React.useState<ApiPrivacySettings>(
+    profile.privacySettings
+  )
+
+  function updateField(key: keyof typeof form, value: string) {
+    setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function togglePrivacy(key: keyof ApiPrivacySettings) {
+    setPrivacy((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    // TODO: submit profile update
-    router.push("/profile")
+    setIsPending(true)
+    try {
+      await Promise.all([
+        updateProfile({
+          displayName: form.displayName,
+          bio: form.bio || null,
+          workplace: form.workplace || null,
+          position: form.position || null,
+          availability: form.availability || null,
+          locationText: form.locationText || null,
+        }),
+        updatePrivacy(privacy),
+      ])
+      toast.success("Profile updated.")
+      router.push("/profile")
+    } catch {
+      toast.error("Could not save changes. Please try again.")
+    } finally {
+      setIsPending(false)
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="name" label="Full name" defaultValue={user.name} required />
-        <Field id="position" label="Role" defaultValue={user.position ?? ""} />
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="displayName">Full name</Label>
+          <Input
+            id="displayName"
+            required
+            value={form.displayName}
+            onChange={(e) => updateField("displayName", e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="position">Role</Label>
+          <Input
+            id="position"
+            value={form.position}
+            onChange={(e) => updateField("position", e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          id="workplace"
-          label="Workplace / school"
-          defaultValue={user.workplace ?? ""}
-        />
-        <Field
-          id="location"
-          label="Location"
-          defaultValue={user.location ?? ""}
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="workplace">Workplace / school</Label>
+          <Input
+            id="workplace"
+            value={form.workplace}
+            onChange={(e) => updateField("workplace", e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="locationText">Location</Label>
+          <Input
+            id="locationText"
+            placeholder="City, neighbourhood"
+            value={form.locationText}
+            onChange={(e) => updateField("locationText", e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="availability">Availability</Label>
+        <Input
+          id="availability"
+          placeholder="e.g. Weekends, evenings after 6 PM"
+          value={form.availability}
+          onChange={(e) => updateField("availability", e.target.value)}
         />
       </div>
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="bio">Bio</Label>
-        <Textarea id="bio" rows={4} defaultValue={user.bio ?? ""} />
+        <Textarea
+          id="bio"
+          rows={4}
+          value={form.bio}
+          onChange={(e) => updateField("bio", e.target.value)}
+        />
       </div>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="skills">Skills</Label>
-        <Input
-          id="skills"
-          defaultValue={user.skills.join(", ")}
-          placeholder="Comma-separated"
-        />
+      <Separator />
+
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium">Privacy</p>
+        <p className="text-xs text-muted-foreground">
+          Control which fields are visible on your public profile.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PrivacyToggle
+            id="showWorkplace"
+            label="Show workplace"
+            checked={privacy.showWorkplace}
+            onChange={() => togglePrivacy("showWorkplace")}
+          />
+          <PrivacyToggle
+            id="showPosition"
+            label="Show role"
+            checked={privacy.showPosition}
+            onChange={() => togglePrivacy("showPosition")}
+          />
+          <PrivacyToggle
+            id="showLocation"
+            label="Show location"
+            checked={privacy.showLocation}
+            onChange={() => togglePrivacy("showLocation")}
+          />
+          <PrivacyToggle
+            id="showAvailability"
+            label="Show availability"
+            checked={privacy.showAvailability}
+            onChange={() => togglePrivacy("showAvailability")}
+          />
+        </div>
       </div>
 
       <div className="flex justify-end gap-2">
         <Button
           type="button"
           variant="ghost"
+          disabled={isPending}
           onClick={() => router.push("/profile")}
         >
           Cancel
         </Button>
-        <Button type="submit">Save changes</Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Saving…" : "Save changes"}
+        </Button>
       </div>
     </form>
   )
 }
 
-interface FieldProps extends React.ComponentProps<typeof Input> {
+function PrivacyToggle({
+  id,
+  label,
+  checked,
+  onChange,
+}: {
   id: string
   label: string
-}
-
-function Field({ id, label, ...rest }: FieldProps) {
+  checked: boolean
+  onChange: () => void
+}) {
   return (
-    <div className="flex flex-col gap-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} {...rest} />
-    </div>
+    <label
+      htmlFor={id}
+      className="flex cursor-pointer items-center justify-between rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
+    >
+      <span>{label}</span>
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="size-4 rounded border-input accent-primary"
+      />
+    </label>
   )
 }

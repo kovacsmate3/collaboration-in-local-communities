@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -20,8 +19,8 @@ import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES, APP_LEGAL_ROUTES } from "@/lib/auth/constants"
 import {
   getAuthErrorMessage,
-  getHomePathForRole,
   getRegisterSubmitLabel,
+  resendVerificationEmail,
   toOptionalString,
   type RegistrationStep,
 } from "@/lib/auth/functions"
@@ -50,10 +49,12 @@ const INITIAL_FORM: RegisterFormState = {
 
 export function RegisterForm() {
   const { register } = useAuth()
-  const router = useRouter()
   const [step, setStep] = React.useState<RegistrationStep>("account")
   const [form, setForm] = React.useState<RegisterFormState>(INITIAL_FORM)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [registeredEmail, setRegisteredEmail] = React.useState<string | null>(
+    null
+  )
 
   function update<K extends keyof RegisterFormState>(
     key: K,
@@ -73,7 +74,7 @@ export function RegisterForm() {
     setIsSubmitting(true)
 
     try {
-      const user = await register({
+      await register({
         email: form.email,
         password: form.password,
         acceptTerms: form.acceptTerms,
@@ -84,14 +85,25 @@ export function RegisterForm() {
         bio: toOptionalString(form.bio),
       })
 
-      toast.success("Account created successfully")
-      router.replace(getHomePathForRole(user.role))
-      router.refresh()
+      setRegisteredEmail(form.email)
     } catch (error) {
       toast.error(getAuthErrorMessage(error, "Unable to create account."))
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (registeredEmail) {
+    return (
+      <CheckEmailCard
+        email={registeredEmail}
+        onEmailChange={() => {
+          setRegisteredEmail(null)
+          setStep("account")
+          setForm(INITIAL_FORM)
+        }}
+      />
+    )
   }
 
   return (
@@ -144,6 +156,66 @@ export function RegisterForm() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function CheckEmailCard({
+  email,
+  onEmailChange,
+}: {
+  email: string
+  onEmailChange: () => void
+}) {
+  const [isResending, setIsResending] = React.useState(false)
+
+  async function handleResend() {
+    setIsResending(true)
+    try {
+      await resendVerificationEmail(email)
+      toast.success("Verification email sent — check your inbox.")
+    } catch {
+      toast.error("Could not resend the email. Please try again.")
+    } finally {
+      setIsResending(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl">Check your email</CardTitle>
+        <CardDescription>
+          We sent a verification link to{" "}
+          <span className="font-medium text-foreground">{email}</span>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4">
+        <p className="text-center text-sm text-muted-foreground">
+          Click the link in the email to activate your account. The link
+          expires in 24 hours.
+        </p>
+        <Button
+          variant="outline"
+          disabled={isResending}
+          onClick={handleResend}
+          className="w-full"
+        >
+          {isResending ? "Sending..." : "Resend email"}
+        </Button>
+        <Button variant="ghost" onClick={onEmailChange} className="w-full">
+          Use a different email
+        </Button>
+        <p className="text-center text-sm text-muted-foreground">
+          Already verified?{" "}
+          <Link
+            href={APP_AUTH_ROUTES.login}
+            className="font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            Sign in
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
   )
 }
 
