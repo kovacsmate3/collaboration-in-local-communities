@@ -8,6 +8,8 @@ public sealed class TaskConversation
     public Guid HelperProfileId { get; set; }
     public string CosmosConversationId { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
+    public string? LastMessageContent { get; set; }
+    public DateTimeOffset? LastMessageAt { get; set; }
 
     public CommunityTask Task { get; set; } = null!;
     public UserProfile SeekerProfile { get; set; } = null!;

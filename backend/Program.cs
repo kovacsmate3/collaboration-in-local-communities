@@ -2,6 +2,7 @@ using Azure.Core;
 using Azure.Identity;
 using Backend.Application.Categories;
 using Backend.Features.Auth;
+using Backend.Features.Conversations;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
@@ -115,6 +116,21 @@ builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
 
 builder.Services.AddApplicationIdentity();
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        var frontendUrl = builder.Configuration["FRONTEND_URL"] ?? "http://localhost:3000";
+        policy
+            .WithOrigins(frontendUrl)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<CosmosMessageService>();
 builder.Services.AddControllers();
 builder.Services.AddOutputCache();
 builder.Services.AddApplicationAuthentication(builder.Configuration);
@@ -156,8 +172,35 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "CosmosDB connection check failed");
-        throw;
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "CosmosDB connection check failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
+    }
+}
+
+{
+    var cosmosMessages = app.Services.GetRequiredService<CosmosMessageService>();
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await cosmosMessages.InitializeAsync();
+        logger.LogInformation("CosmosDB messages container ready.");
+    }
+    catch (Exception ex)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "CosmosDB messages container initialization failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
     }
 }
 
@@ -180,6 +223,7 @@ if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAIN
 }
 
 app.UseRouting();
+app.UseCors();
 app.UseOutputCache();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -188,6 +232,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("Health");
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
 

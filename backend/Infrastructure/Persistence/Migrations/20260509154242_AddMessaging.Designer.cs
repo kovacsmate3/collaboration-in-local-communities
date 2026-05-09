@@ -3,6 +3,7 @@ using System;
 using Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260509154242_AddMessaging")]
+    partial class AddMessaging
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -456,6 +459,45 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_tasks_status", "status IN ('Open', 'InProgress', 'Completed', 'Cancelled')");
                         });
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<Guid>("SenderProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sender_profile_id");
+
+                    b.Property<DateTimeOffset>("SentAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sent_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_messages");
+
+                    b.HasIndex("SenderProfileId")
+                        .HasDatabaseName("ix_messages_sender_profile_id");
+
+                    b.HasIndex("ConversationId", "SentAt")
+                        .HasDatabaseName("ix_messages_conversation_sent_at");
+
+                    b.ToTable("messages", "data");
                 });
 
             modelBuilder.Entity("Backend.Domain.Entities.PointsLedgerEntry", b =>
@@ -1032,15 +1074,6 @@ namespace Backend.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("HelperProfileId")
                         .HasColumnType("uuid")
                         .HasColumnName("helper_profile_id");
-
-                    b.Property<DateTimeOffset?>("LastMessageAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_message_at");
-
-                    b.Property<string>("LastMessageContent")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("last_message_content");
 
                     b.Property<Guid>("SeekerProfileId")
                         .HasColumnType("uuid")
@@ -1789,6 +1822,27 @@ namespace Backend.Infrastructure.Persistence.Migrations
                     b.Navigation("SeekerProfile");
                 });
 
+            modelBuilder.Entity("Backend.Domain.Entities.Message", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.TaskConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_messages_task_conversations_conversation_id");
+
+                    b.HasOne("Backend.Domain.Entities.UserProfile", "SenderProfile")
+                        .WithMany()
+                        .HasForeignKey("SenderProfileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_messages_profiles_sender_profile_id");
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("SenderProfile");
+                });
+
             modelBuilder.Entity("Backend.Domain.Entities.PointsLedgerEntry", b =>
                 {
                     b.HasOne("Backend.Domain.Entities.UserProfile", "Profile")
@@ -2085,6 +2139,11 @@ namespace Backend.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Backend.Domain.Entities.Skill", b =>
                 {
                     b.Navigation("ProfileSkills");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.TaskConversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("Backend.Domain.Entities.TermsVersion", b =>

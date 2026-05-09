@@ -196,6 +196,9 @@ internal sealed class TaskConversationConfiguration : IEntityTypeConfiguration<T
         builder.Property(conversation => conversation.CosmosConversationId).HasMaxLength(200).IsRequired();
         builder.HasCreatedAt(conversation => conversation.CreatedAt);
 
+        builder.Property(conversation => conversation.LastMessageContent).HasMaxLength(500);
+        builder.Property(conversation => conversation.LastMessageAt);
+
         builder.HasOne(conversation => conversation.Task)
             .WithOne(task => task.Conversation)
             .HasForeignKey<TaskConversation>(conversation => conversation.TaskId)
@@ -211,9 +214,9 @@ internal sealed class TaskConversationConfiguration : IEntityTypeConfiguration<T
             .HasForeignKey(conversation => conversation.HelperProfileId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(conversation => conversation.TaskId)
+        builder.HasIndex(conversation => new { conversation.TaskId, conversation.HelperProfileId })
             .IsUnique()
-            .HasDatabaseName("ux_task_conversations_task_id");
+            .HasDatabaseName("ux_task_conversations_task_helper");
 
         builder.HasIndex(conversation => conversation.CosmosConversationId)
             .IsUnique()

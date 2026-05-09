@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { notFound } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -20,6 +19,7 @@ import { formatRelativeTime } from "@/lib/format"
 import { useAuth } from "@/lib/auth-context"
 import { useTask, useUpdateTask } from "@/lib/api/tasks"
 import type { ApiTask } from "@/lib/api/tasks"
+import { useStartConversation } from "@/lib/api/conversations"
 
 interface TaskDetailPageProps {
   params: Promise<{ id: string }>
@@ -93,7 +93,9 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
 function TaskActions({ task }: { task: ApiTask }) {
   const { user } = useAuth()
   const router = useRouter()
-  const { mutate: updateTask, isPending } = useUpdateTask(task.id)
+  const { mutate: updateTask, isPending: isCancelling } = useUpdateTask(task.id)
+  const { mutate: startConversation, isPending: isStarting } =
+    useStartConversation()
   const isSeeker = task.seekerProfileId === user?.profileId
   const status = task.status.toLowerCase().replace(/([a-z])([A-Z])/g, "$1_$2")
 
@@ -110,19 +112,28 @@ function TaskActions({ task }: { task: ApiTask }) {
     )
   }
 
+  function handleMessage() {
+    startConversation(task.id, {
+      onSuccess: (c) => router.push(`/messages/${c.id}`),
+      onError: () => toast.error("Could not open chat."),
+    })
+  }
+
   if (status === "open") {
     return (
       <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline">
-          <Link href="/messages">Message seeker</Link>
-        </Button>
-        {isSeeker ? (
+        {!isSeeker ? (
           <Button
-            variant="ghost"
-            disabled={isPending}
-            onClick={handleCancel}
+            variant="outline"
+            disabled={isStarting}
+            onClick={handleMessage}
           >
-            {isPending ? "Cancelling…" : "Cancel task"}
+            {isStarting ? "Opening…" : "Message seeker"}
+          </Button>
+        ) : null}
+        {isSeeker ? (
+          <Button variant="ghost" disabled={isCancelling} onClick={handleCancel}>
+            {isCancelling ? "Cancelling…" : "Cancel task"}
           </Button>
         ) : null}
       </div>
@@ -132,16 +143,12 @@ function TaskActions({ task }: { task: ApiTask }) {
   if (status === "in_progress") {
     return (
       <div className="flex flex-wrap gap-2">
-        <Button asChild>
-          <Link href="/messages">Open chat</Link>
+        <Button disabled={isStarting} onClick={handleMessage}>
+          {isStarting ? "Opening…" : "Open chat"}
         </Button>
         {isSeeker ? (
-          <Button
-            variant="ghost"
-            disabled={isPending}
-            onClick={handleCancel}
-          >
-            {isPending ? "Cancelling…" : "Cancel task"}
+          <Button variant="ghost" disabled={isCancelling} onClick={handleCancel}>
+            {isCancelling ? "Cancelling…" : "Cancel task"}
           </Button>
         ) : null}
       </div>
