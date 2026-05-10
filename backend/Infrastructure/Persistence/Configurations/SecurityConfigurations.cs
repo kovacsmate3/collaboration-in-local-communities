@@ -11,9 +11,9 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         builder.ToTable(TableNames.RefreshTokens, SchemaNames.Security);
 
         builder.HasGeneratedUuid(token => token.Id);
-        builder.Property(token => token.TokenHash).IsRequired();
+        builder.Property(token => token.TokenHash).HasMaxLength(64).IsRequired();
         builder.Property(token => token.ExpiresAt).IsRequired();
-        builder.Property(token => token.ReplacedByTokenHash);
+        builder.Property(token => token.ReplacedByTokenHash).HasMaxLength(64);
         builder.HasCreatedAt(token => token.CreatedAt);
         builder.Property(token => token.CreatedByIp).HasMaxLength(64);
         builder.Property(token => token.RevokedByIp).HasMaxLength(64);

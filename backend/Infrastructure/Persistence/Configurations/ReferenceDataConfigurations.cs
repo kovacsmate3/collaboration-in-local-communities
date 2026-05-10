@@ -147,7 +147,7 @@ internal sealed class TermsVersionConfiguration : IEntityTypeConfiguration<Terms
         builder.HasGeneratedUuid(terms => terms.Id);
         builder.Property(terms => terms.Version).HasMaxLength(32).IsRequired();
         builder.Property(terms => terms.Title).HasMaxLength(200).IsRequired();
-        builder.Property(terms => terms.ContentUrl);
+        builder.Property(terms => terms.ContentUrl).HasMaxLength(2048);
         builder.Property(terms => terms.IsActive).HasDefaultValue(true);
         builder.Property(terms => terms.EffectiveFrom).IsRequired();
         builder.HasCreatedAt(terms => terms.CreatedAt);

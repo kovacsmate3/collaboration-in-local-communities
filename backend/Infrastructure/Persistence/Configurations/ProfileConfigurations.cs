@@ -17,7 +17,7 @@ internal sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserPr
         builder.Property(profile => profile.Workplace).HasMaxLength(200);
         builder.Property(profile => profile.Position).HasMaxLength(200);
         builder.Property(profile => profile.Availability).HasMaxLength(500);
-        builder.Property(profile => profile.PhotoUrl);
+        builder.Property(profile => profile.PhotoUrl).HasMaxLength(2048);
         builder.Property(profile => profile.Location).HasColumnType("geography(Point,4326)");
         builder.Property(profile => profile.LocationText).HasMaxLength(300);
         builder.Property(profile => profile.IsProfileCompleted).HasDefaultValue(false);
