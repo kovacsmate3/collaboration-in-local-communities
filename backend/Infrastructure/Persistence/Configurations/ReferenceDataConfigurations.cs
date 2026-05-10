@@ -1,4 +1,5 @@
 using Backend.Domain.Entities;
+using Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -64,13 +65,24 @@ internal sealed class SkillConfiguration : IEntityTypeConfiguration<Skill>
 {
     public void Configure(EntityTypeBuilder<Skill> builder)
     {
-        builder.ToTable(TableNames.Skills, SchemaNames.Config);
+        builder.ToTable(
+            TableNames.Skills,
+            SchemaNames.Config,
+            table => table.HasCheckConstraint(
+                "ck_skills_status",
+                ConfigurationHelpers.EnumValuesCheck<SkillStatus>("status")));
 
         builder.HasGeneratedUuid(skill => skill.Id);
         builder.Property(skill => skill.Code).HasMaxLength(64).IsRequired();
         builder.Property(skill => skill.Name).HasMaxLength(120).IsRequired();
         builder.Property(skill => skill.Description).HasMaxLength(500);
         builder.Property(skill => skill.IsActive).HasDefaultValue(true);
+        builder.Property(skill => skill.Status)
+            .HasConversion<string>()
+            .HasMaxLength(16)
+            .HasDefaultValue(SkillStatus.Pending)
+            .IsRequired();
+        builder.Property(skill => skill.ApprovedAt);
         builder.HasCreatedAt(skill => skill.CreatedAt);
         builder.HasUpdatedAt(skill => skill.UpdatedAt);
 
@@ -83,6 +95,9 @@ internal sealed class SkillConfiguration : IEntityTypeConfiguration<Skill>
 
         builder.HasIndex(skill => skill.IsActive)
             .HasDatabaseName("ix_skills_is_active");
+
+        builder.HasIndex(skill => skill.Status)
+            .HasDatabaseName("ix_skills_status");
 
         builder.HasData(
             SeedSkill("00000000-0000-0000-0000-000000000201", "furniture_assembly", "Furniture Assembly"),
@@ -115,6 +130,8 @@ internal sealed class SkillConfiguration : IEntityTypeConfiguration<Skill>
             Code = code,
             Name = name,
             IsActive = true,
+            Status = SkillStatus.Approved,
+            ApprovedAt = ConfigurationHelpers.SeedTimestamp,
             CreatedAt = ConfigurationHelpers.SeedTimestamp,
             UpdatedAt = ConfigurationHelpers.SeedTimestamp
         };
