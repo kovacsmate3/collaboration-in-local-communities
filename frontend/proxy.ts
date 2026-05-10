@@ -16,7 +16,7 @@ import {
 } from "@/lib/auth/functions"
 import { getJwtRoles, isJwtFresh } from "@/lib/auth/jwt"
 
-export async function middleware(request: NextRequest): Promise<NextResponse> {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname
   const isAuthRoute = isAuthPath(pathname)
   const isProtectedRoute = isProtectedPath(pathname)
