@@ -4,6 +4,7 @@ using Backend.Domain.Entities;
 using Backend.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using NetTopologySuite.Geometries;
 
 namespace Backend.Features.Auth;
 
@@ -131,5 +132,36 @@ public sealed partial class AuthController
         }
 
         return ValidationProblem(ModelState);
+    }
+
+    private bool TryBuildLocation(double? latitude, double? longitude, out Point? location)
+    {
+        location = null;
+
+        if (latitude.HasValue != longitude.HasValue)
+        {
+            ModelState.AddModelError("Location", "Both Latitude and Longitude must be provided together.");
+            return false;
+        }
+
+        if (!latitude.HasValue || !longitude.HasValue)
+        {
+            return true;
+        }
+
+        if (!double.IsFinite(latitude.Value) || latitude.Value is < -90 or > 90)
+        {
+            ModelState.AddModelError(nameof(latitude), "Latitude must be between -90 and 90.");
+            return false;
+        }
+
+        if (!double.IsFinite(longitude.Value) || longitude.Value is < -180 or > 180)
+        {
+            ModelState.AddModelError(nameof(longitude), "Longitude must be between -180 and 180.");
+            return false;
+        }
+
+        location = new Point(longitude.Value, latitude.Value) { SRID = 4326 };
+        return true;
     }
 }

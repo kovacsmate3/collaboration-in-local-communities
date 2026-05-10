@@ -32,6 +32,11 @@ public sealed partial class AuthController(
             return ValidationProblem(ModelState);
         }
 
+        if (!TryBuildLocation(request.Latitude, request.Longitude, out var location))
+        {
+            return ValidationProblem(ModelState);
+        }
+
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         var user = new ApplicationUser
@@ -60,6 +65,7 @@ public sealed partial class AuthController(
             DisplayName = request.DisplayName.Trim(),
             Workplace = StringUtilities.Normalize(request.Workplace),
             Position = StringUtilities.Normalize(request.Position),
+            Location = location,
             LocationText = StringUtilities.Normalize(request.LocationText),
             Bio = StringUtilities.Normalize(request.Bio),
             IsProfileCompleted = true,

@@ -22,6 +22,7 @@ import {
   getAuthErrorMessage,
   getHomePathForRole,
   getRegisterSubmitLabel,
+  toOptionalNumber,
   toOptionalString,
   type RegistrationStep,
 } from "@/lib/auth/functions"
@@ -34,6 +35,8 @@ interface RegisterFormState {
   workplace: string
   position: string
   locationText: string
+  latitude: string
+  longitude: string
   bio: string
 }
 
@@ -45,6 +48,8 @@ const INITIAL_FORM: RegisterFormState = {
   workplace: "",
   position: "",
   locationText: "",
+  latitude: "",
+  longitude: "",
   bio: "",
 }
 
@@ -54,6 +59,7 @@ export function RegisterForm() {
   const [step, setStep] = React.useState<RegistrationStep>("account")
   const [form, setForm] = React.useState<RegisterFormState>(INITIAL_FORM)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [isLocating, setIsLocating] = React.useState(false)
 
   function update<K extends keyof RegisterFormState>(
     key: K,
@@ -62,11 +68,53 @@ export function RegisterForm() {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      toast.error("Your browser does not support location lookup.")
+      return
+    }
+
+    setIsLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setForm((current) => ({
+          ...current,
+          latitude: position.coords.latitude.toFixed(6),
+          longitude: position.coords.longitude.toFixed(6),
+        }))
+        setIsLocating(false)
+      },
+      () => {
+        toast.error("Unable to read your current location.")
+        setIsLocating(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    )
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (step === "account") {
       setStep("profile")
+      return
+    }
+
+    const latitude = toOptionalNumber(form.latitude)
+    const longitude = toOptionalNumber(form.longitude)
+
+    if ((latitude === undefined) !== (longitude === undefined)) {
+      toast.error("Latitude and longitude must be provided together.")
+      return
+    }
+
+    if (latitude !== undefined && (latitude < -90 || latitude > 90)) {
+      toast.error("Latitude must be between -90 and 90.")
+      return
+    }
+
+    if (longitude !== undefined && (longitude < -180 || longitude > 180)) {
+      toast.error("Longitude must be between -180 and 180.")
       return
     }
 
@@ -81,6 +129,8 @@ export function RegisterForm() {
         workplace: toOptionalString(form.workplace),
         position: toOptionalString(form.position),
         locationText: toOptionalString(form.locationText),
+        latitude,
+        longitude,
         bio: toOptionalString(form.bio),
       })
 
@@ -112,7 +162,12 @@ export function RegisterForm() {
             {step === "account" ? (
               <AccountStep form={form} update={update} />
             ) : (
-              <ProfileStep form={form} update={update} />
+              <ProfileStep
+                form={form}
+                update={update}
+                isLocating={isLocating}
+                onUseCurrentLocation={useCurrentLocation}
+              />
             )}
 
             <div className="grid gap-2">
@@ -214,12 +269,16 @@ function AccountStep({
 function ProfileStep({
   form,
   update,
+  isLocating,
+  onUseCurrentLocation,
 }: {
   form: RegisterFormState
   update: <K extends keyof RegisterFormState>(
     key: K,
     value: RegisterFormState[K]
   ) => void
+  isLocating: boolean
+  onUseCurrentLocation: () => void
 }) {
   return (
     <div className="grid gap-4">
@@ -264,6 +323,47 @@ function ProfileStep({
           value={form.locationText}
           onChange={(event) => update("locationText", event.target.value)}
         />
+      </div>
+
+      <div className="grid gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="latitude">Coordinates</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isLocating}
+            onClick={onUseCurrentLocation}
+          >
+            {isLocating ? "Locating..." : "Use current location"}
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input
+            id="latitude"
+            name="latitude"
+            type="number"
+            inputMode="decimal"
+            min="-90"
+            max="90"
+            step="0.000001"
+            placeholder="Latitude"
+            value={form.latitude}
+            onChange={(event) => update("latitude", event.target.value)}
+          />
+          <Input
+            id="longitude"
+            name="longitude"
+            type="number"
+            inputMode="decimal"
+            min="-180"
+            max="180"
+            step="0.000001"
+            placeholder="Longitude"
+            value={form.longitude}
+            onChange={(event) => update("longitude", event.target.value)}
+          />
+        </div>
       </div>
 
       <div className="grid gap-3">
