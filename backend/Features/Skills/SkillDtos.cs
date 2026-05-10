@@ -1,5 +1,6 @@
-using Backend.Domain.Entities;
 using System.ComponentModel.DataAnnotations;
+
+using Backend.Domain.Entities;
 
 namespace Backend.Features.Skills;
 
