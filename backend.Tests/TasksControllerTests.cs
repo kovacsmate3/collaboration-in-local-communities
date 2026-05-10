@@ -1,4 +1,3 @@
-using Backend.Domain.Entities;
 using Backend.Features.Tasks;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
