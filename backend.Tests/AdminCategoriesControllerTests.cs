@@ -46,13 +46,12 @@ public sealed class AdminCategoriesControllerTests
     }
 
     [Fact]
-    public async Task DeleteAsync_HandlesDbUpdateException_WhenCategoryIsReferenced()
+    public async Task DeleteAsync_SuccessfullyDeletesUnreferencedCategory()
     {
-        // Note: This test verifies the controller's exception handling logic.
-        // EF Core InMemory doesn't fully replicate Postgres FK constraint behavior
-        // (it throws InvalidOperationException from the change tracker instead of
-        // DbUpdateException from SaveChanges). The actual FK conflict behavior
-        // is tested in integration tests against a real Postgres database.
+        // Note: The FK conflict scenario (DELETE returning 409 when a category
+        // is referenced by tasks) cannot be reliably tested with EF Core InMemory
+        // because it doesn't replicate Postgres DeleteBehavior.Restrict behavior.
+        // That scenario should be covered by integration tests against real Postgres.
 
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
@@ -60,10 +59,10 @@ public sealed class AdminCategoriesControllerTests
         var category = new Category
         {
             Id = Guid.NewGuid(),
-            Code = "test-category",
-            Name = "Test Category",
+            Code = "test-category-2",
+            Name = "Test Category 2",
             Icon = Category.DefaultIcon,
-            SortOrder = 1,
+            SortOrder = 2,
             IsActive = true,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
@@ -74,12 +73,11 @@ public sealed class AdminCategoriesControllerTests
 
         var controller = CreateController(db);
 
-        // Verify the controller can successfully delete an unreferenced category
         var result = await controller.DeleteAsync(category.Id, cancellationToken);
         Assert.IsType<NoContentResult>(result);
 
-        // The FK conflict scenario (409 response) is covered by integration tests
-        // against real Postgres, where DeleteBehavior.Restrict is properly enforced.
+        var deleted = await db.Categories.FindAsync([category.Id], cancellationToken);
+        Assert.Null(deleted);
     }
 
     [Fact]
