@@ -1,8 +1,11 @@
+using JetBrains.Annotations;
+
 namespace Backend.Features.Profiles;
 
 /// <summary>
 /// Request DTO for updating the authenticated user's own profile.
 /// </summary>
+[PublicAPI]
 public sealed record UpdateOwnProfileRequest
 {
     public required string DisplayName { get; init; }

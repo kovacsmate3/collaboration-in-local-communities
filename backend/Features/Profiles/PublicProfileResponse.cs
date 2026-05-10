@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Profiles;
 
@@ -6,6 +7,7 @@ namespace Backend.Features.Profiles;
 /// Public profile response that respects privacy settings.
 /// Fields that are hidden by privacy settings are omitted from the JSON response.
 /// </summary>
+[PublicAPI]
 public sealed record PublicProfileResponse
 {
     public required Guid Id { get; init; }

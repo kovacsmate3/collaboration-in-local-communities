@@ -1,17 +1,21 @@
 using System.ComponentModel.DataAnnotations;
 using Backend.Domain.Entities;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Tasks.Applications;
 
+[PublicAPI]
 public sealed record ApplyToTaskRequest(
     [StringLength(1000)]
     string? Message);
 
+[PublicAPI]
 public sealed record PatchApplicationRequest(
     [Required]
     [StringLength(16)]
     string Action);
 
+[PublicAPI]
 public sealed record TaskApplicationResponse(
     Guid Id,
     Guid TaskId,

@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Tasks;
 
+[PublicAPI]
 public sealed record UpdateTaskRequest(
     [StringLength(160)]
     string? Title,
