@@ -1,3 +1,4 @@
+using System.Net;
 using Azure.Core;
 using Azure.Identity;
 using Backend.Application.Categories;
@@ -6,6 +7,7 @@ using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
 using Backend.Infrastructure.Persistence.Seeding;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -134,6 +136,21 @@ builder.Services.AddApplicationIdentity();
 
 builder.Services.AddControllers();
 builder.Services.AddOutputCache();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = builder.Configuration.GetValue<int?>("ForwardedHeaders:ForwardLimit") ?? 2;
+
+    foreach (var proxy in GetConfiguredIpAddresses(builder.Configuration, "ForwardedHeaders:KnownProxies"))
+    {
+        options.KnownProxies.Add(proxy);
+    }
+
+    foreach (var network in GetConfiguredIpNetworks(builder.Configuration, "ForwardedHeaders:KnownNetworks"))
+    {
+        options.KnownIPNetworks.Add(network);
+    }
+});
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
@@ -196,6 +213,9 @@ if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAIN
     app.UseHttpsRedirection();
 }
 
+app.Use(NormalizeRealIpHeaderAsync);
+app.UseForwardedHeaders();
+
 app.UseRouting();
 app.UseOutputCache();
 app.UseAuthentication();
@@ -229,4 +249,45 @@ static string GetRequiredEnvironmentVariable(string name)
 {
     return Environment.GetEnvironmentVariable(name)
         ?? throw new InvalidOperationException($"Missing required environment variable: {name}.");
+}
+
+static Task NormalizeRealIpHeaderAsync(HttpContext context, RequestDelegate next)
+{
+    if (!context.Request.Headers.ContainsKey(ForwardedHeadersDefaults.XForwardedForHeaderName)
+        && context.Request.Headers.TryGetValue("X-Real-IP", out var realIp))
+    {
+        context.Request.Headers[ForwardedHeadersDefaults.XForwardedForHeaderName] = realIp;
+    }
+
+    return next(context);
+}
+
+static IEnumerable<IPAddress> GetConfiguredIpAddresses(IConfiguration configuration, string sectionName)
+{
+    foreach (var value in configuration.GetSection(sectionName).Get<string[]>() ?? [])
+    {
+        if (IPAddress.TryParse(value, out var address))
+        {
+            yield return address;
+            continue;
+        }
+
+        throw new InvalidOperationException(
+            $"Configuration value '{sectionName}' contains invalid IP address '{value}'.");
+    }
+}
+
+static IEnumerable<System.Net.IPNetwork> GetConfiguredIpNetworks(IConfiguration configuration, string sectionName)
+{
+    foreach (var value in configuration.GetSection(sectionName).Get<string[]>() ?? [])
+    {
+        if (System.Net.IPNetwork.TryParse(value, out var network))
+        {
+            yield return network;
+            continue;
+        }
+
+        throw new InvalidOperationException(
+            $"Configuration value '{sectionName}' contains invalid CIDR network '{value}'.");
+    }
 }
