@@ -21,6 +21,8 @@ export interface RegisterInput extends LoginInput {
   workplace?: string
   position?: string
   locationText?: string
+  latitude?: number
+  longitude?: number
   bio?: string
   acceptTerms: boolean
 }

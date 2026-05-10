@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import { LocationInput } from "@/components/shared/location-input"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -25,6 +26,7 @@ import {
   toOptionalString,
   type RegistrationStep,
 } from "@/lib/auth/functions"
+import type { LocationValue } from "@/lib/location"
 
 interface RegisterFormState {
   email: string
@@ -33,7 +35,7 @@ interface RegisterFormState {
   displayName: string
   workplace: string
   position: string
-  locationText: string
+  location: LocationValue
   bio: string
 }
 
@@ -44,7 +46,7 @@ const INITIAL_FORM: RegisterFormState = {
   displayName: "",
   workplace: "",
   position: "",
-  locationText: "",
+  location: { locationText: "" },
   bio: "",
 }
 
@@ -70,6 +72,23 @@ export function RegisterForm() {
       return
     }
 
+    const { latitude, longitude } = form.location
+
+    if ((latitude === undefined) !== (longitude === undefined)) {
+      toast.error("Latitude and longitude must be provided together.")
+      return
+    }
+
+    if (latitude !== undefined && (latitude < -90 || latitude > 90)) {
+      toast.error("Latitude must be between -90 and 90.")
+      return
+    }
+
+    if (longitude !== undefined && (longitude < -180 || longitude > 180)) {
+      toast.error("Longitude must be between -180 and 180.")
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -80,7 +99,9 @@ export function RegisterForm() {
         displayName: form.displayName,
         workplace: toOptionalString(form.workplace),
         position: toOptionalString(form.position),
-        locationText: toOptionalString(form.locationText),
+        locationText: toOptionalString(form.location.locationText),
+        latitude,
+        longitude,
         bio: toOptionalString(form.bio),
       })
 
@@ -256,13 +277,12 @@ function ProfileStep({
       </div>
 
       <div className="grid gap-3">
-        <Label htmlFor="locationText">Location</Label>
-        <Input
-          id="locationText"
-          name="locationText"
-          placeholder="City, neighbourhood"
-          value={form.locationText}
-          onChange={(event) => update("locationText", event.target.value)}
+        <LocationInput
+          id="location"
+          label="Location"
+          value={form.location}
+          onChange={(location) => update("location", location)}
+          placeholder="City, neighbourhood, or street address"
         />
       </div>
 

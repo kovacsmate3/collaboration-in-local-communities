@@ -9,6 +9,8 @@ public sealed record RegisterRequest(
     [MaxLength(200)] string? Workplace,
     [MaxLength(200)] string? Position,
     [MaxLength(300)] string? LocationText,
+    double? Latitude,
+    double? Longitude,
     [MaxLength(1000)] string? Bio,
     bool AcceptTerms,
     IReadOnlyList<Guid>? SkillIds);

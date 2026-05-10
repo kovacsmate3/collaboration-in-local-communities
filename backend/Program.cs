@@ -113,6 +113,17 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 builder.Services.AddScoped<IListCategoriesQuery, EfListCategoriesQuery>();
 builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
 builder.Services.AddScoped<RefreshTokenPruner>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient("Nominatim", client =>
+{
+    var baseUrl = builder.Configuration["Nominatim:BaseUrl"]?.Trim()
+        ?? "https://nominatim.openstreetmap.org";
+    var userAgent = builder.Configuration["Nominatim:UserAgent"]?.Trim()
+        ?? "2gather-local-community-platform/1.0";
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+    client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+});
 builder.Services.AddOptions<RefreshTokenPruningOptions>()
     .Bind(builder.Configuration.GetSection(RefreshTokenPruningOptions.SectionName))
     .ValidateDataAnnotations()

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 
+import { LocationInput } from "@/components/shared/location-input"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,13 +20,14 @@ import {
   TASK_CATEGORIES,
   TASK_CATEGORY_LIST,
 } from "@/lib/constants"
+import type { LocationValue } from "@/lib/location"
 import type { CompensationType, TaskCategory } from "@/lib/types"
 
 interface PostTaskFormState {
   title: string
   description: string
   category: TaskCategory | ""
-  location: string
+  location: LocationValue
   compensationType: CompensationType
   compensationAmount: string
   barterOffer: string
@@ -35,7 +37,7 @@ const INITIAL: PostTaskFormState = {
   title: "",
   description: "",
   category: "",
-  location: "",
+  location: { locationText: "" },
   compensationType: "voluntary",
   compensationAmount: "",
   barterOffer: "",
@@ -58,9 +60,16 @@ export function PostTaskForm() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const taskDraft = {
+      ...form,
+      locationText: form.location.locationText,
+      latitude: form.location.latitude,
+      longitude: form.location.longitude,
+    }
+
     // TODO: replace with real submission once the API exists.
     // eslint-disable-next-line no-console
-    console.log("Submit task:", form)
+    console.log("Submit task:", taskDraft)
   }
 
   return (
@@ -110,13 +119,13 @@ export function PostTaskForm() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="location">Location</Label>
-          <Input
+          <LocationInput
             id="location"
+            label="Location"
             required
-            placeholder="District, neighbourhood, or 'Online'"
+            placeholder="District, neighbourhood, or street address"
             value={form.location}
-            onChange={(e) => update("location", e.target.value)}
+            onChange={(location) => update("location", location)}
           />
         </div>
       </div>
