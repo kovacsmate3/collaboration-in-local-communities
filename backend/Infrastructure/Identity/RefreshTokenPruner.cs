@@ -8,25 +8,36 @@ public sealed class RefreshTokenPruner(
     AppDbContext db,
     ILogger<RefreshTokenPruner> logger)
 {
-    public static Expression<Func<RefreshToken, bool>> CreatePrunablePredicate(DateTimeOffset cutoff)
+    public static Expression<Func<RefreshToken, bool>> CreateExpiredPredicate(DateTimeOffset cutoff)
     {
-        return refreshToken =>
-            refreshToken.ExpiresAt <= cutoff
-            || (refreshToken.RevokedAt != null && refreshToken.RevokedAt <= cutoff);
+        return refreshToken => refreshToken.ExpiresAt <= cutoff;
+    }
+
+    public static Expression<Func<RefreshToken, bool>> CreateRevokedPredicate(DateTimeOffset cutoff)
+    {
+        return refreshToken => refreshToken.RevokedAt != null && refreshToken.RevokedAt <= cutoff;
     }
 
     public async Task<int> PruneAsync(DateTimeOffset cutoff, CancellationToken cancellationToken)
     {
-        var deletedRows = await db.RefreshTokens
-            .Where(CreatePrunablePredicate(cutoff))
+        var expiredRowsDeleted = await db.RefreshTokens
+            .Where(CreateExpiredPredicate(cutoff))
             .ExecuteDeleteAsync(cancellationToken);
+
+        var revokedRowsDeleted = await db.RefreshTokens
+            .Where(CreateRevokedPredicate(cutoff))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        var deletedRows = expiredRowsDeleted + revokedRowsDeleted;
 
         if (logger.IsEnabled(LogLevel.Information))
         {
             logger.LogInformation(
-                "Pruned {DeletedRows} refresh tokens at {PrunedAt}; deleted tokens expired or revoked on or before {Cutoff}.",
+                "Pruned {DeletedRows} refresh tokens at {PrunedAt}; deleted {ExpiredRowsDeleted} expired and {RevokedRowsDeleted} revoked tokens on or before {Cutoff}.",
                 deletedRows,
                 DateTimeOffset.UtcNow,
+                expiredRowsDeleted,
+                revokedRowsDeleted,
                 cutoff);
         }
 
