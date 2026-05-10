@@ -112,6 +112,12 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
 });
 builder.Services.AddScoped<IListCategoriesQuery, EfListCategoriesQuery>();
 builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
+builder.Services.AddScoped<RefreshTokenPruner>();
+builder.Services.AddOptions<RefreshTokenPruningOptions>()
+    .Bind(builder.Configuration.GetSection(RefreshTokenPruningOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddHostedService<RefreshTokenPruningBackgroundService>();
 
 builder.Services.AddApplicationIdentity();
 
