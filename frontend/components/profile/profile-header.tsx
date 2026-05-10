@@ -1,6 +1,7 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Briefcase01Icon,
+  Calendar03Icon,
   Location01Icon,
   ShieldUserIcon,
 } from "@hugeicons/core-free-icons"
@@ -54,6 +55,12 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
               <li className="flex items-center gap-1">
                 <HugeiconsIcon icon={Location01Icon} className="size-3.5" />
                 {user.location}
+              </li>
+            ) : null}
+            {user.availability ? (
+              <li className="flex items-center gap-1">
+                <HugeiconsIcon icon={Calendar03Icon} className="size-3.5" />
+                {user.availability}
               </li>
             ) : null}
           </ul>
