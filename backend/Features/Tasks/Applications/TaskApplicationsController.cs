@@ -132,6 +132,7 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
         }
 
         var task = await db.Tasks
+            .AsNoTracking()
             .FirstOrDefaultAsync(t => t.Id == taskId, cancellationToken);
 
         if (task is null)
@@ -174,13 +175,39 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
 
             var now = DateTimeOffset.UtcNow;
 
-            application.Status = TaskApplicationStatus.Accepted;
-            application.UpdatedAt = now;
+            var taskRowsUpdated = await db.Tasks
+                .Where(t => t.Id == taskId && t.Status == DomainTaskStatus.Open)
+                .ExecuteUpdateAsync(
+                    s => s
+                        .SetProperty(t => t.Status, DomainTaskStatus.InProgress)
+                        .SetProperty(t => t.AcceptedHelperProfileId, application.HelperProfileId)
+                        .SetProperty(t => t.AcceptedAt, now)
+                        .SetProperty(t => t.UpdatedAt, now),
+                    cancellationToken);
 
-            task.Status = DomainTaskStatus.InProgress;
-            task.AcceptedHelperProfileId = application.HelperProfileId;
-            task.AcceptedAt = now;
-            task.UpdatedAt = now;
+            if (taskRowsUpdated == 0)
+            {
+                return Problem(
+                    title: "Task is not open",
+                    detail: "The task was already accepted or is no longer open.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            var applicationRowsUpdated = await db.TaskApplications
+                .Where(a => a.Id == appId && a.TaskId == taskId && a.Status == TaskApplicationStatus.Pending)
+                .ExecuteUpdateAsync(
+                    s => s
+                        .SetProperty(a => a.Status, TaskApplicationStatus.Accepted)
+                        .SetProperty(a => a.UpdatedAt, now),
+                    cancellationToken);
+
+            if (applicationRowsUpdated == 0)
+            {
+                return Problem(
+                    title: "Application is not pending",
+                    detail: "Only pending applications can be accepted.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
 
             await db.TaskApplications
                 .Where(a => a.TaskId == taskId && a.Id != appId && a.Status == TaskApplicationStatus.Pending)
@@ -206,8 +233,28 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
                 ChangedByProfileId = profile.Id
             });
 
-            await db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex) when (PostgresExceptionHelpers.IsDuplicateTaskConversation(ex))
+            {
+                return Problem(
+                    title: "Task is not open",
+                    detail: "The task was already accepted or is no longer open.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Problem(
+                    title: "Task accept conflict",
+                    detail: "The task or application changed while the accept request was being processed.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            application.Status = TaskApplicationStatus.Accepted;
+            application.UpdatedAt = now;
         }
         else
         {
