@@ -6,6 +6,7 @@ using Backend.Infrastructure.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
 namespace Backend.Features.Tasks;
@@ -19,8 +20,21 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
     public async Task<IActionResult> ListAsync(
         [FromQuery] string? status,
         [FromQuery] Guid? categoryId,
+        [FromQuery] double? latitude,
+        [FromQuery] double? longitude,
+        [FromQuery] double? radiusMeters,
         CancellationToken cancellationToken)
     {
+        Point? proximityOrigin = null;
+
+        if (latitude.HasValue || longitude.HasValue || radiusMeters.HasValue)
+        {
+            if (!TryBuildProximityFilter(latitude, longitude, radiusMeters, ModelState, out proximityOrigin))
+            {
+                return ValidationProblem(ModelState);
+            }
+        }
+
         var query = db.Tasks
             .AsNoTracking()
             .Include(task => task.SeekerProfile)
@@ -44,9 +58,23 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             query = query.Where(task => task.CategoryId == categoryId.Value);
         }
 
-        var tasks = await query
-            .OrderByDescending(task => task.CreatedAt)
-            .ToListAsync(cancellationToken);
+        List<CommunityTask> tasks;
+        if (proximityOrigin is not null)
+        {
+            var radius = radiusMeters.GetValueOrDefault();
+
+            tasks = await query
+                .Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius))
+                .OrderBy(task => task.Location == null ? double.MaxValue : task.Location.Distance(proximityOrigin))
+                .ThenByDescending(task => task.CreatedAt)
+                .ToListAsync(cancellationToken);
+        }
+        else
+        {
+            tasks = await query
+                .OrderByDescending(task => task.CreatedAt)
+                .ToListAsync(cancellationToken);
+        }
 
         return Ok(tasks.Select(TaskResponse.FromTask));
     }
