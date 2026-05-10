@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260510095223_AddSkillStatus")]
+    [Migration("20260510101801_AddSkillStatus")]
     partial class AddSkillStatus
     {
         /// <inheritdoc />
