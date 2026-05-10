@@ -1,0 +1,40 @@
+name: Frontend Qodana
+
+on:
+    pull_request:
+        branches: [main, development]
+    push:
+        branches: [development]
+
+jobs:
+    qodana:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+            checks: write
+
+        steps:
+            - uses: actions/checkout@v6
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.sha }}
+                  fetch-depth: 0
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: "24"
+                  cache: "npm"
+                  cache-dependency-path: frontend/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+              working-directory: frontend
+
+            - name: Qodana Scan
+              uses: JetBrains/qodana-action@v2026.1
+              with:
+                  args: --config qodana-frontend.yaml -d frontend
+                  pr-mode: false
+              env:
+                  QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_FRONTEND }}
+                  QODANA_ENDPOINT: https://qodana.cloud
