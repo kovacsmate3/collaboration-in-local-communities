@@ -2,9 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  MoreHorizontalCircle01Icon,
-} from "@hugeicons/core-free-icons"
+import { MoreHorizontalCircle01Icon } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 
 import { UserAccountMenuItems } from "@/components/layout/user-account-menu-items"
