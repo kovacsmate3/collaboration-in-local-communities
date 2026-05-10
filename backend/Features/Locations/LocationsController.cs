@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Backend.Features.Locations;
 
@@ -10,10 +11,13 @@ namespace Backend.Features.Locations;
 [AllowAnonymous]
 public sealed class LocationsController(
     IHttpClientFactory httpClientFactory,
-    IConfiguration configuration) : ControllerBase
+    IConfiguration configuration,
+    IMemoryCache cache) : ControllerBase
 {
     private const string NominatimClientName = "Nominatim";
     private const string CoordinateFormat = "0.######";
+    private static readonly SemaphoreSlim _nominatimThrottle = new(1, 1);
+    private static DateTimeOffset _nextNominatimRequestAt = DateTimeOffset.MinValue;
 
     [HttpGet("search")]
     public async Task<IActionResult> SearchAsync(
@@ -26,6 +30,12 @@ public sealed class LocationsController(
             return Ok(new LocationSearchResponse([]));
         }
 
+        var cacheKey = $"locations:search:{query.ToUpperInvariant()}";
+        if (cache.TryGetValue<LocationSearchResponse>(cacheKey, out var cachedResponse))
+        {
+            return Ok(cachedResponse);
+        }
+
         var parameters = new Dictionary<string, string?>
         {
             ["q"] = query,
@@ -35,9 +45,9 @@ public sealed class LocationsController(
         };
         AddConfiguredEmail(parameters);
 
-        using var response = await httpClientFactory
-            .CreateClient(NominatimClientName)
-            .GetAsync(BuildUri("search", parameters), cancellationToken);
+        using var response = await SendNominatimRequestAsync(
+            BuildUri("search", parameters),
+            cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -49,12 +59,15 @@ public sealed class LocationsController(
         var results = await response.Content
             .ReadFromJsonAsync<IReadOnlyList<NominatimSearchResult>>(cancellationToken);
 
-        return Ok(new LocationSearchResponse(
+        var locationResponse = new LocationSearchResponse(
             results?
                 .Select(ToSuggestion)
                 .OfType<LocationSuggestionResponse>()
                 .ToList()
-            ?? []));
+            ?? []);
+        cache.Set(cacheKey, locationResponse, TimeSpan.FromDays(1));
+
+        return Ok(locationResponse);
     }
 
     [HttpGet("reverse")]
@@ -78,6 +91,12 @@ public sealed class LocationsController(
             return ValidationProblem(ModelState);
         }
 
+        var cacheKey = $"locations:reverse:{FormatCoordinate(lat)},{FormatCoordinate(lon)}";
+        if (cache.TryGetValue<LocationReverseResponse>(cacheKey, out var cachedResponse))
+        {
+            return Ok(cachedResponse);
+        }
+
         var parameters = new Dictionary<string, string?>
         {
             ["lat"] = FormatCoordinate(lat),
@@ -87,9 +106,9 @@ public sealed class LocationsController(
         };
         AddConfiguredEmail(parameters);
 
-        using var response = await httpClientFactory
-            .CreateClient(NominatimClientName)
-            .GetAsync(BuildUri("reverse", parameters), cancellationToken);
+        using var response = await SendNominatimRequestAsync(
+            BuildUri("reverse", parameters),
+            cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -101,8 +120,10 @@ public sealed class LocationsController(
         var result = await response.Content
             .ReadFromJsonAsync<NominatimReverseResult>(cancellationToken);
         var location = ToSuggestion(result, lat, lon);
+        var locationResponse = new LocationReverseResponse(location);
+        cache.Set(cacheKey, locationResponse, TimeSpan.FromDays(1));
 
-        return Ok(new LocationReverseResponse(location));
+        return Ok(locationResponse);
     }
 
     private static string BuildUri(string path, IReadOnlyDictionary<string, string?> parameters)
@@ -179,6 +200,31 @@ public sealed class LocationsController(
     private static string FormatCoordinate(double value)
     {
         return value.ToString(CoordinateFormat, CultureInfo.InvariantCulture);
+    }
+
+    private async Task<HttpResponseMessage> SendNominatimRequestAsync(
+        string requestUri,
+        CancellationToken cancellationToken)
+    {
+        await _nominatimThrottle.WaitAsync(cancellationToken);
+        try
+        {
+            var now = DateTimeOffset.UtcNow;
+            if (_nextNominatimRequestAt > now)
+            {
+                await Task.Delay(_nextNominatimRequestAt - now, cancellationToken);
+            }
+
+            _nextNominatimRequestAt = DateTimeOffset.UtcNow.AddSeconds(1);
+
+            return await httpClientFactory
+                .CreateClient(NominatimClientName)
+                .GetAsync(requestUri, cancellationToken);
+        }
+        finally
+        {
+            _nominatimThrottle.Release();
+        }
     }
 
     private void AddConfiguredEmail(Dictionary<string, string?> parameters)
