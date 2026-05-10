@@ -10,7 +10,8 @@ public sealed record RegisterRequest(
     [MaxLength(200)] string? Position,
     [MaxLength(300)] string? LocationText,
     [MaxLength(1000)] string? Bio,
-    bool AcceptTerms);
+    bool AcceptTerms,
+    IReadOnlyList<Guid>? SkillIds);
 
 public sealed record LoginRequest(
     [Required, EmailAddress] string Email,

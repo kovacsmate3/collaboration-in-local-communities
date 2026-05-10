@@ -73,6 +73,20 @@ public sealed partial class AuthController(
 
         db.Profiles.Add(profile);
 
+        if (request.SkillIds is { Count: > 0 })
+        {
+            var requested = request.SkillIds.Distinct().ToList();
+            var validSkillIds = await db.Skills
+                .Where(s => requested.Contains(s.Id) && s.IsActive)
+                .Select(s => s.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var skillId in validSkillIds)
+            {
+                profile.ProfileSkills.Add(new ProfileSkill { SkillId = skillId });
+            }
+        }
+
         var activeTerms = await db.TermsVersions
             .GetCurrentAsync(now, cancellationToken);
 
