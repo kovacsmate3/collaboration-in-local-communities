@@ -118,8 +118,8 @@ export function CategoryStatusDialog({
                 <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
                   {category?.code}
                 </code>
-                ) from the task creation flow. Existing tasks that reference
-                it will be unaffected, and you can reactivate it any time.
+                ) from the task creation flow. Existing tasks that reference it
+                will be unaffected, and you can reactivate it any time.
               </>
             )}
           </AlertDialogDescription>

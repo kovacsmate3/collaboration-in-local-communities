@@ -42,9 +42,7 @@ export function DeleteCategoryDialog({
       // Backend returns 409 with a ProblemDetails body when a task still
       // references the category. Surface the explanatory detail/title.
       if (err instanceof ApiError && err.status === 409) {
-        const body = err.body as
-          | { title?: string; detail?: string }
-          | undefined
+        const body = err.body as { title?: string; detail?: string } | undefined
         toast.error(
           body?.detail ??
             body?.title ??
