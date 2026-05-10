@@ -140,7 +140,8 @@ public sealed partial class AuthController
 
         if (latitude.HasValue != longitude.HasValue)
         {
-            ModelState.AddModelError("Location", "Both Latitude and Longitude must be provided together.");
+            ModelState.AddModelError(nameof(RegisterRequest.Latitude), "Both Latitude and Longitude must be provided together.");
+            ModelState.AddModelError(nameof(RegisterRequest.Longitude), "Both Latitude and Longitude must be provided together.");
             return false;
         }
 
@@ -151,13 +152,13 @@ public sealed partial class AuthController
 
         if (!double.IsFinite(latitude.Value) || latitude.Value is < -90 or > 90)
         {
-            ModelState.AddModelError(nameof(latitude), "Latitude must be between -90 and 90.");
+            ModelState.AddModelError(nameof(RegisterRequest.Latitude), "Latitude must be between -90 and 90.");
             return false;
         }
 
         if (!double.IsFinite(longitude.Value) || longitude.Value is < -180 or > 180)
         {
-            ModelState.AddModelError(nameof(longitude), "Longitude must be between -180 and 180.");
+            ModelState.AddModelError(nameof(RegisterRequest.Longitude), "Longitude must be between -180 and 180.");
             return false;
         }
 

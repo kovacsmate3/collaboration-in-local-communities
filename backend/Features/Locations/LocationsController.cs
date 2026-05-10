@@ -13,6 +13,7 @@ public sealed class LocationsController(
     IConfiguration configuration) : ControllerBase
 {
     private const string NominatimClientName = "Nominatim";
+    private const string CoordinateFormat = "0.######";
 
     [HttpGet("search")]
     public async Task<IActionResult> SearchAsync(
@@ -64,14 +65,23 @@ public sealed class LocationsController(
     {
         if (!IsValidLatitude(lat) || !IsValidLongitude(lon))
         {
-            ModelState.AddModelError("Location", "Valid latitude and longitude are required.");
+            if (!IsValidLatitude(lat))
+            {
+                ModelState.AddModelError(nameof(lat), "Latitude must be between -90 and 90.");
+            }
+
+            if (!IsValidLongitude(lon))
+            {
+                ModelState.AddModelError(nameof(lon), "Longitude must be between -180 and 180.");
+            }
+
             return ValidationProblem(ModelState);
         }
 
         var parameters = new Dictionary<string, string?>
         {
-            ["lat"] = lat.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            ["lon"] = lon.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["lat"] = FormatCoordinate(lat),
+            ["lon"] = FormatCoordinate(lon),
             ["format"] = "jsonv2",
             ["zoom"] = "18"
         };
@@ -135,10 +145,12 @@ public sealed class LocationsController(
             ? parsedLongitude
             : fallbackLongitude;
 
+        var fallbackCoordinates = $"{FormatCoordinate(fallbackLatitude)},{FormatCoordinate(fallbackLongitude)}";
+        var fallbackDisplayName = $"{FormatCoordinate(fallbackLatitude)}, {FormatCoordinate(fallbackLongitude)}";
         var id = result?.PlaceId?.ToString(CultureInfo.InvariantCulture)
-            ?? $"{fallbackLatitude},{fallbackLongitude}";
+            ?? fallbackCoordinates;
         var displayName = string.IsNullOrWhiteSpace(result?.DisplayName)
-            ? $"{fallbackLatitude}, {fallbackLongitude}"
+            ? fallbackDisplayName
             : result.DisplayName;
 
         return new LocationSuggestionResponse(id, displayName, latitude, longitude);
@@ -162,6 +174,11 @@ public sealed class LocationsController(
     private static bool IsValidLongitude(double value)
     {
         return double.IsFinite(value) && value is >= -180 and <= 180;
+    }
+
+    private static string FormatCoordinate(double value)
+    {
+        return value.ToString(CoordinateFormat, CultureInfo.InvariantCulture);
     }
 
     private void AddConfiguredEmail(Dictionary<string, string?> parameters)

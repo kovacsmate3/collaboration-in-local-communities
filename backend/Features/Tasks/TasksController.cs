@@ -65,7 +65,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
             tasks = await query
                 .Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius))
-                .OrderBy(task => task.Location == null ? double.MaxValue : task.Location.Distance(proximityOrigin))
+                .OrderBy(task => task.Location!.Distance(proximityOrigin))
                 .ThenByDescending(task => task.CreatedAt)
                 .ToListAsync(cancellationToken);
         }
