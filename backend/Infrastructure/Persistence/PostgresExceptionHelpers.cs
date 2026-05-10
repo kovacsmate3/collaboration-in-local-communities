@@ -68,6 +68,7 @@ public static class PostgresExceptionHelpers
         return postgresException.SqlState == PostgresErrorCodes.ForeignKeyViolation;
     }
 
+    /// <summary>
     /// Checks if a DbUpdateException is a duplicate task conversation violation.
     /// </summary>
     /// <param name="exception">The DbUpdateException to check.</param>
@@ -76,3 +77,4 @@ public static class PostgresExceptionHelpers
     {
         return IsUniqueConstraintViolation(exception, "ux_task_conversations_task_id");
     }
+}
