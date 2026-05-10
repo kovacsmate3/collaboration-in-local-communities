@@ -3,8 +3,12 @@ name: Backend Qodana
 on:
     pull_request:
         branches: [main, development]
+        paths:
+            - "backend/**"
     push:
         branches: [development]
+        paths:
+            - "backend/**"
 
 jobs:
     qodana:
