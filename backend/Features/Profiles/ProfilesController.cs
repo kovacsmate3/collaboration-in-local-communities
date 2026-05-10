@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Backend.Domain.Entities;
+using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -203,7 +204,7 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             if (toAdd.Count > 0)
             {
                 var validIds = await db.Skills
-                    .Where(s => toAdd.Contains(s.Id) && s.IsActive)
+                    .Where(s => toAdd.Contains(s.Id) && s.IsActive && s.Status == SkillStatus.Approved)
                     .Select(s => s.Id)
                     .ToListAsync(cancellationToken);
 

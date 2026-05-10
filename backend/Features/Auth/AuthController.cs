@@ -1,5 +1,6 @@
 using Backend.Common;
 using Backend.Domain.Entities;
+using Backend.Domain.Enums;
 using Backend.Features.Terms;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
@@ -77,7 +78,7 @@ public sealed partial class AuthController(
         {
             var requested = request.SkillIds.Distinct().ToList();
             var validSkillIds = await db.Skills
-                .Where(s => requested.Contains(s.Id) && s.IsActive)
+                .Where(s => requested.Contains(s.Id) && s.IsActive && s.Status == SkillStatus.Approved)
                 .Select(s => s.Id)
                 .ToListAsync(cancellationToken);
 
