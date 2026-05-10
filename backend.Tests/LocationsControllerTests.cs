@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -158,7 +159,8 @@ public sealed class LocationsControllerTests
         var httpContext = new DefaultHttpContext();
         var controller = new LocationsController(
             new FakeHttpClientFactory(statusCode, responseBody),
-            new ConfigurationBuilder().Build())
+            new ConfigurationBuilder().Build(),
+            new MemoryCache(new MemoryCacheOptions()))
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext },
             ProblemDetailsFactory = new FakeProblemDetailsFactory()
