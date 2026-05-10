@@ -230,7 +230,7 @@ public sealed class TermsControllerTests
         var method = typeof(TermsController).GetMethod(nameof(TermsController.GetActiveTermsAsync));
 
         Assert.NotNull(method);
-        Assert.True(method!.IsDefined(typeof(AllowAnonymousAttribute), inherit: true));
+        Assert.True(method.IsDefined(typeof(AllowAnonymousAttribute), inherit: true));
     }
 
     private static AppDbContext CreateDbContext()
