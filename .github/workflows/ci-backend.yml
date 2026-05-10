@@ -26,31 +26,18 @@ jobs:
       - name: Build
         run: dotnet build backend.Tests/backend.Tests.csproj --no-restore --configuration Release
 
-      - name: Test
-        run: dotnet test backend.Tests/backend.Tests.csproj --no-build --configuration Release --verbosity normal
-
       # Whitespace / formatting check. Run for both the app and the test project
       # so staged changes in either are verified.
       - name: Lint (format check)
         run: |
           dotnet format backend/backend.csproj --verify-no-changes --no-restore
           dotnet format backend.Tests/backend.Tests.csproj --verify-no-changes --no-restore
-  qodana:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      checks: write
-    steps:
-      - uses: actions/checkout@v6
+
+      - name: Test
+        run: dotnet test backend.Tests/backend.Tests.csproj --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory backend.Tests/TestResults
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          ref: ${{ github.event.pull_request.head.sha }}  # to check out the actual pull request commit, not the merge commit
-          fetch-depth: 0  # a full history is required for pull request analysis
-      - name: 'Qodana Scan'
-        uses: JetBrains/qodana-action@v2026.1
-        with:
-          args: --config qodana-backend.yaml
-          pr-mode: false
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_BACKEND }}
-          QODANA_ENDPOINT: 'https://qodana.cloud'
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: backend.Tests/TestResults/**/coverage.cobertura.xml
