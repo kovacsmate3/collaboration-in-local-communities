@@ -1,6 +1,13 @@
-# Next.js template
+# Frontend
 
-This is a Next.js template with shadcn/ui.
+Next.js 16 app for `2gather`, built with React 19, Tailwind v4, and shadcn/ui.
+
+## Design System
+
+Design tokens live in `app/globals.css` and are documented in
+[`docs/design-tokens.md`](./docs/design-tokens.md). The visual component gallery
+is available at `/component-gallery` during local development and returns 404 in
+production.
 
 ## Adding components
 
