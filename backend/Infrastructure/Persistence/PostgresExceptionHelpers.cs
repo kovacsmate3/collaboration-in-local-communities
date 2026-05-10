@@ -50,4 +50,14 @@ public static class PostgresExceptionHelpers
     {
         return IsUniqueConstraintViolation(exception, "ux_user_terms_acceptances_user_terms");
     }
+
+    /// <summary>
+    /// Checks if a DbUpdateException is a duplicate task conversation violation.
+    /// </summary>
+    /// <param name="exception">The DbUpdateException to check.</param>
+    /// <returns>True if the exception is a duplicate task conversation violation, false otherwise.</returns>
+    public static bool IsDuplicateTaskConversation(DbUpdateException exception)
+    {
+        return IsUniqueConstraintViolation(exception, "ux_task_conversations_task_id");
+    }
 }
