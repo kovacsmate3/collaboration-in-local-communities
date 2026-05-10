@@ -16,7 +16,7 @@ public static class PostgresExceptionHelpers
     /// <returns>True if the exception is a unique constraint violation, false otherwise.</returns>
     public static bool IsUniqueConstraintViolation(DbUpdateException exception, string? constraintName = null)
     {
-        if (exception?.InnerException is not PostgresException postgresException)
+        if (exception.InnerException is not PostgresException postgresException)
         {
             return false;
         }
@@ -60,7 +60,7 @@ public static class PostgresExceptionHelpers
     /// <returns>True if the exception is a foreign-key constraint violation, false otherwise.</returns>
     public static bool IsForeignKeyViolation(DbUpdateException exception)
     {
-        if (exception?.InnerException is not PostgresException postgresException)
+        if (exception.InnerException is not PostgresException postgresException)
         {
             return false;
         }

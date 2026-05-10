@@ -1,3 +1,5 @@
+using JetBrains.Annotations;
+
 namespace Backend.Features.Profiles;
 
 /// <summary>
@@ -5,6 +7,7 @@ namespace Backend.Features.Profiles;
 /// Returns all fields (private and public) since the user is viewing their own data.
 /// Skill details are accessed separately via the skills API.
 /// </summary>
+[PublicAPI]
 public sealed record OwnProfileResponse
 {
     public required Guid Id { get; init; }

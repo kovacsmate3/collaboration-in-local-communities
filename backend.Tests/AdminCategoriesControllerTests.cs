@@ -1,13 +1,11 @@
 using System.Security.Claims;
 using Backend.Domain.Entities;
-using Backend.Domain.Enums;
 using Backend.Features.Admin.Categories;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 using Xunit;
 
 namespace backend.Tests;

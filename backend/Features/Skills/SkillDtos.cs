@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 
 using Backend.Domain.Entities;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Skills;
 
+[PublicAPI]
 public sealed record SkillResponse(
     Guid Id,
     string Code,
@@ -15,6 +17,7 @@ public sealed record SkillResponse(
         new(skill.Id, skill.Code, skill.Name, skill.Description, skill.Status.ToString());
 }
 
+[PublicAPI]
 public sealed record CreateSkillRequest
 {
     [Required]

@@ -1,6 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
 using Backend.Features.Auth;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
@@ -78,8 +77,8 @@ public sealed class AuthTokenServiceTests
             options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
         services.AddApplicationIdentity();
         services.AddSingleton(new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes("refresh-token-role-test-signing-key-32")));
-        services.AddSingleton<IOptions<AuthOptions>>(Options.Create(new AuthOptions
+            "refresh-token-role-test-signing-key-32"u8.ToArray()));
+        services.AddSingleton(Options.Create(new AuthOptions
         {
             Issuer = "test-issuer",
             Audience = "test-audience",

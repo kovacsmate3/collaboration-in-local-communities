@@ -1,8 +1,11 @@
+using JetBrains.Annotations;
+
 namespace Backend.Features.Profiles;
 
 /// <summary>
 /// Response DTO for privacy settings, representing which profile fields are visible to others.
 /// </summary>
+[PublicAPI]
 public sealed record ProfilePrivacySettingsResponse
 {
     public bool ShowWorkplace { get; init; }

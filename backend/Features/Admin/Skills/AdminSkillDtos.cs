@@ -1,7 +1,9 @@
 using Backend.Domain.Entities;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Admin.Skills;
 
+[PublicAPI]
 public sealed record AdminSkillResponse(
     Guid Id,
     string Code,
@@ -25,6 +27,7 @@ public sealed record AdminSkillResponse(
         skill.UpdatedAt);
 }
 
+[PublicAPI]
 public sealed record AdminSkillPagedResponse(
     IReadOnlyList<AdminSkillResponse> Items,
     int TotalCount,
@@ -32,6 +35,7 @@ public sealed record AdminSkillPagedResponse(
     int PageSize,
     int TotalPages);
 
+[PublicAPI]
 public sealed record PatchSkillRequest
 {
     public string Action { get; init; } = string.Empty;

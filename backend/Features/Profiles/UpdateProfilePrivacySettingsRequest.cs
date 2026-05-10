@@ -1,10 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Profiles;
 
 /// <summary>
 /// Request DTO for updating privacy settings. All fields are required (full-replace, no partial updates).
 /// </summary>
+[PublicAPI]
 public sealed record UpdateProfilePrivacySettingsRequest
 {
     [Required]

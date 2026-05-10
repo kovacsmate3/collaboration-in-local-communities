@@ -1,5 +1,4 @@
 using Backend.Infrastructure.Identity;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Backend.Infrastructure.Persistence.Seeding;
