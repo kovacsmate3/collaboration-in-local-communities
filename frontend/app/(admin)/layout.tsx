@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import { AdminGuard } from "@/components/admin/admin-guard"
 import { AdminDesktopSidebar } from "@/components/admin/admin-sidebar"
 import { AdminHeader } from "@/components/admin/admin-header"
@@ -12,11 +14,7 @@ import { AdminHeader } from "@/components/admin/admin-header"
  * All child routes are guarded by AdminGuard, which redirects non-admin
  * users to /feed.
  */
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <AdminGuard>
       <div className="flex h-svh overflow-hidden">

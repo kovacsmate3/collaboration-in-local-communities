@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import type { SubmitEvent } from "react"
 import { toast } from "sonner"
 
 import { LocationInput } from "@/components/shared/location-input"
@@ -64,7 +65,7 @@ export function RegisterForm() {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (step === "account") {

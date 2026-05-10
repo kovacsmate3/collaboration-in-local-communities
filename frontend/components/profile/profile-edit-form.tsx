@@ -4,6 +4,7 @@ import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Add01Icon, Cancel01Icon } from "@hugeicons/core-free-icons"
 import { useRouter } from "next/navigation"
+import type { ComponentProps, SubmitEvent } from "react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -105,7 +106,7 @@ export function ProfileEditForm({
     }))
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
 
     const displayName = form.displayName.trim()
@@ -295,7 +296,7 @@ export function ProfileEditForm({
   )
 }
 
-interface FieldProps extends React.ComponentProps<typeof Input> {
+interface FieldProps extends ComponentProps<typeof Input> {
   id: string
   label: string
 }

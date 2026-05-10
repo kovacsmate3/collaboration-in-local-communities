@@ -5,6 +5,7 @@ import {
   Location01Icon,
   ShieldUserIcon,
 } from "@hugeicons/core-free-icons"
+import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { UserAvatar } from "@/components/shared/user-avatar"
@@ -13,7 +14,7 @@ import type { User } from "@/lib/types"
 interface ProfileHeaderProps {
   user: User
   /** Right-side actions (Edit profile / Message). */
-  actions?: React.ReactNode
+  actions?: ReactNode
 }
 
 /**
