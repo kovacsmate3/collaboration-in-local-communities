@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 
 import { LocationInput } from "@/components/shared/location-input"
 import { Button } from "@/components/ui/button"
@@ -183,8 +184,8 @@ export function PostTaskForm() {
       </fieldset>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost">
-          Cancel
+        <Button asChild variant="ghost">
+          <Link href="/feed">Cancel</Link>
         </Button>
         <Button type="submit">Post task</Button>
       </div>
