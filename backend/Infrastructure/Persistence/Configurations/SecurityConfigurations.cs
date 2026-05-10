@@ -32,5 +32,8 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
 
         builder.HasIndex(token => token.ExpiresAt)
             .HasDatabaseName("ix_refresh_tokens_expires_at");
+
+        builder.HasIndex(token => token.RevokedAt)
+            .HasDatabaseName("ix_refresh_tokens_revoked_at");
     }
 }

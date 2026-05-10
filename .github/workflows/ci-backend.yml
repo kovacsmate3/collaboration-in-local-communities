@@ -26,12 +26,18 @@ jobs:
       - name: Build
         run: dotnet build backend.Tests/backend.Tests.csproj --no-restore --configuration Release
 
-      - name: Test
-        run: dotnet test backend.Tests/backend.Tests.csproj --no-build --configuration Release --verbosity normal
-
       # Whitespace / formatting check. Run for both the app and the test project
       # so staged changes in either are verified.
       - name: Lint (format check)
         run: |
           dotnet format backend/backend.csproj --verify-no-changes --no-restore
           dotnet format backend.Tests/backend.Tests.csproj --verify-no-changes --no-restore
+
+      - name: Test
+        run: dotnet test backend.Tests/backend.Tests.csproj --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --results-directory backend.Tests/TestResults
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: backend.Tests/TestResults/**/coverage.cobertura.xml
