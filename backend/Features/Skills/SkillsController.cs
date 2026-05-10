@@ -29,7 +29,8 @@ public sealed class SkillsController(AppDbContext db) : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(prefix))
         {
-            query = query.Where(skill => EF.Functions.ILike(skill.Name, $"{prefix}%"));
+            var escaped = prefix.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_");
+            query = query.Where(skill => EF.Functions.ILike(skill.Name, $"{escaped}%", @"\"));
         }
 
         var skills = await query
