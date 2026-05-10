@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Loading03Icon } from "@hugeicons/core-free-icons"
 
+import { ApiError } from "@/lib/api/client"
 import {
   useDeleteCategory,
   type AdminCategoryResponse,
@@ -35,11 +36,24 @@ export function DeleteCategoryDialog({
     if (!category) return
     try {
       await mutateAsync(category.id)
-      toast.success(`Category "${category.name}" deactivated`)
+      toast.success(`Category "${category.name}" deleted`)
       onOpenChange(false)
     } catch (err) {
+      // Backend returns 409 with a ProblemDetails body when a task still
+      // references the category. Surface the explanatory detail/title.
+      if (err instanceof ApiError && err.status === 409) {
+        const body = err.body as
+          | { title?: string; detail?: string }
+          | undefined
+        toast.error(
+          body?.detail ??
+            body?.title ??
+            "Cannot delete: this category is still referenced by one or more tasks. Deactivate it instead."
+        )
+        return
+      }
       toast.error(
-        err instanceof Error ? err.message : "Failed to deactivate category"
+        err instanceof Error ? err.message : "Failed to delete category"
       )
     }
   }
@@ -53,22 +67,23 @@ export function DeleteCategoryDialog({
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Deactivate category?</AlertDialogTitle>
+          <AlertDialogTitle>Delete category permanently?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will soft-delete <strong>{category?.name}</strong> (code:{" "}
+            This will permanently remove <strong>{category?.name}</strong>{" "}
+            (code:{" "}
             <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
               {category?.code}
             </code>
-            ). Existing tasks that reference it will be unaffected, but the
-            category will no longer appear in the task creation flow. You can
-            reactivate it later by editing its status directly in the database
-            until a reactivation UI is added.
+            ). This action cannot be undone. If any task still references this
+            category the deletion will be blocked — deactivate it instead to
+            hide it from the task creation flow without affecting existing
+            tasks.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <Button
-            variant="destructive"
+            variant="destructive-solid"
             onClick={handleConfirm}
             disabled={isPending}
           >
@@ -79,7 +94,7 @@ export function DeleteCategoryDialog({
                 strokeWidth={2}
               />
             )}
-            Deactivate
+            Delete permanently
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

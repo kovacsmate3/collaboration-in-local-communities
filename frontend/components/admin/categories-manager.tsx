@@ -24,6 +24,7 @@ import {
   CreateCategoryDialog,
   EditCategoryDialog,
 } from "@/components/admin/category-form-dialog"
+import { CategoryStatusDialog } from "@/components/admin/category-status-dialog"
 import { DeleteCategoryDialog } from "@/components/admin/delete-category-dialog"
 
 export function CategoriesManager() {
@@ -38,6 +39,8 @@ export function CategoriesManager() {
   const [createOpen, setCreateOpen] = React.useState(false)
   const [editTarget, setEditTarget] =
     React.useState<AdminCategoryResponse | null>(null)
+  const [statusTarget, setStatusTarget] =
+    React.useState<AdminCategoryResponse | null>(null)
   const [deleteTarget, setDeleteTarget] =
     React.useState<AdminCategoryResponse | null>(null)
 
@@ -45,6 +48,7 @@ export function CategoriesManager() {
     () =>
       createCategoryColumns({
         onEdit: setEditTarget,
+        onToggleStatus: setStatusTarget,
         onDelete: setDeleteTarget,
       }),
     []
@@ -105,6 +109,14 @@ export function CategoriesManager() {
         onOpenChange={(open) => {
           if (!open) {
             setEditTarget(null)
+          }
+        }}
+      />
+      <CategoryStatusDialog
+        category={statusTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setStatusTarget(null)
           }
         }}
       />
