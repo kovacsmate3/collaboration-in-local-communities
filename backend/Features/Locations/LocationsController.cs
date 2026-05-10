@@ -63,18 +63,18 @@ public sealed class LocationsController(
         [FromQuery] double lon,
         CancellationToken cancellationToken)
     {
-        if (!IsValidLatitude(lat) || !IsValidLongitude(lon))
+        if (!IsValidLatitude(lat))
         {
-            if (!IsValidLatitude(lat))
-            {
-                ModelState.AddModelError(nameof(lat), "Latitude must be between -90 and 90.");
-            }
+            ModelState.AddModelError(nameof(lat), "Latitude must be between -90 and 90.");
+        }
 
-            if (!IsValidLongitude(lon))
-            {
-                ModelState.AddModelError(nameof(lon), "Longitude must be between -180 and 180.");
-            }
+        if (!IsValidLongitude(lon))
+        {
+            ModelState.AddModelError(nameof(lon), "Longitude must be between -180 and 180.");
+        }
 
+        if (!ModelState.IsValid)
+        {
             return ValidationProblem(ModelState);
         }
 
