@@ -81,7 +81,7 @@ export function LocationInput({
     }
   }
 
-  function useCurrentLocation() {
+  function locateUser() {
     if (!navigator.geolocation) {
       setError("Your browser does not support location lookup.")
       return
@@ -177,7 +177,7 @@ export function LocationInput({
             type="button"
             variant="outline"
             disabled={isLocating}
-            onClick={useCurrentLocation}
+            onClick={locateUser}
           >
             <HugeiconsIcon icon={Location01Icon} className="size-4" />
             {isLocating ? "Locating..." : "Use my location"}
