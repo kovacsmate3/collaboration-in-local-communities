@@ -5,6 +5,7 @@ using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace Backend.Features.Profiles;
 
@@ -131,6 +132,8 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             Availability = profile.Availability,
             PhotoUrl = profile.PhotoUrl,
             LocationText = profile.LocationText,
+            Latitude = profile.Location?.Y,
+            Longitude = profile.Location?.X,
             IsProfileCompleted = profile.IsProfileCompleted,
             AverageRating = profile.AverageRating,
             ReviewCount = profile.ReviewCount,
@@ -181,6 +184,11 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             return NotFound();
         }
 
+        if (!TryBuildLocation(request.Latitude, request.Longitude, out var location))
+        {
+            return ValidationProblem(ModelState);
+        }
+
         profile.DisplayName = request.DisplayName;
         profile.Bio = request.Bio;
         profile.Workplace = request.Workplace;
@@ -188,6 +196,7 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         profile.Availability = request.Availability;
         profile.PhotoUrl = request.PhotoUrl;
         profile.LocationText = request.LocationText;
+        profile.Location = location;
         profile.UpdatedAt = DateTimeOffset.UtcNow;
 
         if (request.SkillIds is not null)
@@ -228,6 +237,8 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             Availability = profile.Availability,
             PhotoUrl = profile.PhotoUrl,
             LocationText = profile.LocationText,
+            Latitude = profile.Location?.Y,
+            Longitude = profile.Location?.X,
             IsProfileCompleted = profile.IsProfileCompleted,
             AverageRating = profile.AverageRating,
             ReviewCount = profile.ReviewCount,
@@ -294,5 +305,37 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    private bool TryBuildLocation(double? latitude, double? longitude, out Point? location)
+    {
+        location = null;
+
+        if (latitude.HasValue != longitude.HasValue)
+        {
+            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Latitude), "Both Latitude and Longitude must be provided together.");
+            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Longitude), "Both Latitude and Longitude must be provided together.");
+            return false;
+        }
+
+        if (!latitude.HasValue || !longitude.HasValue)
+        {
+            return true;
+        }
+
+        if (!double.IsFinite(latitude.Value) || latitude.Value is < -90 or > 90)
+        {
+            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Latitude), "Latitude must be between -90 and 90.");
+            return false;
+        }
+
+        if (!double.IsFinite(longitude.Value) || longitude.Value is < -180 or > 180)
+        {
+            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Longitude), "Longitude must be between -180 and 180.");
+            return false;
+        }
+
+        location = new Point(longitude.Value, latitude.Value) { SRID = 4326 };
+        return true;
     }
 }

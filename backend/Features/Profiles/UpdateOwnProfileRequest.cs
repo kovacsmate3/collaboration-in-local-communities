@@ -15,5 +15,7 @@ public sealed record UpdateOwnProfileRequest
     public string? Availability { get; init; }
     public string? PhotoUrl { get; init; }
     public string? LocationText { get; init; }
+    public double? Latitude { get; init; }
+    public double? Longitude { get; init; }
     public IReadOnlyList<Guid>? SkillIds { get; init; }
 }
