@@ -1,10 +1,16 @@
+using System.ComponentModel.DataAnnotations;
 using Backend.Domain.Entities;
 
 namespace Backend.Features.Tasks.Applications;
 
-public sealed record ApplyToTaskRequest(string? Message);
+public sealed record ApplyToTaskRequest(
+    [StringLength(1000)]
+    string? Message);
 
-public sealed record PatchApplicationRequest(string Action);
+public sealed record PatchApplicationRequest(
+    [Required]
+    [StringLength(16)]
+    string Action);
 
 public sealed record TaskApplicationResponse(
     Guid Id,

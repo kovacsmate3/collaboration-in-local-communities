@@ -1,3 +1,4 @@
+using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
@@ -54,7 +55,7 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
         {
             TaskId = taskId,
             HelperProfileId = profile.Id,
-            Message = request.Message
+            Message = StringUtilities.Normalize(request.Message)
         };
 
         db.TaskApplications.Add(application);

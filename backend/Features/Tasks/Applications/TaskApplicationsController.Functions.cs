@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Backend.Common;
 using Backend.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,13 +9,20 @@ public sealed partial class TaskApplicationsController
 {
     private static bool TryParseAction(string value, out bool isAccept)
     {
-        if (string.Equals(value, "accept", StringComparison.OrdinalIgnoreCase))
+        var normalized = StringUtilities.Normalize(value);
+        if (normalized is null)
+        {
+            isAccept = false;
+            return false;
+        }
+
+        if (string.Equals(normalized, "accept", StringComparison.OrdinalIgnoreCase))
         {
             isAccept = true;
             return true;
         }
 
-        if (string.Equals(value, "reject", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(normalized, "reject", StringComparison.OrdinalIgnoreCase))
         {
             isAccept = false;
             return true;
