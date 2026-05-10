@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using Backend.Domain.Entities;
+using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -187,6 +189,31 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         profile.PhotoUrl = request.PhotoUrl;
         profile.LocationText = request.LocationText;
         profile.UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (request.SkillIds is not null)
+        {
+            var requested = request.SkillIds.ToHashSet();
+            var currentIds = profile.ProfileSkills.Select(ps => ps.SkillId).ToHashSet();
+
+            foreach (var ps in profile.ProfileSkills.Where(ps => !requested.Contains(ps.SkillId)).ToList())
+            {
+                profile.ProfileSkills.Remove(ps);
+            }
+
+            var toAdd = requested.Except(currentIds).ToList();
+            if (toAdd.Count > 0)
+            {
+                var validIds = await db.Skills
+                    .Where(s => toAdd.Contains(s.Id) && s.IsActive && s.Status == SkillStatus.Approved)
+                    .Select(s => s.Id)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var skillId in validIds)
+                {
+                    profile.ProfileSkills.Add(new ProfileSkill { SkillId = skillId });
+                }
+            }
+        }
 
         await db.SaveChangesAsync(cancellationToken);
 

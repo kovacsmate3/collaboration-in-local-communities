@@ -12,4 +12,5 @@ public sealed record UpdateOwnProfileRequest
     public string? Availability { get; init; }
     public string? PhotoUrl { get; init; }
     public string? LocationText { get; init; }
+    public IReadOnlyList<Guid>? SkillIds { get; init; }
 }
