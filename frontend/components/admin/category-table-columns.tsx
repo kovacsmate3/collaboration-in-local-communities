@@ -10,11 +10,13 @@ import { CategorySortButton } from "@/components/admin/category-sort-button"
 
 interface CategoryTableActions {
   onEdit: (category: AdminCategoryResponse) => void
+  onToggleStatus: (category: AdminCategoryResponse) => void
   onDelete: (category: AdminCategoryResponse) => void
 }
 
 export function createCategoryColumns({
   onEdit,
+  onToggleStatus,
   onDelete,
 }: CategoryTableActions): ColumnDef<AdminCategoryResponse>[] {
   return [
@@ -72,13 +74,18 @@ export function createCategoryColumns({
     {
       accessorKey: "isActive",
       header: "Status",
+      // The badge label flips between Active (6 chars) and Inactive (8 chars)
+      // when the admin toggles status. Without a fixed min-width the auto-sized
+      // table column would resize on every flip and shove the surrounding
+      // columns sideways. min-w-20 (5rem = 80px) comfortably fits "Inactive"
+      // and is wider than "Status", so the column stays put either way.
       cell: ({ row }) =>
         row.original.isActive ? (
-          <Badge variant="success" className="text-xs">
+          <Badge variant="success" className="min-w-20 text-xs">
             Active
           </Badge>
         ) : (
-          <Badge variant="destructive" className="text-xs">
+          <Badge variant="destructive" className="min-w-20 text-xs">
             Inactive
           </Badge>
         ),
@@ -90,6 +97,7 @@ export function createCategoryColumns({
         <CategoryRowActions
           category={row.original}
           onEdit={onEdit}
+          onToggleStatus={onToggleStatus}
           onDelete={onDelete}
         />
       ),

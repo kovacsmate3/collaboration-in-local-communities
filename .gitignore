@@ -21,6 +21,9 @@ node_modules/
 .claude/sessions/
 .claude/worktrees/
 
+# Codex local/runtime files
+.codex/
+
 # Local-only overrides
 .claude/*.local.*
 .claude/local/

@@ -52,6 +52,23 @@ public static class PostgresExceptionHelpers
     }
 
     /// <summary>
+    /// Checks if a DbUpdateException is due to a foreign-key constraint violation.
+    /// Used when a hard delete is rejected because dependent rows reference the
+    /// row being deleted (e.g. tasks still reference the category).
+    /// </summary>
+    /// <param name="exception">The DbUpdateException to check.</param>
+    /// <returns>True if the exception is a foreign-key constraint violation, false otherwise.</returns>
+    public static bool IsForeignKeyViolation(DbUpdateException exception)
+    {
+        if (exception?.InnerException is not PostgresException postgresException)
+        {
+            return false;
+        }
+
+        return postgresException.SqlState == PostgresErrorCodes.ForeignKeyViolation;
+    }
+
+    /// <summary>
     /// Checks if a DbUpdateException is a duplicate task conversation violation.
     /// </summary>
     /// <param name="exception">The DbUpdateException to check.</param>

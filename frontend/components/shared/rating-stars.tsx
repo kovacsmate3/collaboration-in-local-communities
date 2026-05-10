@@ -33,7 +33,7 @@ export function RatingStars({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 text-amber-500",
+        "inline-flex items-center gap-1.5 text-reputation",
         className
       )}
       aria-label={`Rated ${clamped.toFixed(1)} out of 5`}
