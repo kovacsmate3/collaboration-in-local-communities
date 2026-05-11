@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import type { FormEvent } from "react"
+import type { SubmitEvent } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -60,7 +60,7 @@ export function LoginForm() {
     }
   }
 
-  function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleFormSubmit(event: SubmitEvent<HTMLFormElement>) {
     form.clearErrors("root")
     void form.handleSubmit(onSubmit)(event)
   }
@@ -76,11 +76,7 @@ export function LoginForm() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form
-              noValidate
-              onSubmit={handleFormSubmit}
-              className="grid gap-6"
-            >
+            <form noValidate onSubmit={handleFormSubmit} className="grid gap-6">
               <TextField<LoginFormValues>
                 name="email"
                 label="Email"

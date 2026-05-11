@@ -62,7 +62,9 @@ export function LocationField<TFieldValues extends FieldValues>({
               aria-invalid={hasError}
             />
             {description ? (
-              <FormDescription id={descriptionId}>{description}</FormDescription>
+              <FormDescription id={descriptionId}>
+                {description}
+              </FormDescription>
             ) : null}
             <FormMessage id={messageId} />
           </FormItem>
