@@ -69,6 +69,100 @@ public sealed class AuthTokenServiceTests
             claim => claim.Type == ClaimTypes.Role && claim.Value == ApplicationRoleNames.Admin);
     }
 
+    [Fact]
+    public async Task CreateTokenPairAsync_EmitsExpectedClaimsAndExpiry()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var services = CreateServices();
+        using var scope = services.CreateScope();
+        var tokenService = scope.ServiceProvider.GetRequiredService<IAuthTokenService>();
+        var options = scope.ServiceProvider.GetRequiredService<IOptions<AuthOptions>>().Value;
+
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            UserName = "claims@example.test",
+            Email = "claims@example.test"
+        };
+
+        var before = DateTimeOffset.UtcNow;
+        var pair = await tokenService.CreateTokenPairAsync(user, cancellationToken);
+        var after = DateTimeOffset.UtcNow;
+
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(pair.AccessToken);
+        Assert.Equal(options.Issuer, jwt.Issuer);
+        Assert.Contains(options.Audience, jwt.Audiences);
+        Assert.Equal(user.Id.ToString(), jwt.Claims.Single(c => c.Type == JwtRegisteredClaimNames.Sub).Value);
+        Assert.Equal(user.Email, jwt.Claims.Single(c => c.Type == JwtRegisteredClaimNames.Email).Value);
+        Assert.NotEmpty(jwt.Claims.Single(c => c.Type == JwtRegisteredClaimNames.Jti).Value);
+
+        // Expiry should land within the configured window of when the call started.
+        var minExpected = before.AddMinutes(options.AccessTokenMinutes);
+        var maxExpected = after.AddMinutes(options.AccessTokenMinutes);
+        Assert.InRange(pair.AccessTokenExpiresAt, minExpected, maxExpected);
+
+        // Refresh token is a non-empty Base64 string with the documented byte length.
+        var refreshBytes = Convert.FromBase64String(pair.RefreshToken);
+        Assert.Equal(64, refreshBytes.Length);
+    }
+
+    [Fact]
+    public async Task CreateTokenPairAsync_GeneratesUniqueRefreshTokensAndJtis()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var services = CreateServices();
+        using var scope = services.CreateScope();
+        var tokenService = scope.ServiceProvider.GetRequiredService<IAuthTokenService>();
+
+        var user = new ApplicationUser
+        {
+            Id = Guid.NewGuid(),
+            UserName = "unique@example.test",
+            Email = "unique@example.test"
+        };
+
+        var first = await tokenService.CreateTokenPairAsync(user, cancellationToken);
+        var second = await tokenService.CreateTokenPairAsync(user, cancellationToken);
+
+        Assert.NotEqual(first.RefreshToken, second.RefreshToken);
+        var firstJti = new JwtSecurityTokenHandler()
+            .ReadJwtToken(first.AccessToken)
+            .Claims.Single(c => c.Type == JwtRegisteredClaimNames.Jti).Value;
+        var secondJti = new JwtSecurityTokenHandler()
+            .ReadJwtToken(second.AccessToken)
+            .Claims.Single(c => c.Type == JwtRegisteredClaimNames.Jti).Value;
+        Assert.NotEqual(firstJti, secondJti);
+    }
+
+    [Fact]
+    public async Task HashRefreshToken_IsDeterministicForSameInput()
+    {
+        await using var services = CreateServices();
+        using var scope = services.CreateScope();
+        var tokenService = scope.ServiceProvider.GetRequiredService<IAuthTokenService>();
+
+        // A real refresh token is base64; just feed the service a known base64 string.
+        var token = Convert.ToBase64String("the quick brown fox jumps over the lazy dog"u8.ToArray());
+
+        var first = tokenService.HashRefreshToken(token);
+        var second = tokenService.HashRefreshToken(token);
+
+        Assert.Equal(first, second);
+        Assert.Equal(64, first.Length); // SHA-256 hex
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task HashRefreshToken_ThrowsFormatException_WhenNotBase64()
+    {
+        await using var services = CreateServices();
+        using var scope = services.CreateScope();
+        var tokenService = scope.ServiceProvider.GetRequiredService<IAuthTokenService>();
+
+        Assert.Throws<FormatException>(() => tokenService.HashRefreshToken("not-base64-***"));
+        await Task.CompletedTask;
+    }
+
     private static ServiceProvider CreateServices()
     {
         var services = new ServiceCollection();
