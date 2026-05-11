@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { apiClient } from "@/lib/api/client"
-import type { Reputation, Review, TaskCategory, TaskStatus, User } from "@/lib/types"
+import type {
+  Reputation,
+  Review,
+  TaskCategory,
+  TaskStatus,
+  User,
+} from "@/lib/types"
 
 export interface ProfilePrivacySettingsResponse {
   showWorkplace: boolean

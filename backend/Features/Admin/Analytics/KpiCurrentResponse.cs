@@ -1,7 +1,9 @@
 using Backend.Infrastructure.Persistence.Analytics;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Admin.Analytics;
 
+[PublicAPI]
 public sealed record KpiCurrentResponse(
     long RegisteredUsers,
     long ActiveUsers7d,
