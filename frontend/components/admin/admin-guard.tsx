@@ -1,6 +1,7 @@
 "use client"
 
 import { Suspense } from "react"
+import type { ReactNode } from "react"
 
 import { AdminGuardInner } from "./admin-guard-inner"
 import { AdminGuardSkeleton } from "./admin-guard-skeleton"
@@ -24,7 +25,7 @@ import { AdminGuardSkeleton } from "./admin-guard-skeleton"
  * redirect unauthenticated visitors to /login (preserving the original
  * target as ?next=) and signed-in non-admins to /feed.
  */
-export function AdminGuard({ children }: { children: React.ReactNode }) {
+export function AdminGuard({ children }: { children: ReactNode }) {
   return (
     <Suspense fallback={<AdminGuardSkeleton />}>
       <AdminGuardInner>{children}</AdminGuardInner>

@@ -122,8 +122,9 @@ async function readAuthError(response: Response): Promise<string> {
   }
 
   if (isProblemDetails(body)) {
-    const validationError = firstValidationError(body.errors)
-    return validationError ?? body.title ?? response.statusText
+    const { errors, title } = body
+    const validationError = firstValidationError(errors)
+    return validationError ?? title ?? response.statusText
   }
 
   return response.status === 401

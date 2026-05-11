@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Sent02Icon } from "@hugeicons/core-free-icons"
+import type { SubmitEvent } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,7 +28,7 @@ interface ChatWindowProps {
 export function ChatWindow({ chat, messages }: ChatWindowProps) {
   const [draft, setDraft] = React.useState("")
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!draft.trim()) return
     // TODO: send message via API/socket

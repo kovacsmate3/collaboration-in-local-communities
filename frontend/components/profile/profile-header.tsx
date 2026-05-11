@@ -1,9 +1,11 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Briefcase01Icon,
+  Calendar03Icon,
   Location01Icon,
   ShieldUserIcon,
 } from "@hugeicons/core-free-icons"
+import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { UserAvatar } from "@/components/shared/user-avatar"
@@ -12,7 +14,7 @@ import type { User } from "@/lib/types"
 interface ProfileHeaderProps {
   user: User
   /** Right-side actions (Edit profile / Message). */
-  actions?: React.ReactNode
+  actions?: ReactNode
 }
 
 /**
@@ -54,6 +56,12 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
               <li className="flex items-center gap-1">
                 <HugeiconsIcon icon={Location01Icon} className="size-3.5" />
                 {user.location}
+              </li>
+            ) : null}
+            {user.availability ? (
+              <li className="flex items-center gap-1">
+                <HugeiconsIcon icon={Calendar03Icon} className="size-3.5" />
+                {user.availability}
               </li>
             ) : null}
           </ul>

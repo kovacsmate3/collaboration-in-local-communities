@@ -1,12 +1,13 @@
 "use client"
 
 import * as React from "react"
+import type { ComponentProps } from "react"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 
 function ThemeProvider({
   children,
   ...props
-}: React.ComponentProps<typeof NextThemesProvider>) {
+}: ComponentProps<typeof NextThemesProvider>) {
   return (
     <NextThemesProvider
       attribute="class"
@@ -51,8 +52,8 @@ function ThemeHotkey() {
       // extensions (devtools, password managers, etc.) and IME composition
       // events dispatch keydown events without a `key`, which would crash
       // the toLowerCase() call. Bail in that case, and also during IME
-      // composition (keyCode 229 is the legacy "composition" sentinel).
-      if (!event.key || event.isComposing || event.keyCode === 229) {
+      // composition.
+      if (!event.key || event.isComposing) {
         return
       }
 

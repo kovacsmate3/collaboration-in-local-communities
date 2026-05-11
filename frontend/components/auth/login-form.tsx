@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import type { SubmitEvent } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -28,7 +29,7 @@ export function LoginForm() {
   const searchParams = useSearchParams()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     setIsSubmitting(true)
 

@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+import type { SubmitEvent } from "react"
 
 import { LocationInput } from "@/components/shared/location-input"
 import { Button } from "@/components/ui/button"
@@ -58,7 +60,7 @@ export function PostTaskForm() {
     value: PostTaskFormState[K]
   ) => setForm((prev) => ({ ...prev, [key]: value }))
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     const taskDraft = {
       ...form,
@@ -183,8 +185,8 @@ export function PostTaskForm() {
       </fieldset>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost">
-          Cancel
+        <Button asChild variant="ghost">
+          <Link href="/feed">Cancel</Link>
         </Button>
         <Button type="submit">Post task</Button>
       </div>

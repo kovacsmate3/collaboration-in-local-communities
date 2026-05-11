@@ -1,12 +1,12 @@
-import * as React from "react"
+import type { ComponentProps, ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
 
-interface PageHeaderProps extends React.ComponentProps<"div"> {
+interface PageHeaderProps extends ComponentProps<"div"> {
   title: string
   description?: string
   /** Right-side actions (buttons, links). */
-  actions?: React.ReactNode
+  actions?: ReactNode
 }
 
 /**
