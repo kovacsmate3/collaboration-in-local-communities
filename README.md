@@ -24,6 +24,10 @@ Note: the Cosmos DB Linux emulator image is commonly x86_64-only. The compose fi
 
 `docker-compose.prod.yml` is the production-oriented compose file. It builds the app containers in their production targets and expects external runtime configuration such as the Cosmos endpoint/key instead of bundling the local emulator into that stack.
 
+## End-to-end tests
+
+A Playwright suite lives in [`e2e/`](./e2e) and exercises the full running stack (backend + frontend + Postgres + Cosmos). It runs in CI on every PR via [`.github/workflows/ci-e2e.yml`](./.github/workflows/ci-e2e.yml). See [`e2e/AGENTS.md`](./e2e/AGENTS.md) for how to run it locally.
+
 ## Coding conventions
 
 All formatting, linting, and style rules — for both backend (.NET / C#) and frontend (Next.js / TypeScript) — are documented in [`CONVENTIONS.md`](./CONVENTIONS.md). That file is the single source of truth; please read it before opening your first PR.
