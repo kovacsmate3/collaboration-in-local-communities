@@ -24,9 +24,9 @@ test.describe("Authentication", () => {
   }) => {
     await page.goto("/login")
 
-    await expect(
-      page.getByRole("heading", { name: "Welcome back" })
-    ).toBeVisible()
+    // CardTitle renders a <div>, not a real heading, so we can't use
+    // getByRole("heading") here. Match the visible title text instead.
+    await expect(page.getByText("Welcome back", { exact: true })).toBeVisible()
 
     await page.getByLabel("Email").fill(SEEDED_USER.email)
     await page.getByLabel("Password").fill(SEEDED_USER.password)
@@ -45,7 +45,7 @@ test.describe("Authentication", () => {
     await page.goto("/register")
 
     await expect(
-      page.getByRole("heading", { name: "Create your account" })
+      page.getByText("Create your account", { exact: true })
     ).toBeVisible()
 
     // Account step
