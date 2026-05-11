@@ -7,9 +7,11 @@ using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
 using Backend.Infrastructure.Persistence.Seeding;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using Scalar.AspNetCore;
 
@@ -138,25 +140,34 @@ builder.Services.AddControllers();
 builder.Services.AddOutputCache();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.ForwardLimit = builder.Configuration.GetValue<int?>("ForwardedHeaders:ForwardLimit") ?? 2;
+    // Only trust X-Forwarded-Proto from upstream proxies so Request.IsHttps reflects the
+    // original scheme (used for Secure cookies). X-Forwarded-For is intentionally not
+    // processed: the real client IP comes from the signed proxy token (FrontendProxyAuth).
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
 
-    foreach (var proxy in GetConfiguredIpAddresses(builder.Configuration, "ForwardedHeaders:KnownProxies"))
-    {
-        options.KnownProxies.Add(proxy);
-    }
-
-    foreach (var network in GetConfiguredIpNetworks(builder.Configuration, "ForwardedHeaders:KnownNetworks"))
-    {
-        options.KnownIPNetworks.Add(network);
-    }
+    // ACA's Envoy ingress reaches the app pod from a private RFC1918 address; trusting these
+    // ranges lets the framework accept the X-Forwarded-Proto header it sets.
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("10.0.0.0"), 8));
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("172.16.0.0"), 12));
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("192.168.0.0"), 16));
 });
+builder.Services.AddFrontendProxyAuth(builder.Configuration);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
 builder.Services.AddDevelopmentDataSeeders(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
+
+var proxyAuth = app.Services.GetRequiredService<IOptions<FrontendProxyAuthOptions>>().Value;
+if (proxyAuth.Enabled
+    && !app.Environment.IsDevelopment()
+    && string.IsNullOrWhiteSpace(proxyAuth.SigningKey))
+{
+    throw new InvalidOperationException(
+        "FrontendProxyAuth:SigningKey is required when FrontendProxyAuth is enabled outside Development. "
+        + "Set FrontendProxyAuth__SigningKey or disable it via FrontendProxyAuth__Enabled=false.");
+}
 
 using (var scope = app.Services.CreateScope())
 {
@@ -213,8 +224,8 @@ if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAIN
     app.UseHttpsRedirection();
 }
 
-app.Use(NormalizeRealIpHeaderAsync);
 app.UseForwardedHeaders();
+app.UseFrontendProxyAuth();
 
 app.UseRouting();
 app.UseOutputCache();
@@ -249,45 +260,4 @@ static string GetRequiredEnvironmentVariable(string name)
 {
     return Environment.GetEnvironmentVariable(name)
         ?? throw new InvalidOperationException($"Missing required environment variable: {name}.");
-}
-
-static Task NormalizeRealIpHeaderAsync(HttpContext context, RequestDelegate next)
-{
-    if (!context.Request.Headers.ContainsKey(ForwardedHeadersDefaults.XForwardedForHeaderName)
-        && context.Request.Headers.TryGetValue("X-Real-IP", out var realIp))
-    {
-        context.Request.Headers[ForwardedHeadersDefaults.XForwardedForHeaderName] = realIp;
-    }
-
-    return next(context);
-}
-
-static IEnumerable<IPAddress> GetConfiguredIpAddresses(IConfiguration configuration, string sectionName)
-{
-    foreach (var value in configuration.GetSection(sectionName).Get<string[]>() ?? [])
-    {
-        if (IPAddress.TryParse(value, out var address))
-        {
-            yield return address;
-            continue;
-        }
-
-        throw new InvalidOperationException(
-            $"Configuration value '{sectionName}' contains invalid IP address '{value}'.");
-    }
-}
-
-static IEnumerable<System.Net.IPNetwork> GetConfiguredIpNetworks(IConfiguration configuration, string sectionName)
-{
-    foreach (var value in configuration.GetSection(sectionName).Get<string[]>() ?? [])
-    {
-        if (System.Net.IPNetwork.TryParse(value, out var network))
-        {
-            yield return network;
-            continue;
-        }
-
-        throw new InvalidOperationException(
-            $"Configuration value '{sectionName}' contains invalid CIDR network '{value}'.");
-    }
 }

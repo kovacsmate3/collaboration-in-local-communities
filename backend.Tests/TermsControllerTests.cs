@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Backend.Domain.Entities;
 using Backend.Features.Terms;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -244,7 +245,7 @@ public sealed class TermsControllerTests
 
     private static TermsController CreateController(AppDbContext db, Guid userId)
     {
-        var controller = new TermsController(db)
+        var controller = new TermsController(db, new StubClientIpAccessor())
         {
             ControllerContext = new ControllerContext
             {
@@ -259,5 +260,10 @@ public sealed class TermsControllerTests
         };
 
         return controller;
+    }
+
+    private sealed class StubClientIpAccessor : IClientIpAccessor
+    {
+        public string? GetClientIp() => "127.0.0.1";
     }
 }
