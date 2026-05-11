@@ -1,9 +1,9 @@
 "use client"
 
-import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useState, type SubmitEvent } from "react"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -38,7 +38,7 @@ import {
 export function RegisterForm() {
   const { register } = useAuth()
   const router = useRouter()
-  const [step, setStep] = React.useState<RegistrationStep>("account")
+  const [step, setStep] = useState<RegistrationStep>("account")
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -49,7 +49,7 @@ export function RegisterForm() {
   const isSubmitting = form.formState.isSubmitting
   const serverError = form.formState.errors.root?.message
 
-  async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleFormSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (step === "account") {
