@@ -51,7 +51,7 @@ test.describe("Authentication", () => {
     // Account step
     await page.getByLabel("Email").fill(email)
     await page.getByLabel("Password").fill(password)
-    await page.getByRole("checkbox").check()
+    await page.getByRole("checkbox", { name: /I agree to the Terms/i }).check()
     await page.getByRole("button", { name: "Continue" }).click()
 
     // Profile step
