@@ -37,22 +37,37 @@ export function LocationField<TFieldValues extends FieldValues>({
     <FormField
       control={control}
       name={name}
-      render={({ field }) => (
-        <FormItem className="gap-3">
-          <LocationInput
-            id={field.name}
-            label={label}
-            required={required}
-            value={field.value}
-            onChange={field.onChange}
-            placeholder={placeholder}
-          />
-          {description ? (
-            <FormDescription>{description}</FormDescription>
-          ) : null}
-          <FormMessage />
-        </FormItem>
-      )}
+      render={({ field, fieldState }) => {
+        const inputId = `${field.name}-form-item`
+        const descriptionId = `${field.name}-form-item-description`
+        const messageId = `${field.name}-form-item-message`
+        const hasError = Boolean(fieldState.error)
+        const describedBy = [
+          description ? descriptionId : null,
+          hasError ? messageId : null,
+        ]
+          .filter(Boolean)
+          .join(" ")
+
+        return (
+          <FormItem className="gap-3">
+            <LocationInput
+              id={inputId}
+              label={label}
+              required={required}
+              value={field.value}
+              onChange={field.onChange}
+              placeholder={placeholder}
+              aria-describedby={describedBy || undefined}
+              aria-invalid={hasError}
+            />
+            {description ? (
+              <FormDescription id={descriptionId}>{description}</FormDescription>
+            ) : null}
+            <FormMessage id={messageId} />
+          </FormItem>
+        )
+      }}
     />
   )
 }
