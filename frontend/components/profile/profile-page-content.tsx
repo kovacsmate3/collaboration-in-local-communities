@@ -18,10 +18,11 @@ import {
   profileKeys,
   toProfileUser,
   useOwnProfile,
+  useProfileReviews,
+  useProfileTaskHistory,
   usePublicProfile,
 } from "@/lib/api/profile"
 import { apiClient } from "@/lib/api/client"
-import { mockReviews, mockTasks } from "@/lib/mock-data"
 
 interface ProfilePageContentProps {
   profileId?: string
@@ -88,10 +89,13 @@ function ProfileLoaded({
     .map((query, index) => query.data?.name ?? skillIds[index])
     .filter((name): name is string => Boolean(name))
   const profileUser = toProfileUser(profile, skillNames)
-  const reviews = mockReviews.filter((r) => r.targetUserId === profileUser.id)
-  const taskHistory = mockTasks.filter(
-    (t) => t.seeker.id === profileUser.id || t.helper?.id === profileUser.id
-  )
+  const reviewsQuery = useProfileReviews(profile.id)
+  const taskHistoryQuery = useProfileTaskHistory(profile.id)
+  const reviews = reviewsQuery.data ?? []
+  const taskHistory = taskHistoryQuery.data ?? []
+  const reviewsCount = reviewsQuery.data?.length ?? profile.reviewCount
+  const taskHistoryCount =
+    taskHistoryQuery.data?.length ?? profile.completedTaskCount
 
   return (
     <div className="flex flex-col gap-6">
@@ -113,18 +117,50 @@ function ProfileLoaded({
 
       <Tabs defaultValue="reviews">
         <TabsList>
-          <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
+          <TabsTrigger value="reviews">Reviews ({reviewsCount})</TabsTrigger>
           <TabsTrigger value="history">
-            History ({taskHistory.length})
+            History ({taskHistoryCount})
           </TabsTrigger>
         </TabsList>
         <TabsContent value="reviews">
-          <ReviewsList reviews={reviews} />
+          {reviewsQuery.isLoading ? (
+            <ProfileTabSkeleton />
+          ) : reviewsQuery.isError ? (
+            <ProfileTabError label="Reviews" />
+          ) : (
+            <ReviewsList reviews={reviews} />
+          )}
         </TabsContent>
         <TabsContent value="history">
-          <TaskHistory tasks={taskHistory} />
+          {taskHistoryQuery.isLoading ? (
+            <ProfileTabSkeleton />
+          ) : taskHistoryQuery.isError ? (
+            <ProfileTabError label="Task history" />
+          ) : (
+            <TaskHistory tasks={taskHistory} />
+          )}
         </TabsContent>
       </Tabs>
+    </div>
+  )
+}
+
+function ProfileTabError({ label }: { label: string }) {
+  return (
+    <Alert variant="destructive">
+      <AlertTitle>{label} unavailable</AlertTitle>
+      <AlertDescription>
+        This profile section could not be loaded. Please try again shortly.
+      </AlertDescription>
+    </Alert>
+  )
+}
+
+function ProfileTabSkeleton() {
+  return (
+    <div className="flex flex-col gap-3">
+      <Skeleton className="h-20 w-full" />
+      <Skeleton className="h-20 w-full" />
     </div>
   )
 }

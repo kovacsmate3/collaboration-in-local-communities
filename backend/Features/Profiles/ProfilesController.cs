@@ -56,6 +56,77 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
     }
 
     /// <summary>
+    /// Get reviews received by a profile.
+    /// </summary>
+    /// <param name="id">The profile ID whose reviews should be returned.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>
+    /// 200 OK with reviews ordered newest first.
+    /// 404 Not Found if the profile does not exist.
+    /// </returns>
+    [HttpGet("{id:guid}/reviews")]
+    public async Task<IActionResult> GetProfileReviewsAsync(Guid id, CancellationToken cancellationToken)
+    {
+        if (!await ProfileExistsAsync(id, cancellationToken))
+        {
+            return NotFound();
+        }
+
+        var reviews = await db.Reviews
+            .AsNoTracking()
+            .Where(review => review.RevieweeProfileId == id)
+            .OrderByDescending(review => review.CreatedAt)
+            .Select(review => new ProfileReviewResponse(
+                review.Id,
+                review.TaskId,
+                review.ReviewerProfileId,
+                review.ReviewerProfile.DisplayName,
+                review.ReviewerProfile.PhotoUrl,
+                review.RevieweeProfileId,
+                review.Rating,
+                review.Comment ?? string.Empty,
+                review.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        return Ok(reviews);
+    }
+
+    /// <summary>
+    /// Get tasks posted by or accepted by a profile.
+    /// </summary>
+    /// <param name="id">The profile ID whose task history should be returned.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>
+    /// 200 OK with tasks ordered newest first.
+    /// 404 Not Found if the profile does not exist.
+    /// </returns>
+    [HttpGet("{id:guid}/task-history")]
+    public async Task<IActionResult> GetProfileTaskHistoryAsync(Guid id, CancellationToken cancellationToken)
+    {
+        if (!await ProfileExistsAsync(id, cancellationToken))
+        {
+            return NotFound();
+        }
+
+        var tasks = await db.Tasks
+            .AsNoTracking()
+            .Where(task => task.SeekerProfileId == id || task.AcceptedHelperProfileId == id)
+            .OrderByDescending(task => task.CreatedAt)
+            .Select(task => new ProfileTaskHistoryResponse(
+                task.Id,
+                task.Title,
+                task.CategoryId,
+                task.Category.Code,
+                task.Category.Name,
+                task.Category.Icon,
+                task.Status.ToString(),
+                task.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        return Ok(tasks);
+    }
+
+    /// <summary>
     /// Get the current authenticated user's privacy settings.
     /// </summary>
     /// <returns>
@@ -337,5 +408,12 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
 
         location = new Point(longitude.Value, latitude.Value) { SRID = 4326 };
         return true;
+    }
+
+    private Task<bool> ProfileExistsAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return db.Profiles
+            .AsNoTracking()
+            .AnyAsync(profile => profile.Id == id, cancellationToken);
     }
 }

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { apiClient } from "@/lib/api/client"
-import type { Reputation, User } from "@/lib/types"
+import type { Reputation, Review, TaskCategory, TaskStatus, User } from "@/lib/types"
 
 export interface ProfilePrivacySettingsResponse {
   showWorkplace: boolean
@@ -67,10 +67,45 @@ export interface SkillResponse {
   status: string
 }
 
+export interface ProfileReviewResponse {
+  id: string
+  taskId: string
+  authorId: string
+  authorName: string
+  authorAvatarUrl?: string | null
+  targetUserId: string
+  rating: number
+  comment: string
+  createdAt: string
+}
+
+export interface ProfileTaskHistoryResponse {
+  id: string
+  title: string
+  categoryId: string
+  categoryCode: string
+  categoryName: string
+  categoryIcon: string
+  status: string
+  createdAt: string
+}
+
+export interface ProfileTaskHistoryItem {
+  id: string
+  title: string
+  category: TaskCategory
+  icon: string
+  status: TaskStatus
+  createdAt: string
+}
+
 export const profileKeys = {
   all: ["profiles"] as const,
   me: () => [...profileKeys.all, "me"] as const,
   public: (id: string) => [...profileKeys.all, "public", id] as const,
+  reviews: (id: string) => [...profileKeys.public(id), "reviews"] as const,
+  taskHistory: (id: string) =>
+    [...profileKeys.public(id), "task-history"] as const,
   skill: (id: string) => ["skills", "detail", id] as const,
   skills: (prefix: string) => ["skills", "search", prefix] as const,
 }
@@ -101,6 +136,34 @@ export function useUpdateOwnProfile() {
       qc.setQueryData(profileKeys.me(), profile)
       void qc.invalidateQueries({ queryKey: profileKeys.all })
     },
+  })
+}
+
+export function useProfileReviews(id: string) {
+  return useQuery({
+    queryKey: profileKeys.reviews(id),
+    queryFn: async () => {
+      const reviews = await apiClient.get<ProfileReviewResponse[]>(
+        `/profiles/${id}/reviews`
+      )
+
+      return reviews.map(toReview)
+    },
+    enabled: id.length > 0,
+  })
+}
+
+export function useProfileTaskHistory(id: string) {
+  return useQuery({
+    queryKey: profileKeys.taskHistory(id),
+    queryFn: async () => {
+      const tasks = await apiClient.get<ProfileTaskHistoryResponse[]>(
+        `/profiles/${id}/task-history`
+      )
+
+      return tasks.map(toProfileTaskHistoryItem)
+    },
+    enabled: id.length > 0,
   })
 }
 
@@ -139,6 +202,61 @@ export function toProfileUser(
     reputation: toReputation(profile),
     verified: false,
     joinedAt: "createdAt" in profile ? profile.createdAt : "",
+  }
+}
+
+const taskCategoryByBackendCode: Record<string, TaskCategory> = {
+  moving: "moving",
+  tutoring: "tutoring",
+  repairs: "household",
+  cleaning: "household",
+  pet_care: "petcare",
+  shopping: "errands",
+  errands: "errands",
+  other: "other",
+}
+
+function toReview(review: ProfileReviewResponse): Review {
+  return {
+    id: review.id,
+    taskId: review.taskId,
+    authorId: review.authorId,
+    authorName: review.authorName,
+    authorAvatarUrl: review.authorAvatarUrl ?? undefined,
+    targetUserId: review.targetUserId,
+    rating: review.rating,
+    comment: review.comment,
+    createdAt: review.createdAt,
+  }
+}
+
+function toProfileTaskHistoryItem(
+  task: ProfileTaskHistoryResponse
+): ProfileTaskHistoryItem {
+  return {
+    id: task.id,
+    title: task.title,
+    category: taskCategoryByBackendCode[task.categoryCode] ?? "other",
+    icon: task.categoryIcon,
+    status: toTaskStatus(task.status),
+    createdAt: task.createdAt,
+  }
+}
+
+function toTaskStatus(status: string): TaskStatus {
+  switch (status.toLowerCase()) {
+    case "open":
+      return "open"
+    case "inprogress":
+    case "in_progress":
+      return "in_progress"
+    case "completed":
+      return "completed"
+    case "cancelled":
+    case "canceled":
+      return "cancelled"
+    default:
+      return "open"
   }
 }
 
