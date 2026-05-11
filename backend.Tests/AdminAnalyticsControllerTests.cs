@@ -9,21 +9,18 @@ namespace backend.Tests;
 public sealed class AdminAnalyticsControllerTests
 {
     [Fact]
-    public async Task GetKpiAsync_ReturnsZeroedKpi_WhenReadModelIsEmpty()
+    public async Task GetKpiAsync_ReturnsNotFound_WhenReadModelIsEmpty()
     {
+        // Note: KpiCurrent maps to a PostgreSQL view (kpi_current_v) that always returns
+        // a single aggregate row in production. An empty result can only happen when the
+        // view is unavailable or the database is in an unexpected state.
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
         var controller = new AdminAnalyticsController(db);
 
         var result = await controller.GetKpiAsync(cancellationToken);
 
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var response = Assert.IsType<KpiCurrentResponse>(ok.Value);
-        Assert.Equal(0, response.RegisteredUsers);
-        Assert.Equal(0, response.ActiveUsers7d);
-        Assert.Equal(0, response.TasksPosted7d);
-        Assert.Equal(0, response.CompletedTasks7d);
-        Assert.Equal(0, response.CompletionRate7d);
+        Assert.IsType<NotFoundResult>(result);
     }
 
     private static AppDbContext CreateDbContext()

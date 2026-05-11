@@ -17,6 +17,11 @@ public sealed class AdminAnalyticsController(AppDbContext db) : ControllerBase
             .AsNoTracking()
             .FirstOrDefaultAsync(cancellationToken);
 
+        if (current is null)
+        {
+            return NotFound();
+        }
+
         return Ok(KpiCurrentResponse.FromReadModel(current));
     }
 }
