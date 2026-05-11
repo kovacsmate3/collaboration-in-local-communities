@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import type { FormEvent } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -59,6 +60,11 @@ export function LoginForm() {
     }
   }
 
+  function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
+    form.clearErrors("root")
+    void form.handleSubmit(onSubmit)(event)
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
@@ -72,7 +78,7 @@ export function LoginForm() {
           <Form {...form}>
             <form
               noValidate
-              onSubmit={form.handleSubmit(onSubmit)}
+              onSubmit={handleFormSubmit}
               className="grid gap-6"
             >
               <TextField<LoginFormValues>
