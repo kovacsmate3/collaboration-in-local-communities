@@ -3,9 +3,11 @@ using Azure.Identity;
 using Backend.Application.Categories;
 using Backend.Features.Auth;
 using Backend.Infrastructure.Identity;
+using Backend.Infrastructure.OpenApi;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
 using Backend.Infrastructure.Persistence.Seeding;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -23,7 +25,7 @@ if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     });
 }
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApiWithJwt();
 
 builder.Services.AddSingleton(_ =>
 {
@@ -173,16 +175,21 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "CosmosDB connection check failed");
-        throw;
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "CosmosDB connection check failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
     }
 }
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapScalarWithJwt();
 
     using var seedScope = app.Services.CreateScope();
     var db = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
