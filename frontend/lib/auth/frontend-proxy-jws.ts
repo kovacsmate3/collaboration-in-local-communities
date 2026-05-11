@@ -80,24 +80,17 @@ function base64UrlEncode(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
 }
 
-export function getClientIpFromRequest(request: NextRequest): string {
-  const candidates = [
-    request.headers.get("x-vercel-forwarded-for"),
-    request.headers.get("x-forwarded-for"),
-    request.headers.get("x-real-ip"),
-  ]
-
-  for (const candidate of candidates) {
-    if (!candidate) {
-      continue
-    }
-    const first = candidate.split(",")[0]?.trim()
-    if (first) {
-      return first
-    }
+export function getClientIpFromRequest(request: NextRequest): string | null {
+  // Only trust x-vercel-forwarded-for: Vercel injects this server-side and
+  // strips any client-supplied value, so it cannot be forged by the caller.
+  // x-forwarded-for and x-real-ip are user-controllable in topologies where
+  // the outer proxy does not overwrite them.
+  const header = request.headers.get("x-vercel-forwarded-for")
+  if (!header) {
+    return null
   }
-
-  return ""
+  const first = header.split(",")[0]?.trim()
+  return first || null
 }
 
 export async function applyProxyAuth(
@@ -110,8 +103,13 @@ export async function applyProxyAuth(
     outbound.delete(header)
   }
 
+  const ip = getClientIpFromRequest(request)
+  if (!ip) {
+    return
+  }
+
   const token = await signProxyToken({
-    ip: getClientIpFromRequest(request),
+    ip,
     method,
     path: backendUrl.pathname,
   })
