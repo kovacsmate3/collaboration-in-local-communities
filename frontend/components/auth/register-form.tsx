@@ -158,5 +158,5 @@ export function RegisterForm() {
 }
 
 function hasAccountErrors(errors: FieldErrors<RegisterFormValues>): boolean {
-  return Boolean(errors.email || errors.password || errors.acceptTerms)
+  return REGISTER_ACCOUNT_FIELDS.some((field) => Boolean(errors[field]))
 }
