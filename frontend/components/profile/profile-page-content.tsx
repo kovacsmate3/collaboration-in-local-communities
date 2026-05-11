@@ -79,7 +79,7 @@ function ProfileLoaded({
   const skillIds = "skillIds" in profile ? profile.skillIds : []
   const skillQueries = useQueries({
     queries: skillIds.map((id) => ({
-      queryKey: profileKeys.skill(id),
+      queryKey: [...profileKeys.skill(id), "name-only"],
       queryFn: () => apiClient.get<{ name: string }>(`/skills/${id}`),
       enabled: id.length > 0,
     })),
