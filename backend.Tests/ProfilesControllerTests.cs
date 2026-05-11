@@ -81,6 +81,9 @@ public sealed class ProfilesControllerTests
     [Fact]
     public async Task UpdateOwnProfileAsync_PersistsLocationWithSrid4326_WhenValidCoordinatesProvided()
     {
+        // Note: SRID is a plain property on the NetTopologySuite Point object.
+        // EF Core InMemory stores .NET objects as-is, so SRID is preserved without
+        // needing a real PostGIS-enabled database for this assertion.
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
         var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
