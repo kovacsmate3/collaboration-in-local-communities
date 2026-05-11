@@ -51,10 +51,9 @@ export function RegisterForm() {
 
   async function handleFormSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
+    form.clearErrors("root")
 
     if (step === "account") {
-      form.clearErrors("root")
-
       const accountFieldsAreValid = await form.trigger(
         REGISTER_ACCOUNT_FIELDS,
         { shouldFocus: true }
