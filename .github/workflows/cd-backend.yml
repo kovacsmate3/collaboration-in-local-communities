@@ -88,10 +88,12 @@ jobs:
 
       - name: Run database migrations
         run: dotnet ef database update --project backend
+        # ASP.NET Core maps `__` in env-var names to `:` in configuration keys, so
+        # these bind to the Azure:Postgres:* options that backend/Program.cs reads.
         env:
-          AZURE_POSTGRESQL_HOST: ${{ secrets.AZURE_POSTGRESQL_HOST }}
-          AZURE_POSTGRESQL_DATABASE: ${{ secrets.AZURE_POSTGRESQL_DATABASE }}
-          AZURE_POSTGRESQL_USERNAME: ${{ secrets.AZURE_POSTGRESQL_USERNAME }}
+          Azure__Postgres__Host: ${{ secrets.AZURE_POSTGRESQL_HOST }}
+          Azure__Postgres__Database: ${{ secrets.AZURE_POSTGRESQL_DATABASE }}
+          Azure__Postgres__Username: ${{ secrets.AZURE_POSTGRESQL_USERNAME }}
 
       - name: Deploy to Container App
         uses: azure/container-apps-deploy-action@v2
