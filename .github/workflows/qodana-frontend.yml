@@ -6,7 +6,7 @@ on:
         paths:
             - "frontend/**"
     push:
-        branches: [development]
+        branches: [main, development]
         paths:
             - "frontend/**"
 
@@ -38,7 +38,7 @@ jobs:
               uses: JetBrains/qodana-action@v2026.1
               with:
                   args: --config qodana-frontend.yaml -d frontend
-                  pr-mode: false
+                  pr-mode: ${{ github.event_name == 'pull_request' }}
               env:
                   QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_FRONTEND }}
                   QODANA_ENDPOINT: https://qodana.cloud
