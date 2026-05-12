@@ -7,11 +7,9 @@ using Backend.Infrastructure.OpenApi;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
 using Backend.Infrastructure.Persistence.Seeding;
-using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 

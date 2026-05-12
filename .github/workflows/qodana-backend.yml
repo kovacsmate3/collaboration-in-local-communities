@@ -28,7 +28,7 @@ jobs:
               uses: JetBrains/qodana-action@v2026.1
               with:
                   args: --config qodana-backend.yaml
-                  pr-mode: false
+                  pr-mode: true
               env:
                   QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_BACKEND }}
                   QODANA_ENDPOINT: https://qodana.cloud
