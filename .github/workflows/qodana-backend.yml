@@ -6,7 +6,7 @@ on:
         paths:
             - "backend/**"
     push:
-        branches: [development]
+        branches: [main, development]
         paths:
             - "backend/**"
 
@@ -28,7 +28,7 @@ jobs:
               uses: JetBrains/qodana-action@v2026.1
               with:
                   args: --config qodana-backend.yaml
-                  pr-mode: true
+                  pr-mode: ${{ github.event_name == 'pull_request' }}
               env:
                   QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_BACKEND }}
                   QODANA_ENDPOINT: https://qodana.cloud
