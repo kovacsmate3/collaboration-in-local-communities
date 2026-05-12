@@ -218,14 +218,14 @@ if (app.Environment.IsDevelopment())
     await seedScope.ServiceProvider.RunDataSeedersAsync();
 }
 
+app.UseForwardedHeaders();
+app.UseFrontendProxyAuth();
+
 // Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080)
 if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), out var inContainer) || !inContainer)
 {
     app.UseHttpsRedirection();
 }
-
-app.UseForwardedHeaders();
-app.UseFrontendProxyAuth();
 
 app.UseRouting();
 app.UseOutputCache();
