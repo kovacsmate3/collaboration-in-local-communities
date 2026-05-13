@@ -18,6 +18,7 @@ import {
   setAccessTokenCookie,
   toSafeAuthResponse,
 } from "@/lib/auth/backend"
+import { applyProxyAuth } from "@/lib/auth/frontend-proxy-jws"
 import type { BackendAuthResponse } from "@/lib/auth/types"
 
 type ApiRouteContext = {
@@ -150,7 +151,10 @@ async function fetchBackend(
     headers.set("authorization", `Bearer ${accessToken}`)
   }
 
-  return fetch(getBackendUrl(path, request.url), {
+  const backendUrl = getBackendUrl(path, request.url)
+  await applyProxyAuth(request, headers, backendUrl, request.method)
+
+  return fetch(backendUrl, {
     method: request.method,
     headers,
     body: requestBody ? requestBody.slice(0) : undefined,

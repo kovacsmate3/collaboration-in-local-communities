@@ -83,7 +83,7 @@ public sealed partial class AuthController
 
     private string? GetClientIp()
     {
-        return HttpContext.Connection.RemoteIpAddress?.ToString();
+        return clientIpAccessor.GetClientIp();
     }
 
     private void SetRefreshTokenCookie(AuthTokenResult tokens)

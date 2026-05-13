@@ -4,6 +4,7 @@ using Backend.Domain.Enums;
 using Backend.Features.Terms;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +17,8 @@ namespace Backend.Features.Auth;
 public sealed partial class AuthController(
     AppDbContext db,
     UserManager<ApplicationUser> userManager,
-    IAuthTokenService tokenService) : ControllerBase
+    IAuthTokenService tokenService,
+    IClientIpAccessor clientIpAccessor) : ControllerBase
 {
     private const string RefreshTokenCookieName = "refreshToken";
 

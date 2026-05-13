@@ -1,3 +1,4 @@
+using System.Net;
 using Azure.Core;
 using Azure.Identity;
 using Backend.Application.Categories;
@@ -7,8 +8,11 @@ using Backend.Infrastructure.OpenApi;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
 using Backend.Infrastructure.Persistence.Seeding;
+using Backend.Infrastructure.Security;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -134,12 +138,36 @@ builder.Services.AddApplicationIdentity();
 
 builder.Services.AddControllers();
 builder.Services.AddOutputCache();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    // Only trust X-Forwarded-Proto from upstream proxies so Request.IsHttps reflects the
+    // original scheme (used for Secure cookies). X-Forwarded-For is intentionally not
+    // processed: the real client IP comes from the signed proxy token (FrontendProxyAuth).
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+
+    // ACA's Envoy ingress reaches the app pod from a private RFC1918 address; trusting these
+    // ranges lets the framework accept the X-Forwarded-Proto header it sets.
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("10.0.0.0"), 8));
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("172.16.0.0"), 12));
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("192.168.0.0"), 16));
+});
+builder.Services.AddFrontendProxyAuth(builder.Configuration);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
 builder.Services.AddDevelopmentDataSeeders(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
+
+var proxyAuth = app.Services.GetRequiredService<IOptions<FrontendProxyAuthOptions>>().Value;
+if (proxyAuth.Enabled
+    && !app.Environment.IsDevelopment()
+    && string.IsNullOrWhiteSpace(proxyAuth.SigningKey))
+{
+    throw new InvalidOperationException(
+        "FrontendProxyAuth:SigningKey is required when FrontendProxyAuth is enabled outside Development. "
+        + "Set FrontendProxyAuth__SigningKey or disable it via FrontendProxyAuth__Enabled=false.");
+}
 
 using (var scope = app.Services.CreateScope())
 {
@@ -194,6 +222,9 @@ if (app.Environment.IsDevelopment())
     await db.Database.MigrateAsync();
     await seedScope.ServiceProvider.RunDataSeedersAsync();
 }
+
+app.UseForwardedHeaders();
+app.UseFrontendProxyAuth();
 
 // Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080)
 if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), out var inContainer) || !inContainer)
