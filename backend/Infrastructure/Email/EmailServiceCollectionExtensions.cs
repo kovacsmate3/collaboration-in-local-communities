@@ -9,7 +9,10 @@ public static class EmailServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
+        services.AddOptions<EmailOptions>()
+            .Bind(configuration.GetSection(EmailOptions.SectionName))
+            .Validate(o => !string.IsNullOrWhiteSpace(o.ApiKey), "SendGrid:ApiKey is required.")
+            .ValidateOnStart();
         services.AddScoped<IEmailSender, SendGridEmailSender>();
         return services;
     }

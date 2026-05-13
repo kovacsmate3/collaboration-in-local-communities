@@ -11,7 +11,7 @@ public sealed class EmailOptions : SendGridClientOptions
         SetDataResidency("eu");
     }
 
-    public string FromEmail { get; set; } = "noreply@2gather.example.com";
+    public string FromEmail { get; set; } = "noreply@2gather.hu";
     public string FromName { get; set; } = "2gather";
     public string FrontendBaseUrl { get; set; } = "http://localhost:3000";
 }

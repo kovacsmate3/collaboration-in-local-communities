@@ -15,8 +15,8 @@ internal sealed class SendGridEmailSender(
         string htmlContent,
         CancellationToken cancellationToken = default)
     {
-        var client = new SendGridClient(options.Value.ApiKey);
-        var from = new EmailAddress("amrigw@inf.elte.hu", "2gather");
+        var client = new SendGridClient(options.Value);
+        var from = new EmailAddress(options.Value.FromEmail, options.Value.FromName);
         var to = new EmailAddress(toEmail);
         var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent: null, htmlContent);
         var response = await client.SendEmailAsync(msg, cancellationToken);
