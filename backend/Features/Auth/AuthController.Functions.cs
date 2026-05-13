@@ -2,7 +2,6 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using Backend.Domain.Entities;
-using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
