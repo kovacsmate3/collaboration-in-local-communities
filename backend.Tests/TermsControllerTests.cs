@@ -264,6 +264,6 @@ public sealed class TermsControllerTests
 
     private sealed class StubClientIpAccessor : IClientIpAccessor
     {
-        public string? GetClientIp() => "127.0.0.1";
+        public string GetClientIp() => "127.0.0.1";
     }
 }

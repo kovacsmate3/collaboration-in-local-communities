@@ -18,7 +18,7 @@ public sealed class FrontendProxyAuthMiddlewareTests
     [Fact]
     public async Task BypassesInDevelopmentEvenWithoutToken()
     {
-        var (middleware, _) = Build(env: Environments.Development);
+        var middleware = Build(env: Environments.Development);
         var context = NewContext("POST", "/api/auth/login");
 
         await middleware.InvokeAsync(context);
@@ -30,7 +30,7 @@ public sealed class FrontendProxyAuthMiddlewareTests
     [Fact]
     public async Task BypassesHealthEndpointInProduction()
     {
-        var (middleware, _) = Build();
+        var middleware = Build();
         var context = NewContext("GET", "/health");
 
         await middleware.InvokeAsync(context);
@@ -42,7 +42,7 @@ public sealed class FrontendProxyAuthMiddlewareTests
     public async Task AcceptsValidTokenAndStashesIp()
     {
         var fixedNow = DateTimeOffset.FromUnixTimeSeconds(1_700_000_000);
-        var (middleware, _) = Build(time: new FixedTimeProvider(fixedNow));
+        var middleware = Build(time: new FixedTimeProvider(fixedNow));
         var token = MakeToken(fixedNow, "203.0.113.7", "POST", "/api/auth/login");
         var context = NewContext("POST", "/api/auth/login");
         context.Request.Headers["X-Frontend-Auth"] = token;
@@ -56,7 +56,7 @@ public sealed class FrontendProxyAuthMiddlewareTests
     [Fact]
     public async Task RejectsMissingToken()
     {
-        var (middleware, _) = Build();
+        var middleware = Build();
         var context = NewContext("POST", "/api/auth/login");
 
         await middleware.InvokeAsync(context);
@@ -68,7 +68,7 @@ public sealed class FrontendProxyAuthMiddlewareTests
     public async Task RejectsExpiredToken()
     {
         var fixedNow = DateTimeOffset.FromUnixTimeSeconds(1_700_000_000);
-        var (middleware, _) = Build(time: new FixedTimeProvider(fixedNow));
+        var middleware = Build(time: new FixedTimeProvider(fixedNow));
         var staleIssuedAt = fixedNow.AddMinutes(-5);
         var token = MakeToken(staleIssuedAt, "203.0.113.7", "POST", "/api/auth/login");
         var context = NewContext("POST", "/api/auth/login");
@@ -83,7 +83,7 @@ public sealed class FrontendProxyAuthMiddlewareTests
     public async Task RejectsPathMismatch()
     {
         var fixedNow = DateTimeOffset.FromUnixTimeSeconds(1_700_000_000);
-        var (middleware, _) = Build(time: new FixedTimeProvider(fixedNow));
+        var middleware = Build(time: new FixedTimeProvider(fixedNow));
         var token = MakeToken(fixedNow, "203.0.113.7", "POST", "/api/auth/login");
         var context = NewContext("POST", "/api/admin/categories");
         context.Request.Headers["X-Frontend-Auth"] = token;
@@ -97,7 +97,7 @@ public sealed class FrontendProxyAuthMiddlewareTests
     public async Task RejectsMethodMismatch()
     {
         var fixedNow = DateTimeOffset.FromUnixTimeSeconds(1_700_000_000);
-        var (middleware, _) = Build(time: new FixedTimeProvider(fixedNow));
+        var middleware = Build(time: new FixedTimeProvider(fixedNow));
         var token = MakeToken(fixedNow, "203.0.113.7", "POST", "/api/auth/login");
         var context = NewContext("DELETE", "/api/auth/login");
         context.Request.Headers["X-Frontend-Auth"] = token;
@@ -111,7 +111,7 @@ public sealed class FrontendProxyAuthMiddlewareTests
     public async Task RejectsTamperedSignature()
     {
         var fixedNow = DateTimeOffset.FromUnixTimeSeconds(1_700_000_000);
-        var (middleware, _) = Build(time: new FixedTimeProvider(fixedNow));
+        var middleware = Build(time: new FixedTimeProvider(fixedNow));
         var token = MakeToken(fixedNow, "203.0.113.7", "POST", "/api/auth/login");
         var tampered = token[..^1] + (token[^1] == 'A' ? 'B' : 'A');
         var context = NewContext("POST", "/api/auth/login");
@@ -139,7 +139,7 @@ public sealed class FrontendProxyAuthMiddlewareTests
         Assert.NotEqual(StatusCodes.Status404NotFound, context.Response.StatusCode);
     }
 
-    private static (FrontendProxyAuthMiddleware middleware, FrontendProxyAuthOptions options) Build(
+    private static FrontendProxyAuthMiddleware Build(
         string? env = null,
         TimeProvider? time = null)
     {
@@ -150,7 +150,7 @@ public sealed class FrontendProxyAuthMiddlewareTests
             new StubHostEnvironment(env ?? Environments.Production),
             time ?? TimeProvider.System,
             NullLogger<FrontendProxyAuthMiddleware>.Instance);
-        return (middleware, options);
+        return middleware;
     }
 
     private static DefaultHttpContext NewContext(string method, string path)

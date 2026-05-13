@@ -77,8 +77,16 @@ public sealed class FrontendProxyAuthMiddleware(
 
         try
         {
-            payload = JsonSerializer.Deserialize<ProxyTokenPayload>(buffer.AsSpan(0, decodedLength), _serializerOptions)!;
-            return payload is not null;
+            var deserializedPayload = JsonSerializer.Deserialize<ProxyTokenPayload>(
+                buffer.AsSpan(0, decodedLength),
+                _serializerOptions);
+            if (deserializedPayload is null)
+            {
+                return false;
+            }
+
+            payload = deserializedPayload;
+            return true;
         }
         catch (JsonException)
         {
