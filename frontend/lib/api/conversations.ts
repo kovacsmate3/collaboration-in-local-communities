@@ -56,7 +56,7 @@ export function useConversationMessages(id: string) {
   return useQuery({
     queryKey: conversationKeys.messages(id),
     queryFn: () => apiClient.get<ApiMessage[]>(`/conversations/${id}/messages`),
-    enabled: !!id,
+    enabled: Boolean(id),
   })
 }
 

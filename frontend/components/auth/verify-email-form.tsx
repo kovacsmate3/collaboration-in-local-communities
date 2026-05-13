@@ -18,20 +18,20 @@ type Status = "loading" | "success" | "error"
 
 export function VerifyEmailForm() {
   const searchParams = useSearchParams()
-  const [status, setStatus] = React.useState<Status>("loading")
+  const userId = searchParams.get("userId")
+  const token = searchParams.get("token")
+  const hasParams = Boolean(userId && token)
+  const [status, setStatus] = React.useState<Status>(
+    hasParams ? "loading" : "error"
+  )
   const [errorMessage, setErrorMessage] = React.useState(
-    "The link has expired or is invalid."
+    hasParams
+      ? "The link has expired or is invalid."
+      : "The verification link is incomplete."
   )
 
   React.useEffect(() => {
-    const userId = searchParams.get("userId")
-    const token = searchParams.get("token")
-
-    if (!userId || !token) {
-      setErrorMessage("The verification link is incomplete.")
-      setStatus("error")
-      return
-    }
+    if (!userId || !token) return
 
     const controller = new AbortController()
 
@@ -66,7 +66,7 @@ export function VerifyEmailForm() {
     return () => {
       controller.abort()
     }
-  }, [searchParams])
+  }, [searchParams, userId, token])
 
   if (status === "loading") {
     return (

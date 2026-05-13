@@ -20,10 +20,7 @@ export function RichTextEditor({
   className,
 }: RichTextEditorProps) {
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder }),
-    ],
+    extensions: [StarterKit, Placeholder.configure({ placeholder })],
     content: value || "<p></p>",
     onUpdate({ editor: e }) {
       onChange(e.getHTML())
@@ -32,7 +29,9 @@ export function RichTextEditor({
   })
 
   return (
-    <div className={cn("flex flex-col rounded-md border border-input", className)}>
+    <div
+      className={cn("flex flex-col rounded-md border border-input", className)}
+    >
       <div
         className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/40 p-1"
         role="toolbar"
@@ -81,7 +80,7 @@ export function RichTextEditor({
           active={editor?.isActive("blockquote") ?? false}
           title="Blockquote"
         >
-          "
+          &ldquo;
         </ToolbarButton>
       </div>
 
@@ -94,7 +93,7 @@ export function RichTextEditor({
           "[&_.ProseMirror_p.is-editor-empty:first-child::before]:float-left",
           "[&_.ProseMirror_p.is-editor-empty:first-child::before]:h-0",
           "[&_.ProseMirror_p.is-editor-empty:first-child::before]:text-muted-foreground",
-          "[&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]",
+          "[&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]"
         )}
       />
     </div>
@@ -124,7 +123,7 @@ function ToolbarButton({
       className={cn(
         "min-w-7 rounded px-1.5 py-1 text-sm leading-none transition-colors",
         "hover:bg-muted",
-        active && "bg-muted font-semibold",
+        active && "bg-muted font-semibold"
       )}
     >
       {children}

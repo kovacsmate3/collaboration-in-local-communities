@@ -65,7 +65,7 @@ export function usePublicProfile(id: string) {
   return useQuery({
     queryKey: profileKeys.public(id),
     queryFn: () => apiClient.get<ApiPublicProfile>(`/profiles/${id}`),
-    enabled: !!id,
+    enabled: Boolean(id),
   })
 }
 

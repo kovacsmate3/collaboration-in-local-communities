@@ -60,7 +60,9 @@ export const taskKeys = {
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
-export function useTaskList(filters: { status?: string; categoryId?: string } = {}) {
+export function useTaskList(
+  filters: { status?: string; categoryId?: string } = {}
+) {
   const params = new URLSearchParams()
   if (filters.status) params.set("status", filters.status)
   if (filters.categoryId) params.set("categoryId", filters.categoryId)
@@ -76,7 +78,7 @@ export function useTask(id: string) {
   return useQuery({
     queryKey: taskKeys.detail(id),
     queryFn: () => apiClient.get<ApiTask>(`/tasks/${id}`),
-    enabled: !!id,
+    enabled: Boolean(id),
   })
 }
 
