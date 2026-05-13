@@ -26,7 +26,7 @@ interface AuthContextValue {
   isAdmin: boolean
   refreshSession: (signal?: AbortSignal) => Promise<AuthUser | undefined>
   login: (input: LoginInput) => Promise<AuthUser>
-  register: (input: RegisterInput) => Promise<void>
+  register: (input: RegisterInput) => Promise<string>
   logout: () => Promise<void>
 }
 
@@ -85,7 +85,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const register = React.useCallback(async (input: RegisterInput) => {
-    await authMutation(AUTH_API_PATHS.register, input)
+    const body = await authMutation(AUTH_API_PATHS.register, input)
+    if (
+      typeof body === "object" &&
+      body !== null &&
+      "message" in body &&
+      typeof (body as Record<string, unknown>).message === "string"
+    ) {
+      return (body as Record<string, unknown>).message as string
+    }
+    return "Registration successful. Please check your email to verify your account."
   }, [])
 
   const logout = React.useCallback(async () => {

@@ -105,7 +105,7 @@ export async function resendVerificationEmail(email: string): Promise<void> {
 export async function authMutation(
   path: string,
   input: LoginInput | RegisterInput
-) {
+): Promise<unknown> {
   const response = await fetch(path, {
     method: "POST",
     headers: {
@@ -118,6 +118,12 @@ export async function authMutation(
   if (!response.ok) {
     throw new Error(await readAuthError(response))
   }
+
+  try {
+    return await response.json()
+  } catch {
+    return undefined
+  }
 }
 
 function isSafeRelativePath(path: string | null): path is string {
@@ -129,6 +135,9 @@ function isPathWithinRoute(pathname: string, route: string): boolean {
 }
 
 async function readAuthError(response: Response): Promise<string> {
+  if (response.status === 403) return EMAIL_NOT_VERIFIED_ERROR
+  if (response.status === 401) return "The email or password is incorrect."
+
   let body: unknown
 
   try {
@@ -143,10 +152,7 @@ async function readAuthError(response: Response): Promise<string> {
     return validationError ?? title ?? response.statusText
   }
 
-  if (response.status === 403) return EMAIL_NOT_VERIFIED_ERROR
-  return response.status === 401
-    ? "The email or password is incorrect."
-    : response.statusText
+  return response.statusText
 }
 
 function isProblemDetails(
