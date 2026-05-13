@@ -18,6 +18,9 @@ public sealed record RegisterRequest(
     IReadOnlyList<Guid>? SkillIds);
 
 [PublicAPI]
+public sealed record RegisterResponse(string Message);
+
+[PublicAPI]
 public sealed record LoginRequest(
     [Required, EmailAddress] string Email,
     [Required] string Password);
@@ -30,3 +33,12 @@ public sealed record AuthResponse(
     string AccessToken,
     DateTimeOffset AccessTokenExpiresAt,
     DateTimeOffset RefreshTokenExpiresAt);
+
+[PublicAPI]
+public sealed record ConfirmEmailRequest(
+    [Required] Guid UserId,
+    [Required] string Token);
+
+[PublicAPI]
+public sealed record ResendVerificationEmailRequest(
+    [Required, EmailAddress] string Email);
