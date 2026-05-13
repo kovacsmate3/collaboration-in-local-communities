@@ -41,13 +41,13 @@ const BAR_CHART_PANELS: AdminDashboardChartPanelProps[] = [
     title: "Category Demand",
     description: "Tasks per category (last 30 days)",
     data: CATEGORY_DEMAND_DATA,
-    colorClass: "bg-blue-500",
+    colorClass: "bg-info",
   },
   {
     title: "Compensation Mix",
     description: "Task compensation type breakdown",
     data: COMPENSATION_DATA,
-    colorClass: "bg-emerald-500",
+    colorClass: "bg-success",
   },
 ]
 

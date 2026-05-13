@@ -1,3 +1,5 @@
+using Backend.Domain.Enums;
+
 namespace Backend.Domain.Entities;
 
 public sealed class Skill
@@ -7,6 +9,8 @@ public sealed class Skill
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
+    public SkillStatus Status { get; set; } = SkillStatus.Pending;
+    public DateTimeOffset? ApprovedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 

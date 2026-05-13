@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Ganss.Xss;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
@@ -31,6 +32,48 @@ public sealed partial class TasksController
         }
 
         return new Point(longitude.Value, latitude.Value) { SRID = 4326 };
+    }
+
+    private static bool TryBuildProximityFilter(
+        double? latitude,
+        double? longitude,
+        double? radiusMeters,
+        ModelStateDictionary modelState,
+        out Point? origin)
+    {
+        origin = null;
+
+        if (latitude.HasValue != longitude.HasValue || latitude.HasValue != radiusMeters.HasValue)
+        {
+            modelState.AddModelError("Proximity", "Latitude, Longitude, and RadiusMeters must be provided together.");
+            return false;
+        }
+
+        if (!latitude.HasValue || !longitude.HasValue || !radiusMeters.HasValue)
+        {
+            return true;
+        }
+
+        if (!double.IsFinite(latitude.Value) || latitude.Value is < -90 or > 90)
+        {
+            modelState.AddModelError(nameof(latitude), "Latitude must be between -90 and 90.");
+            return false;
+        }
+
+        if (!double.IsFinite(longitude.Value) || longitude.Value is < -180 or > 180)
+        {
+            modelState.AddModelError(nameof(longitude), "Longitude must be between -180 and 180.");
+            return false;
+        }
+
+        if (!double.IsFinite(radiusMeters.Value) || radiusMeters.Value <= 0)
+        {
+            modelState.AddModelError(nameof(radiusMeters), "RadiusMeters must be greater than 0.");
+            return false;
+        }
+
+        origin = BuildLocation(latitude, longitude);
+        return true;
     }
 
     private static string SanitizeDescription(string html) =>

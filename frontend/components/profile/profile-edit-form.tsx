@@ -1,127 +1,208 @@
 "use client"
 
 import * as React from "react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Add01Icon, Cancel01Icon } from "@hugeicons/core-free-icons"
 import { useRouter } from "next/navigation"
+import type { ComponentProps, SubmitEvent } from "react"
 import { toast } from "sonner"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Separator } from "@/components/ui/separator"
 import {
-  useUpdateProfile,
-  useUpdatePrivacySettings,
-  type ApiOwnProfile,
-  type ApiPrivacySettings,
-} from "@/lib/api/profiles"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { LocationInput } from "@/components/shared/location-input"
+import { UserAvatar } from "@/components/shared/user-avatar"
+import { useAuth } from "@/lib/auth-context"
+import { toOptionalString } from "@/lib/auth/functions"
+import {
+  type OwnProfileResponse,
+  type SkillResponse,
+  useSkills,
+  useUpdateOwnProfile,
+} from "@/lib/api/profile"
+import type { LocationValue } from "@/lib/location"
 
 interface ProfileEditFormProps {
-  profile: ApiOwnProfile
+  profile: OwnProfileResponse
+  selectedSkills: SkillResponse[]
+  returnHref?: string
 }
 
-export function ProfileEditForm({ profile }: ProfileEditFormProps) {
+interface ProfileFormState {
+  displayName: string
+  position: string
+  workplace: string
+  location: LocationValue
+  availability: string
+  photoUrl: string
+  bio: string
+  skillIds: string[]
+}
+
+type ProfileTextField = Exclude<keyof ProfileFormState, "location" | "skillIds">
+
+export function ProfileEditForm({
+  profile,
+  selectedSkills,
+  returnHref = "/profile",
+}: ProfileEditFormProps) {
   const router = useRouter()
-  const { mutateAsync: updateProfile } = useUpdateProfile()
-  const { mutateAsync: updatePrivacy } = useUpdatePrivacySettings()
-  const [isPending, setIsPending] = React.useState(false)
-
-  const [form, setForm] = React.useState({
+  const { refreshSession } = useAuth()
+  const updateProfile = useUpdateOwnProfile()
+  const [skillPrefix, setSkillPrefix] = React.useState("")
+  const skillsQuery = useSkills(skillPrefix)
+  const [form, setForm] = React.useState<ProfileFormState>(() => ({
     displayName: profile.displayName,
-    bio: profile.bio ?? "",
-    workplace: profile.workplace ?? "",
     position: profile.position ?? "",
+    workplace: profile.workplace ?? "",
+    location: {
+      locationText: profile.locationText ?? "",
+      latitude: profile.latitude ?? undefined,
+      longitude: profile.longitude ?? undefined,
+    },
     availability: profile.availability ?? "",
-    locationText: profile.locationText ?? "",
-  })
+    photoUrl: profile.photoUrl ?? "",
+    bio: profile.bio ?? "",
+    skillIds: profile.skillIds,
+  }))
 
-  const [privacy, setPrivacy] = React.useState<ApiPrivacySettings>(
-    profile.privacySettings
-  )
+  const skillById = React.useMemo(() => {
+    const next = new Map(selectedSkills.map((skill) => [skill.id, skill]))
+    for (const skill of skillsQuery.data ?? []) {
+      next.set(skill.id, skill)
+    }
+    return next
+  }, [selectedSkills, skillsQuery.data])
 
-  function updateField(key: keyof typeof form, value: string) {
-    setForm((prev) => ({ ...prev, [key]: value }))
+  function updateField(field: ProfileTextField, value: string) {
+    setForm((current) => ({ ...current, [field]: value }))
   }
 
-  function togglePrivacy(key: keyof ApiPrivacySettings) {
-    setPrivacy((prev) => ({ ...prev, [key]: !prev[key] }))
+  function updateLocation(location: LocationValue) {
+    setForm((current) => ({ ...current, location }))
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function addSkill(id: string) {
+    setForm((current) =>
+      current.skillIds.includes(id)
+        ? current
+        : { ...current, skillIds: [...current.skillIds, id] }
+    )
+  }
+
+  function removeSkill(id: string) {
+    setForm((current) => ({
+      ...current,
+      skillIds: current.skillIds.filter((skillId) => skillId !== id),
+    }))
+  }
+
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
-    setIsPending(true)
+
+    const displayName = form.displayName.trim()
+    if (!displayName) {
+      toast.error("Full name is required.")
+      return
+    }
+
+    const { latitude, longitude } = form.location
+    if ((latitude === undefined) !== (longitude === undefined)) {
+      toast.error("Latitude and longitude must be provided together.")
+      return
+    }
+
     try {
-      await Promise.all([
-        updateProfile({
-          displayName: form.displayName,
-          bio: form.bio || null,
-          workplace: form.workplace || null,
-          position: form.position || null,
-          availability: form.availability || null,
-          locationText: form.locationText || null,
-        }),
-        updatePrivacy(privacy),
-      ])
-      toast.success("Profile updated.")
-      router.push("/profile")
-    } catch {
-      toast.error("Could not save changes. Please try again.")
-    } finally {
-      setIsPending(false)
+      await updateProfile.mutateAsync({
+        displayName,
+        position: toOptionalString(form.position),
+        workplace: toOptionalString(form.workplace),
+        locationText: toOptionalString(form.location.locationText),
+        latitude,
+        longitude,
+        availability: toOptionalString(form.availability),
+        photoUrl: toOptionalString(form.photoUrl),
+        bio: toOptionalString(form.bio),
+        skillIds: form.skillIds,
+      })
+      await refreshSession()
+      toast.success("Profile saved")
+      router.push(returnHref)
+      router.refresh()
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Unable to save profile."
+      )
     }
   }
 
+  const selectedSkillSet = new Set(form.skillIds)
+  const availableSkills =
+    skillsQuery.data?.filter((skill) => !selectedSkillSet.has(skill.id)) ?? []
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="displayName">Full name</Label>
-          <Input
-            id="displayName"
-            required
-            value={form.displayName}
-            onChange={(e) => updateField("displayName", e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="position">Role</Label>
-          <Input
-            id="position"
-            value={form.position}
-            onChange={(e) => updateField("position", e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="workplace">Workplace / school</Label>
-          <Input
-            id="workplace"
-            value={form.workplace}
-            onChange={(e) => updateField("workplace", e.target.value)}
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="locationText">Location</Label>
-          <Input
-            id="locationText"
-            placeholder="City, neighbourhood"
-            value={form.locationText}
-            onChange={(e) => updateField("locationText", e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="availability">Availability</Label>
-        <Input
-          id="availability"
-          placeholder="e.g. Weekends, evenings after 6 PM"
-          value={form.availability}
-          onChange={(e) => updateField("availability", e.target.value)}
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <div className="flex items-center gap-4">
+        <UserAvatar
+          name={form.displayName || profile.displayName}
+          src={toOptionalString(form.photoUrl)}
+          size="lg"
+        />
+        <Field
+          id="photoUrl"
+          label="Photo URL"
+          inputMode="url"
+          value={form.photoUrl}
+          onChange={(e) => updateField("photoUrl", e.target.value)}
         />
       </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          id="displayName"
+          label="Full name"
+          value={form.displayName}
+          onChange={(e) => updateField("displayName", e.target.value)}
+          required
+        />
+        <Field
+          id="position"
+          label="Role"
+          value={form.position}
+          onChange={(e) => updateField("position", e.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          id="workplace"
+          label="Workplace / school"
+          value={form.workplace}
+          onChange={(e) => updateField("workplace", e.target.value)}
+        />
+        <LocationInput
+          id="location"
+          label="Location"
+          value={form.location}
+          onChange={updateLocation}
+        />
+      </div>
+
+      <Field
+        id="availability"
+        label="Availability"
+        value={form.availability}
+        onChange={(e) => updateField("availability", e.target.value)}
+      />
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="bio">Bio</Label>
@@ -133,82 +214,98 @@ export function ProfileEditForm({ profile }: ProfileEditFormProps) {
         />
       </div>
 
-      <Separator />
-
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-medium">Privacy</p>
-        <p className="text-xs text-muted-foreground">
-          Control which fields are visible on your public profile.
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <PrivacyToggle
-            id="showWorkplace"
-            label="Show workplace"
-            checked={privacy.showWorkplace}
-            onChange={() => togglePrivacy("showWorkplace")}
+        <Label htmlFor="skill-search">Skills</Label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            id="skill-search"
+            value={skillPrefix}
+            onChange={(e) => setSkillPrefix(e.target.value)}
           />
-          <PrivacyToggle
-            id="showPosition"
-            label="Show role"
-            checked={privacy.showPosition}
-            onChange={() => togglePrivacy("showPosition")}
-          />
-          <PrivacyToggle
-            id="showLocation"
-            label="Show location"
-            checked={privacy.showLocation}
-            onChange={() => togglePrivacy("showLocation")}
-          />
-          <PrivacyToggle
-            id="showAvailability"
-            label="Show availability"
-            checked={privacy.showAvailability}
-            onChange={() => togglePrivacy("showAvailability")}
-          />
+          <Select onValueChange={addSkill}>
+            <SelectTrigger className="w-full sm:w-56">
+              <SelectValue placeholder="Add skill" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableSkills.length > 0 ? (
+                availableSkills.map((skill) => (
+                  <SelectItem key={skill.id} value={skill.id}>
+                    {skill.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="empty" disabled>
+                  No matches
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              const first = availableSkills[0]
+              if (first) {
+                addSkill(first.id)
+              }
+            }}
+            disabled={availableSkills.length === 0}
+            aria-label="Add first matching skill"
+          >
+            <HugeiconsIcon icon={Add01Icon} className="size-4" />
+          </Button>
         </div>
+        {form.skillIds.length > 0 ? (
+          <ul className="flex flex-wrap gap-1.5">
+            {form.skillIds.map((id) => {
+              const skill = skillById.get(id)
+              return (
+                <li key={id}>
+                  <Badge variant="muted" className="h-7 gap-1 pr-1">
+                    {skill?.name ?? id}
+                    <button
+                      type="button"
+                      onClick={() => removeSkill(id)}
+                      className="grid size-5 place-items-center rounded-full hover:bg-background"
+                      aria-label={`Remove ${skill?.name ?? "skill"}`}
+                    >
+                      <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
+                    </button>
+                  </Badge>
+                </li>
+              )
+            })}
+          </ul>
+        ) : null}
       </div>
 
       <div className="flex justify-end gap-2">
         <Button
           type="button"
           variant="ghost"
-          disabled={isPending}
-          onClick={() => router.push("/profile")}
+          onClick={() => router.push(returnHref)}
+          disabled={updateProfile.isPending}
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? "Saving…" : "Save changes"}
+        <Button type="submit" disabled={updateProfile.isPending}>
+          {updateProfile.isPending ? "Saving..." : "Save changes"}
         </Button>
       </div>
     </form>
   )
 }
 
-function PrivacyToggle({
-  id,
-  label,
-  checked,
-  onChange,
-}: {
+interface FieldProps extends ComponentProps<typeof Input> {
   id: string
   label: string
-  checked: boolean
-  onChange: () => void
-}) {
+}
+
+function Field({ id, label, className, ...rest }: FieldProps) {
   return (
-    <label
-      htmlFor={id}
-      className="flex cursor-pointer items-center justify-between rounded-md border border-border px-3 py-2 text-sm hover:bg-muted"
-    >
-      <span>{label}</span>
-      <input
-        id={id}
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="size-4 rounded border-input accent-primary"
-      />
-    </label>
+    <div className="flex flex-1 flex-col gap-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} className={className} {...rest} />
+    </div>
   )
 }

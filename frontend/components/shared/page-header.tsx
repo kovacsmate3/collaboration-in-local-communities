@@ -1,12 +1,12 @@
-import * as React from "react"
+import type { ComponentProps, ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
 
-interface PageHeaderProps extends React.ComponentProps<"div"> {
+interface PageHeaderProps extends ComponentProps<"div"> {
   title: string
   description?: string
   /** Right-side actions (buttons, links). */
-  actions?: React.ReactNode
+  actions?: ReactNode
 }
 
 /**
@@ -29,7 +29,7 @@ export function PageHeader({
       {...props}
     >
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="font-heading text-page-title">{title}</h1>
         {description ? (
           <p className="text-sm text-muted-foreground">{description}</p>
         ) : null}

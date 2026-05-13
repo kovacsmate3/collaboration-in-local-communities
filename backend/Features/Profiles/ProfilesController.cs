@@ -1,8 +1,11 @@
 using System.Security.Claims;
+using Backend.Domain.Entities;
+using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 
 namespace Backend.Features.Profiles;
 
@@ -50,6 +53,77 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    /// <summary>
+    /// Get reviews received by a profile.
+    /// </summary>
+    /// <param name="id">The profile ID whose reviews should be returned.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>
+    /// 200 OK with reviews ordered newest first.
+    /// 404 Not Found if the profile does not exist.
+    /// </returns>
+    [HttpGet("{id:guid}/reviews")]
+    public async Task<IActionResult> GetProfileReviewsAsync(Guid id, CancellationToken cancellationToken)
+    {
+        if (!await ProfileExistsAsync(id, cancellationToken))
+        {
+            return NotFound();
+        }
+
+        var reviews = await db.Reviews
+            .AsNoTracking()
+            .Where(review => review.RevieweeProfileId == id)
+            .OrderByDescending(review => review.CreatedAt)
+            .Select(review => new ProfileReviewResponse(
+                review.Id,
+                review.TaskId,
+                review.ReviewerProfileId,
+                review.ReviewerProfile.DisplayName,
+                review.ReviewerProfile.PhotoUrl,
+                review.RevieweeProfileId,
+                review.Rating,
+                review.Comment ?? string.Empty,
+                review.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        return Ok(reviews);
+    }
+
+    /// <summary>
+    /// Get tasks posted by or accepted by a profile.
+    /// </summary>
+    /// <param name="id">The profile ID whose task history should be returned.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>
+    /// 200 OK with tasks ordered newest first.
+    /// 404 Not Found if the profile does not exist.
+    /// </returns>
+    [HttpGet("{id:guid}/task-history")]
+    public async Task<IActionResult> GetProfileTaskHistoryAsync(Guid id, CancellationToken cancellationToken)
+    {
+        if (!await ProfileExistsAsync(id, cancellationToken))
+        {
+            return NotFound();
+        }
+
+        var tasks = await db.Tasks
+            .AsNoTracking()
+            .Where(task => task.SeekerProfileId == id || task.AcceptedHelperProfileId == id)
+            .OrderByDescending(task => task.CreatedAt)
+            .Select(task => new ProfileTaskHistoryResponse(
+                task.Id,
+                task.Title,
+                task.CategoryId,
+                task.Category.Code,
+                task.Category.Name,
+                task.Category.Icon,
+                task.Status.ToString(),
+                task.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        return Ok(tasks);
     }
 
     /// <summary>
@@ -129,6 +203,8 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             Availability = profile.Availability,
             PhotoUrl = profile.PhotoUrl,
             LocationText = profile.LocationText,
+            Latitude = profile.Location?.Y,
+            Longitude = profile.Location?.X,
             IsProfileCompleted = profile.IsProfileCompleted,
             AverageRating = profile.AverageRating,
             ReviewCount = profile.ReviewCount,
@@ -179,6 +255,11 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             return NotFound();
         }
 
+        if (!TryBuildLocation(request.Latitude, request.Longitude, out var location))
+        {
+            return ValidationProblem(ModelState);
+        }
+
         profile.DisplayName = request.DisplayName;
         profile.Bio = request.Bio;
         profile.Workplace = request.Workplace;
@@ -186,7 +267,33 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         profile.Availability = request.Availability;
         profile.PhotoUrl = request.PhotoUrl;
         profile.LocationText = request.LocationText;
+        profile.Location = location;
         profile.UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (request.SkillIds is not null)
+        {
+            var requested = request.SkillIds.ToHashSet();
+            var currentIds = profile.ProfileSkills.Select(ps => ps.SkillId).ToHashSet();
+
+            foreach (var ps in profile.ProfileSkills.Where(ps => !requested.Contains(ps.SkillId)).ToList())
+            {
+                profile.ProfileSkills.Remove(ps);
+            }
+
+            var toAdd = requested.Except(currentIds).ToList();
+            if (toAdd.Count > 0)
+            {
+                var validIds = await db.Skills
+                    .Where(s => toAdd.Contains(s.Id) && s.IsActive && s.Status == SkillStatus.Approved)
+                    .Select(s => s.Id)
+                    .ToListAsync(cancellationToken);
+
+                foreach (var skillId in validIds)
+                {
+                    profile.ProfileSkills.Add(new ProfileSkill { SkillId = skillId });
+                }
+            }
+        }
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -201,6 +308,8 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             Availability = profile.Availability,
             PhotoUrl = profile.PhotoUrl,
             LocationText = profile.LocationText,
+            Latitude = profile.Location?.Y,
+            Longitude = profile.Location?.X,
             IsProfileCompleted = profile.IsProfileCompleted,
             AverageRating = profile.AverageRating,
             ReviewCount = profile.ReviewCount,
@@ -267,5 +376,44 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    private bool TryBuildLocation(double? latitude, double? longitude, out Point? location)
+    {
+        location = null;
+
+        if (latitude.HasValue != longitude.HasValue)
+        {
+            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Latitude), "Both Latitude and Longitude must be provided together.");
+            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Longitude), "Both Latitude and Longitude must be provided together.");
+            return false;
+        }
+
+        if (!latitude.HasValue || !longitude.HasValue)
+        {
+            return true;
+        }
+
+        if (!double.IsFinite(latitude.Value) || latitude.Value is < -90 or > 90)
+        {
+            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Latitude), "Latitude must be between -90 and 90.");
+            return false;
+        }
+
+        if (!double.IsFinite(longitude.Value) || longitude.Value is < -180 or > 180)
+        {
+            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Longitude), "Longitude must be between -180 and 180.");
+            return false;
+        }
+
+        location = new Point(longitude.Value, latitude.Value) { SRID = 4326 };
+        return true;
+    }
+
+    private Task<bool> ProfileExistsAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return db.Profiles
+            .AsNoTracking()
+            .AnyAsync(profile => profile.Id == id, cancellationToken);
     }
 }

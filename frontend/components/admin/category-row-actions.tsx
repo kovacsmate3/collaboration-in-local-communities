@@ -1,6 +1,11 @@
 "use client"
 
-import { Delete02Icon, Edit02Icon } from "@hugeicons/core-free-icons"
+import {
+  Delete02Icon,
+  Edit02Icon,
+  ViewIcon,
+  ViewOffSlashIcon,
+} from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import type { AdminCategoryResponse } from "@/lib/api/admin/categories"
@@ -14,14 +19,21 @@ import {
 interface CategoryRowActionsProps {
   category: AdminCategoryResponse
   onEdit: (category: AdminCategoryResponse) => void
+  onToggleStatus: (category: AdminCategoryResponse) => void
   onDelete: (category: AdminCategoryResponse) => void
 }
 
 export function CategoryRowActions({
   category,
   onEdit,
+  onToggleStatus,
   onDelete,
 }: CategoryRowActionsProps) {
+  const willActivate = !category.isActive
+  const toggleLabel = willActivate
+    ? `Reactivate ${category.name}`
+    : `Deactivate ${category.name}`
+
   return (
     <div className="flex items-center justify-end gap-1">
       <Tooltip>
@@ -45,23 +57,40 @@ export function CategoryRowActions({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            variant={willActivate ? "ghost" : "destructive"}
+            size="icon"
+            className="size-8"
+            onClick={() => onToggleStatus(category)}
+          >
+            <HugeiconsIcon
+              icon={willActivate ? ViewIcon : ViewOffSlashIcon}
+              className="size-4"
+              strokeWidth={1.5}
+            />
+            <span className="sr-only">{toggleLabel}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {willActivate ? "Reactivate" : "Deactivate"}
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
             variant="ghost"
             size="icon"
             className="size-8 text-destructive hover:text-destructive"
             onClick={() => onDelete(category)}
-            disabled={!category.isActive}
           >
             <HugeiconsIcon
               icon={Delete02Icon}
               className="size-4"
               strokeWidth={1.5}
             />
-            <span className="sr-only">Deactivate {category.name}</span>
+            <span className="sr-only">Delete {category.name}</span>
           </Button>
         </TooltipTrigger>
-        <TooltipContent>
-          {category.isActive ? "Deactivate" : "Already inactive"}
-        </TooltipContent>
+        <TooltipContent>Delete permanently</TooltipContent>
       </Tooltip>
     </div>
   )

@@ -111,7 +111,8 @@ export const ADMIN_PAGE_META: Record<string, AdminPageMeta> = {
   "/admin/reports": { label: "Reports", parent: "/admin" },
   "/admin/data-library": { label: "Data Library", parent: "/admin" },
   "/admin/audit-log": { label: "Audit Log", parent: "/admin" },
-  "/admin/profile": { label: "My Account", parent: "/admin" },
+  "/admin/profile": { label: "My Account" },
+  "/admin/profile/edit": { label: "Edit Profile", parent: "/admin/profile" },
 }
 
 export function isAdminNavItemActive(

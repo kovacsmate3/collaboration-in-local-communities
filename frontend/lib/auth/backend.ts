@@ -11,6 +11,7 @@ import {
   BACKEND_PROFILE_PATHS,
   DEFAULT_BACKEND_API_URL,
 } from "@/lib/auth/constants"
+import { applyProxyAuth } from "@/lib/auth/frontend-proxy-jws"
 import type { JwtUserClaims } from "@/lib/auth/jwt"
 import type {
   AuthUser,
@@ -124,11 +125,13 @@ export async function refreshBackendToken(
     return null
   }
 
-  const response = await fetch(getBackendUrl([...BACKEND_AUTH_PATHS.refresh]), {
+  const backendUrl = getBackendUrl([...BACKEND_AUTH_PATHS.refresh])
+  const headers = new Headers({ cookie })
+  await applyProxyAuth(request, headers, backendUrl, "POST")
+
+  const response = await fetch(backendUrl, {
     method: "POST",
-    headers: {
-      cookie,
-    },
+    headers,
     cache: "no-store",
   })
 
@@ -145,13 +148,16 @@ export async function refreshBackendToken(
 }
 
 export async function fetchOwnProfile(
+  request: NextRequest,
   accessToken: string
 ): Promise<OwnProfileFetchResult> {
-  const response = await fetch(getBackendUrl([...BACKEND_PROFILE_PATHS.me]), {
+  const backendUrl = getBackendUrl([...BACKEND_PROFILE_PATHS.me])
+  const headers = new Headers({ authorization: `Bearer ${accessToken}` })
+  await applyProxyAuth(request, headers, backendUrl, "GET")
+
+  const response = await fetch(backendUrl, {
     method: "GET",
-    headers: {
-      authorization: `Bearer ${accessToken}`,
-    },
+    headers,
     cache: "no-store",
   })
 

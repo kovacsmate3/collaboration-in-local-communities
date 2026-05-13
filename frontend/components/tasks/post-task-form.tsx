@@ -3,8 +3,10 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import type { SubmitEvent } from "react"
 import { toast } from "sonner"
 
+import { LocationInput } from "@/components/shared/location-input"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,13 +25,14 @@ import { resendVerificationEmail } from "@/lib/auth/functions"
 import { useCategories } from "@/lib/api/categories"
 import { useCreateTask } from "@/lib/api/tasks"
 import { COMPENSATION_LABELS } from "@/lib/constants"
+import type { LocationValue } from "@/lib/location"
 import type { CompensationType } from "@/lib/types"
 
 interface PostTaskFormState {
   title: string
   description: string
   categoryId: string
-  locationText: string
+  location: LocationValue
   compensationType: CompensationType
   compensationAmount: string
 }
@@ -38,7 +41,7 @@ const INITIAL: PostTaskFormState = {
   title: "",
   description: "",
   categoryId: "",
-  locationText: "",
+  location: { locationText: "" },
   compensationType: "voluntary",
   compensationAmount: "",
 }
@@ -98,7 +101,7 @@ export function PostTaskForm() {
     )
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
 
     const plainText = form.description.replace(/<[^>]*>/g, "").trim()
@@ -119,7 +122,9 @@ export function PostTaskForm() {
         categoryId: form.categoryId,
         compensationType: form.compensationType,
         compensationAmount: amount,
-        locationText: form.locationText || undefined,
+        locationText: form.location.locationText || undefined,
+        latitude: form.location.latitude,
+        longitude: form.location.longitude,
       },
       {
         onSuccess: (task) => {
@@ -185,12 +190,12 @@ export function PostTaskForm() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label htmlFor="locationText">Location</Label>
-          <Input
-            id="locationText"
-            placeholder="District, neighbourhood, or 'Online'"
-            value={form.locationText}
-            onChange={(e) => update("locationText", e.target.value)}
+          <LocationInput
+            id="location"
+            label="Location"
+            placeholder="District, neighbourhood, or street address"
+            value={form.location}
+            onChange={(location) => update("location", location)}
           />
         </div>
       </div>

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Backend.Domain.Entities;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ namespace Backend.Features.Terms;
 [ApiController]
 [Route("api/terms")]
 [Authorize]
-public sealed class TermsController(AppDbContext db) : ControllerBase
+public sealed class TermsController(AppDbContext db, IClientIpAccessor clientIpAccessor) : ControllerBase
 {
     /// <summary>
     /// Get the currently active terms version.
@@ -98,7 +99,7 @@ public sealed class TermsController(AppDbContext db) : ControllerBase
             UserId = userIdGuid,
             TermsVersionId = termsVersionId,
             AcceptedAt = DateTimeOffset.UtcNow,
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+            IpAddress = clientIpAccessor.GetClientIp()
         });
 
         try

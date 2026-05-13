@@ -3,7 +3,6 @@ import {
   Compass01Icon,
   Tag01Icon,
   TaskDaily01Icon,
-  UserCircleIcon,
 } from "@hugeicons/core-free-icons"
 
 import type { IconSvgElement } from "@hugeicons/react"
@@ -45,11 +44,5 @@ export const PRIMARY_NAV: NavItem[] = [
     label: "Messages",
     icon: BubbleChatIcon,
     matches: (p) => p.startsWith("/messages"),
-  },
-  {
-    href: "/profile",
-    label: "Profile",
-    icon: UserCircleIcon,
-    matches: (p) => p.startsWith("/profile"),
   },
 ]

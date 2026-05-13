@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import { AppHeader } from "@/components/layout/app-header"
 import { MobileNav } from "@/components/layout/mobile-nav"
 
@@ -8,11 +10,7 @@ import { MobileNav } from "@/components/layout/mobile-nav"
  * The bottom nav adds 4rem of padding to the page bottom so content is
  * never hidden behind it on small screens.
  */
-export default function MainLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
       <AppHeader />

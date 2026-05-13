@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Sent02Icon } from "@hugeicons/core-free-icons"
+import type { SubmitEvent } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,7 +33,7 @@ export function ChatWindow({ conversation, messages }: ChatWindowProps) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  function handleSend(e: React.FormEvent) {
+  function handleSend(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     const content = draft.trim()
     if (!content) return
@@ -87,7 +88,12 @@ export function ChatWindow({ conversation, messages }: ChatWindowProps) {
           aria-label="Message"
           disabled={isPending}
         />
-        <Button type="submit" size="icon" disabled={isPending || !draft.trim()} aria-label="Send">
+        <Button
+          type="submit"
+          size="icon"
+          disabled={isPending || !draft.trim()}
+          aria-label="Send"
+        >
           <HugeiconsIcon icon={Sent02Icon} />
         </Button>
       </form>

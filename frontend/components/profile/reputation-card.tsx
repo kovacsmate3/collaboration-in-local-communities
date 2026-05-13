@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RatingStars } from "@/components/shared/rating-stars"
 
@@ -37,7 +39,7 @@ export function ReputationCard({
   )
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+function Stat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted-foreground">{label}</span>

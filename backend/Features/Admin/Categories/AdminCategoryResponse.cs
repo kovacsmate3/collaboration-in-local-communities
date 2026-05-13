@@ -1,7 +1,9 @@
 using Backend.Domain.Entities;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Admin.Categories;
 
+[PublicAPI]
 public sealed record AdminCategoryResponse(
     Guid Id,
     string Code,

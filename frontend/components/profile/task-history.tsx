@@ -4,10 +4,10 @@ import { CategoryBadge } from "@/components/tasks/category-badge"
 import { EmptyState } from "@/components/shared/empty-state"
 import { formatRelativeTime } from "@/lib/format"
 import { TASK_CATEGORIES } from "@/lib/constants"
-import type { Task } from "@/lib/types"
+import type { ProfileTaskHistoryItem } from "@/lib/api/profile"
 
 interface TaskHistoryProps {
-  tasks: Task[]
+  tasks: ProfileTaskHistoryItem[]
 }
 
 /**

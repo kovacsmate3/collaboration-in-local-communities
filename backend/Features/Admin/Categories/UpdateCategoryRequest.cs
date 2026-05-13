@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Admin.Categories;
 
+[PublicAPI]
 public sealed record UpdateCategoryRequest(
     [Required]
     [StringLength(120)]
