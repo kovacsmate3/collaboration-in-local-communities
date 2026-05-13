@@ -1,22 +1,22 @@
-FROM node:26-alpine AS deps
+FROM node:26-trixie-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:26-alpine AS builder
+FROM node:26-trixie-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:26-alpine AS dev
+FROM node:26-trixie-slim AS dev
 WORKDIR /app
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 CMD ["sh", "-c", "npm i && npm run dev"]
 
-FROM gcr.io/distroless/nodejs24-debian12:nonroot AS runner
+FROM gcr.io/distroless/nodejs26-debian13:nonroot AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/public ./public

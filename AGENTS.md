@@ -57,7 +57,7 @@ Caveats:
 | Workflow                                                              | Runs                                                                                                |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | [`.github/workflows/ci-backend.yml`](./.github/workflows/ci-backend.yml)   | `dotnet restore` → `dotnet build -c Release` → `dotnet test` → `dotnet format --verify-no-changes` |
-| [`.github/workflows/ci-frontend.yml`](./.github/workflows/ci-frontend.yml) | Node 24: `npm ci` → `npm run lint` → `npm run build`                                                |
+| [`.github/workflows/ci-frontend.yml`](./.github/workflows/ci-frontend.yml) | Node 26: `npm ci` → `npm run lint` → `npm run build`                                                |
 
 CI is the final word — run the equivalent commands locally before pushing.
 
