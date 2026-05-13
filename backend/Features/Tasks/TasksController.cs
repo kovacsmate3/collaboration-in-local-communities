@@ -3,7 +3,6 @@ using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Validation;
-using Ganss.Xss;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
