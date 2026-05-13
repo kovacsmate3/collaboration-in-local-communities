@@ -123,17 +123,22 @@ public sealed partial class AuthController(
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
+        bool emailSent = true;
         try
         {
             await SendVerificationEmailAsync(user, cancellationToken);
         }
         catch (Exception ex)
         {
+            emailSent = false;
             logger.LogError(ex, "Failed to send verification email to {Email}", user.Email);
         }
 
-        return Ok(new RegisterResponse(
-            "Registration successful. Please check your email to verify your account."));
+        var message = emailSent
+            ? "Registration successful. Please check your email to verify your account."
+            : "Registration successful, but we could not send the verification email. Use the resend-verification endpoint to request a new link.";
+
+        return Ok(new RegisterResponse(message));
     }
 
     [HttpPost("login")]
