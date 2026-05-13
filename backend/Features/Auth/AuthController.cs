@@ -23,11 +23,9 @@ public sealed partial class AuthController(
     UserManager<ApplicationUser> userManager,
     IAuthTokenService tokenService,
     IClientIpAccessor clientIpAccessor,
-    IAuthTokenService tokenService,
     IEmailSender emailSender,
     IOptions<EmailOptions> emailOptions,
-    ILogger<AuthController> logger
-) : ControllerBase
+    ILogger<AuthController> logger) : ControllerBase
 {
     private const string RefreshTokenCookieName = "refreshToken";
 
