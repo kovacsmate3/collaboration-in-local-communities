@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import type { ReactNode } from "react"
 
 import type {
   AuthUser,
@@ -31,7 +32,7 @@ interface AuthContextValue {
 
 const AuthContext = React.createContext<AuthContextValue | null>(null)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null | undefined>(null)
 
   const refreshSession = React.useCallback(async (signal?: AbortSignal) => {

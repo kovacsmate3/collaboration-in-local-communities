@@ -1,5 +1,4 @@
 using Backend.Domain.Entities;
-using Backend.Domain.Enums;
 using Backend.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -18,7 +17,9 @@ internal sealed class ActivityEventConfiguration : IEntityTypeConfiguration<Acti
             .HasMaxLength(64)
             .IsRequired();
         builder.Property(activityEvent => activityEvent.EntityType).HasMaxLength(64);
-        builder.Property(activityEvent => activityEvent.Metadata).HasColumnType("jsonb");
+        builder.Property(activityEvent => activityEvent.Metadata)
+            .HasColumnType("jsonb")
+            .HasMaxLength(4000);
         builder.HasCreatedAt(activityEvent => activityEvent.CreatedAt);
 
         builder.HasOne<ApplicationUser>()
@@ -57,7 +58,9 @@ internal sealed class AuditEventConfiguration : IEntityTypeConfiguration<AuditEv
         builder.HasGeneratedUuid(auditEvent => auditEvent.Id);
         builder.Property(auditEvent => auditEvent.EventType).HasMaxLength(100).IsRequired();
         builder.Property(auditEvent => auditEvent.EntityType).HasMaxLength(100);
-        builder.Property(auditEvent => auditEvent.Payload).HasColumnType("jsonb");
+        builder.Property(auditEvent => auditEvent.Payload)
+            .HasColumnType("jsonb")
+            .HasMaxLength(8000);
         builder.HasCreatedAt(auditEvent => auditEvent.CreatedAt);
 
         builder.HasOne<ApplicationUser>()

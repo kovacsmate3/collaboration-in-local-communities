@@ -1,6 +1,5 @@
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Backend.Infrastructure.Identity;
 

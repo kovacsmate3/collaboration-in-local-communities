@@ -4,6 +4,8 @@
  * Backend controller: AdminCategoriesController
  * Base route: GET|POST /api/admin/categories
  *             GET|PUT|DELETE /api/admin/categories/{id}
+ *             POST          /api/admin/categories/{id}/deactivate
+ *             POST          /api/admin/categories/{id}/activate
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -24,7 +26,7 @@ export interface AdminCategoryResponse {
   description?: string
   /** Controls render order */
   sortOrder: number
-  /** False when soft-deleted */
+  /** False when deactivated; can be flipped via the activate/deactivate endpoints */
   isActive: boolean
 }
 
@@ -98,14 +100,49 @@ export function useUpdateCategory() {
 }
 
 /**
- * Soft-deletes (deactivates) a category.
+ * Permanently deletes a category.
  * Endpoint: DELETE /api/admin/categories/{id}
- * Backend sets IsActive = false; returns 204 No Content.
+ *
+ * Returns 204 on success. Returns 409 if any task still references the
+ * category (FK is configured with OnDelete(Restrict)) — in that case,
+ * callers should deactivate instead.
  */
 export function useDeleteCategory() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/admin/categories/${id}`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: categoryKeys.lists() })
+    },
+  })
+}
+
+/**
+ * Deactivates (soft-deletes) a category. Idempotent.
+ * Endpoint: POST /api/admin/categories/{id}/deactivate
+ * Backend sets IsActive = false; returns 204 No Content.
+ */
+export function useDeactivateCategory() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.post<void>(`/admin/categories/${id}/deactivate`, {}),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: categoryKeys.lists() })
+    },
+  })
+}
+
+/**
+ * Reactivates a previously deactivated category. Idempotent.
+ * Endpoint: POST /api/admin/categories/{id}/activate
+ * Backend sets IsActive = true; returns 204 No Content.
+ */
+export function useActivateCategory() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.post<void>(`/admin/categories/${id}/activate`, {}),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: categoryKeys.lists() })
     },

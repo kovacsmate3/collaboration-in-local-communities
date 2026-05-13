@@ -1,10 +1,12 @@
 using System.Text;
 using Backend.Common;
 using Backend.Domain.Entities;
+using Backend.Domain.Enums;
 using Backend.Features.Terms;
 using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -20,9 +22,12 @@ public sealed partial class AuthController(
     AppDbContext db,
     UserManager<ApplicationUser> userManager,
     IAuthTokenService tokenService,
+    IClientIpAccessor clientIpAccessor,
+    IAuthTokenService tokenService,
     IEmailSender emailSender,
     IOptions<EmailOptions> emailOptions,
-    ILogger<AuthController> logger) : ControllerBase
+    ILogger<AuthController> logger
+) : ControllerBase
 {
     private const string RefreshTokenCookieName = "refreshToken";
 
@@ -35,6 +40,11 @@ public sealed partial class AuthController(
         if (!request.AcceptTerms)
         {
             ModelState.AddModelError(nameof(request.AcceptTerms), "Terms must be accepted.");
+            return ValidationProblem(ModelState);
+        }
+
+        if (!TryBuildLocation(request.Latitude, request.Longitude, out var location))
+        {
             return ValidationProblem(ModelState);
         }
 
@@ -66,6 +76,7 @@ public sealed partial class AuthController(
             DisplayName = request.DisplayName.Trim(),
             Workplace = StringUtilities.Normalize(request.Workplace),
             Position = StringUtilities.Normalize(request.Position),
+            Location = location,
             LocationText = StringUtilities.Normalize(request.LocationText),
             Bio = StringUtilities.Normalize(request.Bio),
             IsProfileCompleted = true,
@@ -79,6 +90,20 @@ public sealed partial class AuthController(
         };
 
         db.Profiles.Add(profile);
+
+        if (request.SkillIds is { Count: > 0 })
+        {
+            var requested = request.SkillIds.Distinct().ToList();
+            var validSkillIds = await db.Skills
+                .Where(s => requested.Contains(s.Id) && s.IsActive && s.Status == SkillStatus.Approved)
+                .Select(s => s.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var skillId in validSkillIds)
+            {
+                profile.ProfileSkills.Add(new ProfileSkill { SkillId = skillId });
+            }
+        }
 
         var activeTerms = await db.TermsVersions
             .GetCurrentAsync(now, cancellationToken);

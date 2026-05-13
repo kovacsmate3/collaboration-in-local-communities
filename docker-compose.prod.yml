@@ -24,6 +24,7 @@ services:
       CosmosDb__AccountEndpoint: ${COSMOS_ENDPOINT:?COSMOS_ENDPOINT is required}
       CosmosDb__AccountKey: ${COSMOS_KEY:?COSMOS_KEY is required}
       AUTH_SIGNING_KEY: ${AUTH_SIGNING_KEY:?AUTH_SIGNING_KEY is required}
+      FrontendProxyAuth__SigningKey: ${FRONTEND_PROXY_SIGNING_KEY:?FRONTEND_PROXY_SIGNING_KEY is required}
     depends_on:
       db:
         condition: service_healthy
@@ -34,6 +35,7 @@ services:
       - "3000:3000"
     environment:
       API_URL: ${API_URL:-http://backend:8080}
+      BACKEND_PROXY_SIGNING_KEY: ${FRONTEND_PROXY_SIGNING_KEY:?FRONTEND_PROXY_SIGNING_KEY is required}
     depends_on:
       - backend
 

@@ -1,8 +1,11 @@
+using JetBrains.Annotations;
+
 namespace Backend.Features.Profiles;
 
 /// <summary>
 /// Request DTO for updating the authenticated user's own profile.
 /// </summary>
+[PublicAPI]
 public sealed record UpdateOwnProfileRequest
 {
     public required string DisplayName { get; init; }
@@ -12,4 +15,7 @@ public sealed record UpdateOwnProfileRequest
     public string? Availability { get; init; }
     public string? PhotoUrl { get; init; }
     public string? LocationText { get; init; }
+    public double? Latitude { get; init; }
+    public double? Longitude { get; init; }
+    public IReadOnlyList<Guid>? SkillIds { get; init; }
 }

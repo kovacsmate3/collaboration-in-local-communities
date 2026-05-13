@@ -52,6 +52,16 @@ export function toOptionalString(value: string): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
+export function toOptionalNumber(value: string): number | undefined {
+  const trimmed = value.trim()
+  if (trimmed.length === 0) {
+    return undefined
+  }
+
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
 export function isAuthPath(pathname: string): boolean {
   return Object.values(APP_AUTH_ROUTES).some((route) => pathname === route)
 }
@@ -112,8 +122,9 @@ async function readAuthError(response: Response): Promise<string> {
   }
 
   if (isProblemDetails(body)) {
-    const validationError = firstValidationError(body.errors)
-    return validationError ?? body.title ?? response.statusText
+    const { errors, title } = body
+    const validationError = firstValidationError(errors)
+    return validationError ?? title ?? response.statusText
   }
 
   return response.status === 401

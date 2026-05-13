@@ -1,7 +1,9 @@
 using Backend.Domain.Entities;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Tasks;
 
+[PublicAPI]
 public sealed record TaskResponse(
     Guid Id,
     string PublicCode,

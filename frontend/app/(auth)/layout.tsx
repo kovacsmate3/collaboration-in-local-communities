@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { BriefcaseIcon } from "@hugeicons/core-free-icons"
+import type { ReactNode } from "react"
 
 import { APP_NAME } from "@/lib/constants"
 
@@ -10,11 +11,7 @@ import { APP_NAME } from "@/lib/constants"
  * Uses the shadcn login-03/signup-03 shell: muted background, centered
  * brand mark, and a compact form surface.
  */
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">

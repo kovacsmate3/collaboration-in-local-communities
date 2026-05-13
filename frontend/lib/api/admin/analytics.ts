@@ -3,8 +3,6 @@
  *
  * Endpoint: GET /api/admin/analytics/kpi
  * Backed by the `analytics.kpi_current_v` database view (issue #72 / #73).
- *
- * TODO: wire up once the /api/admin/analytics/kpi endpoint is shipped.
  */
 
 import { useQuery } from "@tanstack/react-query"

@@ -107,6 +107,12 @@ Configuration lives in [`components.json`](./components.json) (style `radix-vega
 
 Custom components go in `components/<feature>/` (one folder per feature area: `auth`, `layout`, `messages`, `profile`, `shared`, `tasks`).
 
+## Deployment constraint: Vercel required for IP attestation
+
+`lib/auth/frontend-proxy-jws.ts` reads the client IP exclusively from the `x-vercel-forwarded-for` header, which Vercel injects server-side and strips from any client-supplied value. This is intentional: `x-forwarded-for` and `x-real-ip` are user-controllable in topologies without a strict outer proxy, so trusting them would let callers forge their audit IP.
+
+The consequence is a hard deployment dependency: **the frontend must run on Vercel** for the backend's IP attestation to work. If the frontend is ever moved to a different host (e.g. self-hosted Docker, Railway, Fly.io), `getClientIpFromRequest` will return `null` for every request, `applyProxyAuth` will not set `X-Frontend-Auth`, and the backend will reject all proxied API calls in production. To support a non-Vercel host you would need to identify which header that platform injects as a trusted, non-forgeable client IP source and update `getClientIpFromRequest` accordingly.
+
 ## Mock data
 
 `lib/mock-data.ts` provides fixtures for screens that aren't wired to the backend yet. Treat it as a stand-in until the corresponding endpoint exists; don't ship it in production code paths. `lib/types.ts` holds the shared TypeScript types those fixtures and components depend on.

@@ -5,7 +5,10 @@
 .vs/
 bin/
 obj/
+TestResults/
 *.csproj.user
+
+.history/
 
 *.DotSettings.user
 
@@ -19,6 +22,9 @@ node_modules/
 .claude/history/
 .claude/sessions/
 .claude/worktrees/
+
+# Codex local/runtime files
+.codex/
 
 # Local-only overrides
 .claude/*.local.*

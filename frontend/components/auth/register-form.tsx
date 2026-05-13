@@ -1,10 +1,15 @@
 "use client"
 
-import * as React from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useState, type SubmitEvent } from "react"
+import { useForm, type FieldErrors } from "react-hook-form"
 import { toast } from "sonner"
 
+import { RegisterAccountStep } from "@/components/auth/register-account-step"
+import { RegisterProfileStep } from "@/components/auth/register-profile-step"
+import { RegisterStepIndicator } from "@/components/auth/register-step-indicator"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -13,85 +18,74 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { Form } from "@/components/ui/form"
 import { useAuth } from "@/lib/auth-context"
-import { APP_AUTH_ROUTES, APP_LEGAL_ROUTES } from "@/lib/auth/constants"
+import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
 import {
   getAuthErrorMessage,
   getHomePathForRole,
   getRegisterSubmitLabel,
-  toOptionalString,
   type RegistrationStep,
 } from "@/lib/auth/functions"
-
-interface RegisterFormState {
-  email: string
-  password: string
-  acceptTerms: boolean
-  displayName: string
-  workplace: string
-  position: string
-  locationText: string
-  bio: string
-}
-
-const INITIAL_FORM: RegisterFormState = {
-  email: "",
-  password: "",
-  acceptTerms: false,
-  displayName: "",
-  workplace: "",
-  position: "",
-  locationText: "",
-  bio: "",
-}
+import { toRegisterInput } from "@/lib/auth/mappers"
+import {
+  REGISTER_FORM_DEFAULT_VALUES,
+  registerSchema,
+  REGISTER_ACCOUNT_FIELDS,
+  type RegisterFormValues,
+} from "@/lib/auth/schemas"
 
 export function RegisterForm() {
   const { register } = useAuth()
   const router = useRouter()
-  const [step, setStep] = React.useState<RegistrationStep>("account")
-  const [form, setForm] = React.useState<RegisterFormState>(INITIAL_FORM)
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [step, setStep] = useState<RegistrationStep>("account")
 
-  function update<K extends keyof RegisterFormState>(
-    key: K,
-    value: RegisterFormState[K]
-  ) {
-    setForm((current) => ({ ...current, [key]: value }))
-  }
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: REGISTER_FORM_DEFAULT_VALUES,
+    mode: "onTouched",
+  })
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const isSubmitting = form.formState.isSubmitting
+  const serverError = form.formState.errors.root?.message
+
+  async function handleFormSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
+    form.clearErrors("root")
 
     if (step === "account") {
-      setStep("profile")
+      const accountFieldsAreValid = await form.trigger(
+        REGISTER_ACCOUNT_FIELDS,
+        { shouldFocus: true }
+      )
+
+      if (accountFieldsAreValid) {
+        setStep("profile")
+      }
+
       return
     }
 
-    setIsSubmitting(true)
+    await form.handleSubmit(onSubmit, onInvalidSubmit)(event)
+  }
+
+  async function onSubmit(values: RegisterFormValues) {
+    form.clearErrors("root")
 
     try {
-      const user = await register({
-        email: form.email,
-        password: form.password,
-        acceptTerms: form.acceptTerms,
-        displayName: form.displayName,
-        workplace: toOptionalString(form.workplace),
-        position: toOptionalString(form.position),
-        locationText: toOptionalString(form.locationText),
-        bio: toOptionalString(form.bio),
-      })
-
+      const user = await register(toRegisterInput(values))
       toast.success("Account created successfully")
       router.replace(getHomePathForRole(user.role))
       router.refresh()
     } catch (error) {
-      toast.error(getAuthErrorMessage(error, "Unable to create account."))
-    } finally {
-      setIsSubmitting(false)
+      const message = getAuthErrorMessage(error, "Unable to create account.")
+      form.setError("root", { message })
+      toast.error(message)
     }
+  }
+
+  function onInvalidSubmit(errors: FieldErrors<RegisterFormValues>) {
+    setStep(hasAccountErrors(errors) ? "account" : "profile")
   }
 
   return (
@@ -106,201 +100,62 @@ export function RegisterForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-6">
-            <StepIndicator step={step} />
+          <Form {...form}>
+            <form noValidate onSubmit={handleFormSubmit} className="grid gap-6">
+              <RegisterStepIndicator step={step} />
 
-            {step === "account" ? (
-              <AccountStep form={form} update={update} />
-            ) : (
-              <ProfileStep form={form} update={update} />
-            )}
+              {step === "account" ? (
+                <RegisterAccountStep />
+              ) : (
+                <RegisterProfileStep />
+              )}
 
-            <div className="grid gap-2">
-              <Button type="submit" disabled={isSubmitting} className="w-full">
-                {getRegisterSubmitLabel(step, isSubmitting)}
-              </Button>
-              {step === "profile" ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={isSubmitting}
-                  onClick={() => setStep("account")}
+              {serverError ? (
+                <p
+                  role="alert"
+                  className="text-sm font-medium text-destructive"
                 >
-                  Back
-                </Button>
+                  {serverError}
+                </p>
               ) : null}
-            </div>
 
-            <p className="text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link
-                href={APP_AUTH_ROUTES.login}
-                className="font-medium text-foreground underline-offset-4 hover:underline"
-              >
-                Sign in
-              </Link>
-            </p>
-          </form>
+              <div className="grid gap-2">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full"
+                >
+                  {getRegisterSubmitLabel(step, isSubmitting)}
+                </Button>
+                {step === "profile" ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={isSubmitting}
+                    onClick={() => setStep("account")}
+                  >
+                    Back
+                  </Button>
+                ) : null}
+              </div>
+
+              <p className="text-center text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link
+                  href={APP_AUTH_ROUTES.login}
+                  className="font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>
   )
 }
 
-function AccountStep({
-  form,
-  update,
-}: {
-  form: RegisterFormState
-  update: <K extends keyof RegisterFormState>(
-    key: K,
-    value: RegisterFormState[K]
-  ) => void
-}) {
-  return (
-    <div className="grid gap-4">
-      <div className="grid gap-3">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="you@example.com"
-          value={form.email}
-          onChange={(event) => update("email", event.target.value)}
-        />
-      </div>
-
-      <div className="grid gap-3">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          required
-          autoComplete="new-password"
-          minLength={8}
-          value={form.password}
-          onChange={(event) => update("password", event.target.value)}
-        />
-        <p className="text-xs text-muted-foreground">At least 8 characters.</p>
-      </div>
-
-      <label className="flex items-start gap-2 text-sm text-muted-foreground">
-        <input
-          type="checkbox"
-          required
-          checked={form.acceptTerms}
-          onChange={(event) => update("acceptTerms", event.target.checked)}
-          className="mt-1 size-4 rounded border-input"
-        />
-        <span>
-          I agree to the{" "}
-          <Link
-            href={APP_LEGAL_ROUTES.terms}
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Terms
-          </Link>
-          .
-        </span>
-      </label>
-    </div>
-  )
-}
-
-function ProfileStep({
-  form,
-  update,
-}: {
-  form: RegisterFormState
-  update: <K extends keyof RegisterFormState>(
-    key: K,
-    value: RegisterFormState[K]
-  ) => void
-}) {
-  return (
-    <div className="grid gap-4">
-      <div className="grid gap-3">
-        <Label htmlFor="displayName">Full name</Label>
-        <Input
-          id="displayName"
-          name="displayName"
-          required
-          autoComplete="name"
-          value={form.displayName}
-          onChange={(event) => update("displayName", event.target.value)}
-        />
-      </div>
-
-      <div className="grid gap-3">
-        <Label htmlFor="workplace">Workplace / school</Label>
-        <Input
-          id="workplace"
-          name="workplace"
-          value={form.workplace}
-          onChange={(event) => update("workplace", event.target.value)}
-        />
-      </div>
-
-      <div className="grid gap-3">
-        <Label htmlFor="position">Role</Label>
-        <Input
-          id="position"
-          name="position"
-          value={form.position}
-          onChange={(event) => update("position", event.target.value)}
-        />
-      </div>
-
-      <div className="grid gap-3">
-        <Label htmlFor="locationText">Location</Label>
-        <Input
-          id="locationText"
-          name="locationText"
-          placeholder="City, neighbourhood"
-          value={form.locationText}
-          onChange={(event) => update("locationText", event.target.value)}
-        />
-      </div>
-
-      <div className="grid gap-3">
-        <Label htmlFor="bio">Short bio</Label>
-        <Textarea
-          id="bio"
-          name="bio"
-          rows={3}
-          value={form.bio}
-          onChange={(event) => update("bio", event.target.value)}
-        />
-      </div>
-    </div>
-  )
-}
-
-function StepIndicator({ step }: { step: RegistrationStep }) {
-  return (
-    <div className="grid grid-cols-2 gap-2 text-center text-xs font-medium">
-      <span
-        className={
-          step === "account"
-            ? "rounded-md bg-primary px-3 py-2 text-primary-foreground"
-            : "rounded-md bg-muted px-3 py-2 text-muted-foreground"
-        }
-      >
-        Account
-      </span>
-      <span
-        className={
-          step === "profile"
-            ? "rounded-md bg-primary px-3 py-2 text-primary-foreground"
-            : "rounded-md bg-muted px-3 py-2 text-muted-foreground"
-        }
-      >
-        Profile
-      </span>
-    </div>
-  )
+function hasAccountErrors(errors: FieldErrors<RegisterFormValues>): boolean {
+  return REGISTER_ACCOUNT_FIELDS.some((field) => Boolean(errors[field]))
 }

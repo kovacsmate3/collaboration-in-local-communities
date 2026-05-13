@@ -17,7 +17,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
 
   if (accessToken) {
-    const user = await getSessionUser(accessToken)
+    const user = await getSessionUser(request, accessToken)
     if (user) {
       return NextResponse.json<SessionResponse>({
         user,
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     return response
   }
 
-  const user = await getSessionUser(refreshResult.auth.accessToken)
+  const user = await getSessionUser(request, refreshResult.auth.accessToken)
   if (!user) {
     const response = NextResponse.json<SessionResponse>({ user: null })
     appendBackendSetCookie(refreshResult.response, response)
@@ -49,7 +49,10 @@ export async function GET(request: NextRequest): Promise<Response> {
   return response
 }
 
-async function getSessionUser(accessToken: string): Promise<AuthUser | null> {
+async function getSessionUser(
+  request: NextRequest,
+  accessToken: string
+): Promise<AuthUser | null> {
   if (!isJwtFresh(accessToken)) {
     return null
   }
@@ -59,7 +62,7 @@ async function getSessionUser(accessToken: string): Promise<AuthUser | null> {
     return null
   }
 
-  const profileResult = await fetchOwnProfile(accessToken)
+  const profileResult = await fetchOwnProfile(request, accessToken)
   if (profileResult.status === "unauthorized") {
     return null
   }

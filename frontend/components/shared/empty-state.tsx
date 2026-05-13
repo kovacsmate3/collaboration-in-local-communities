@@ -1,5 +1,5 @@
-import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
+import type { ReactNode } from "react"
 import type { IconSvgElement } from "@hugeicons/react"
 
 import { cn } from "@/lib/utils"
@@ -8,7 +8,7 @@ interface EmptyStateProps {
   icon?: IconSvgElement
   title: string
   description?: string
-  action?: React.ReactNode
+  action?: ReactNode
   className?: string
 }
 

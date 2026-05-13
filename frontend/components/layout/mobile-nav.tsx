@@ -19,7 +19,7 @@ export function MobileNav() {
       aria-label="Primary"
       className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/90 backdrop-blur md:hidden"
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-4">
         {PRIMARY_NAV.map((item) => {
           const active = item.matches
             ? item.matches(pathname)

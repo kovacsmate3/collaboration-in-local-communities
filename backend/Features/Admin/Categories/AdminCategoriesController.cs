@@ -135,6 +135,11 @@ public sealed partial class AdminCategoriesController(
         return Ok(AdminCategoryResponse.FromCategory(category));
     }
 
+    /// <summary>
+    /// Permanently removes a category. Returns 409 Conflict if any task still
+    /// references it (the FK is configured with <c>OnDelete(Restrict)</c>);
+    /// callers should deactivate instead in that case.
+    /// </summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -145,12 +150,60 @@ public sealed partial class AdminCategoriesController(
             return NotFound();
         }
 
-        if (!category.IsActive)
+        db.Categories.Remove(category);
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (PostgresExceptionHelpers.IsForeignKeyViolation(exception))
+        {
+            return CategoryInUseConflict(category);
+        }
+
+        await EvictCategoryListAsync(cancellationToken);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Soft-deletes (deactivates) a category. Idempotent — calling on an
+    /// already-inactive category is a no-op and returns 204.
+    /// </summary>
+    [HttpPost("{id:guid}/deactivate")]
+    public async Task<IActionResult> DeactivateAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await SetActiveAsync(id, isActive: false, cancellationToken);
+    }
+
+    /// <summary>
+    /// Reactivates a previously deactivated category. Idempotent — calling on
+    /// an already-active category is a no-op and returns 204.
+    /// </summary>
+    [HttpPost("{id:guid}/activate")]
+    public async Task<IActionResult> ActivateAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await SetActiveAsync(id, isActive: true, cancellationToken);
+    }
+
+    private async Task<IActionResult> SetActiveAsync(
+        Guid id,
+        bool isActive,
+        CancellationToken cancellationToken)
+    {
+        var category = await db.Categories
+            .FirstOrDefaultAsync(category => category.Id == id, cancellationToken);
+        if (category is null)
+        {
+            return NotFound();
+        }
+
+        if (category.IsActive == isActive)
         {
             return NoContent();
         }
 
-        category.IsActive = false;
+        category.IsActive = isActive;
         category.UpdatedAt = DateTimeOffset.UtcNow;
 
         await db.SaveChangesAsync(cancellationToken);

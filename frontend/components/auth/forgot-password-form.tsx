@@ -1,7 +1,7 @@
 "use client"
 
-import * as React from "react"
 import Link from "next/link"
+import type { SubmitEvent } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
 
 export function ForgotPasswordForm() {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     // TODO: call password-reset endpoint
   }
