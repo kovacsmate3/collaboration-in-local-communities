@@ -17,14 +17,17 @@ interface ChatPageProps {
 
 export default function ChatPage({ params }: ChatPageProps) {
   const { chatId } = React.use(params)
-  const { data: conversations = [], isLoading: listLoading } =
-    useConversations()
+  const {
+    data: conversations = [],
+    isLoading: listLoading,
+    isFetching: listFetching,
+  } = useConversations()
   const { data: messages = [], isLoading: messagesLoading } =
     useConversationMessages(chatId)
 
   const conversation = conversations.find((c) => c.id === chatId)
 
-  if (!listLoading && !conversation) {
+  if (!listLoading && !listFetching && !conversation) {
     notFound()
   }
 
