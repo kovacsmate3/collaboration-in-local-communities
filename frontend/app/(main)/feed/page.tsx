@@ -8,7 +8,11 @@ import { TaskList } from "@/components/tasks/task-list"
 import { useTaskList } from "@/lib/api/tasks"
 
 export default function FeedPage() {
-  const { data: tasks = [], isLoading, isError } = useTaskList({ status: "Open" })
+  const {
+    data: tasks = [],
+    isLoading,
+    isError,
+  } = useTaskList({ status: "Open" })
 
   return (
     <div className="flex flex-col gap-6">

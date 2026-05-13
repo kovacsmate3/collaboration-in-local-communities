@@ -174,9 +174,7 @@ export function PostTaskForm() {
           >
             <SelectTrigger id="category">
               <SelectValue
-                placeholder={
-                  categoriesLoading ? "Loading…" : "Pick a category"
-                }
+                placeholder={categoriesLoading ? "Loading…" : "Pick a category"}
               />
             </SelectTrigger>
             <SelectContent>

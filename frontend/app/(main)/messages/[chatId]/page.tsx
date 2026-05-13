@@ -6,7 +6,10 @@ import { notFound } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { ChatList } from "@/components/messages/chat-list"
 import { ChatWindow } from "@/components/messages/chat-window"
-import { useConversations, useConversationMessages } from "@/lib/api/conversations"
+import {
+  useConversations,
+  useConversationMessages,
+} from "@/lib/api/conversations"
 
 interface ChatPageProps {
   params: Promise<{ chatId: string }>
@@ -14,7 +17,8 @@ interface ChatPageProps {
 
 export default function ChatPage({ params }: ChatPageProps) {
   const { chatId } = React.use(params)
-  const { data: conversations = [], isLoading: listLoading } = useConversations()
+  const { data: conversations = [], isLoading: listLoading } =
+    useConversations()
   const { data: messages = [], isLoading: messagesLoading } =
     useConversationMessages(chatId)
 

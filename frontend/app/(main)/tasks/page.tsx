@@ -48,9 +48,7 @@ export default function TasksPage() {
           <>
             <TabsContent value="posted">
               {isLoading ? (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Loading…
-                </p>
+                <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
               ) : (
                 <TaskList
                   tasks={posted}
@@ -61,9 +59,7 @@ export default function TasksPage() {
             </TabsContent>
             <TabsContent value="accepted">
               {isLoading ? (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Loading…
-                </p>
+                <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
               ) : (
                 <TaskList
                   tasks={accepted}

@@ -16,7 +16,11 @@ export default function HelperPage() {
   const [filters, setFilters] =
     React.useState<TaskFiltersState>(DEFAULT_FILTERS)
 
-  const { data: allTasks = [], isLoading, isError } = useTaskList({ status: "Open" })
+  const {
+    data: allTasks = [],
+    isLoading,
+    isError,
+  } = useTaskList({ status: "Open" })
 
   const tasks = React.useMemo(
     () => applyFilters(allTasks, filters),
@@ -67,6 +71,7 @@ function applyFilters(tasks: ApiTask[], filters: TaskFiltersState): ApiTask[] {
     .filter((t) =>
       filters.compensation === "all"
         ? true
-        : t.compensationType.toLowerCase() === filters.compensation.toLowerCase()
+        : t.compensationType.toLowerCase() ===
+          filters.compensation.toLowerCase()
     )
 }

@@ -19,7 +19,7 @@ export function RichTextContent({ html, className }: RichTextContentProps) {
         "[&_li]:mb-0.5",
         "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:italic",
         "[&_img]:my-3 [&_img]:max-w-full [&_img]:rounded-md",
-        className,
+        className
       )}
       dangerouslySetInnerHTML={{ __html: html }}
     />

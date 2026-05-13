@@ -41,7 +41,10 @@ export function TaskCard({ task, hideStatus, className }: TaskCardProps) {
 
         <CardContent className="flex flex-col gap-3">
           <p className="line-clamp-2 text-sm text-muted-foreground">
-            {task.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()}
+            {task.description
+              .replace(/<[^>]*>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()}
           </p>
           {task.locationText ? (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -54,7 +57,9 @@ export function TaskCard({ task, hideStatus, className }: TaskCardProps) {
         <CardFooter>
           <div className="flex items-center gap-2">
             <UserAvatar size="sm" name={task.seekerDisplayName} />
-            <span className="text-xs font-medium">{task.seekerDisplayName}</span>
+            <span className="text-xs font-medium">
+              {task.seekerDisplayName}
+            </span>
           </div>
         </CardFooter>
       </Link>

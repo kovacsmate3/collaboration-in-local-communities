@@ -13,7 +13,10 @@ import { MessageBubble } from "@/components/messages/message-bubble"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { useAuth } from "@/lib/auth-context"
 import { useSendMessage } from "@/lib/api/conversations"
-import type { ApiConversationPreview, ApiMessage } from "@/lib/api/conversations"
+import type {
+  ApiConversationPreview,
+  ApiMessage,
+} from "@/lib/api/conversations"
 import { useConversationHub } from "@/lib/chat-hub"
 
 interface ChatWindowProps {

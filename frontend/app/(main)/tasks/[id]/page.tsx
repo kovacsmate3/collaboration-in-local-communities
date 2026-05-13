@@ -30,9 +30,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
   const { data: task, isLoading, isError } = useTask(id)
 
   if (isLoading) {
-    return (
-      <p className="text-sm text-muted-foreground">Loading task…</p>
-    )
+    return <p className="text-sm text-muted-foreground">Loading task…</p>
   }
 
   if (isError || !task) {
@@ -132,7 +130,11 @@ function TaskActions({ task }: { task: ApiTask }) {
           </Button>
         ) : null}
         {isSeeker ? (
-          <Button variant="ghost" disabled={isCancelling} onClick={handleCancel}>
+          <Button
+            variant="ghost"
+            disabled={isCancelling}
+            onClick={handleCancel}
+          >
             {isCancelling ? "Cancelling…" : "Cancel task"}
           </Button>
         ) : null}
@@ -147,7 +149,11 @@ function TaskActions({ task }: { task: ApiTask }) {
           {isStarting ? "Opening…" : "Open chat"}
         </Button>
         {isSeeker ? (
-          <Button variant="ghost" disabled={isCancelling} onClick={handleCancel}>
+          <Button
+            variant="ghost"
+            disabled={isCancelling}
+            onClick={handleCancel}
+          >
             {isCancelling ? "Cancelling…" : "Cancel task"}
           </Button>
         ) : null}

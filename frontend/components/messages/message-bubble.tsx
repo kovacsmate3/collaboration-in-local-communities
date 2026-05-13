@@ -7,7 +7,9 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message }: MessageBubbleProps) {
   return (
-    <div className={cn("flex", message.isMine ? "justify-end" : "justify-start")}>
+    <div
+      className={cn("flex", message.isMine ? "justify-end" : "justify-start")}
+    >
       <div
         className={cn(
           "max-w-[80%] rounded-2xl px-3.5 py-2 text-sm",
