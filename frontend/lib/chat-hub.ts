@@ -7,9 +7,6 @@ import { useQueryClient } from "@tanstack/react-query"
 import { conversationKeys } from "@/lib/api/conversations"
 import type { ApiMessage } from "@/lib/api/conversations"
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"
-
 async function fetchToken(): Promise<string> {
   const res = await fetch("/api/auth/token")
   if (!res.ok) return ""
@@ -27,7 +24,7 @@ export function useConversationHub(
     if (!conversationId || !currentProfileId) return
 
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${BACKEND_URL}/hubs/chat`, {
+      .withUrl("/hubs/chat", {
         accessTokenFactory: fetchToken,
       })
       .withAutomaticReconnect()
