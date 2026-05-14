@@ -13,9 +13,11 @@ public static class IdentityServiceCollectionExtensions
             {
                 options.User.RequireUniqueEmail = true;
                 options.Password.RequiredLength = 8;
+                options.Tokens.PasswordResetTokenProvider = "PasswordResetTokenProvider";
             })
             .AddRoles<ApplicationRole>()
             .AddEntityFrameworkStores<AppDbContext>()
-            .AddDefaultTokenProviders();
+            .AddDefaultTokenProviders()
+            .AddTokenProvider<PasswordResetTokenProvider<ApplicationUser>>("PasswordResetTokenProvider");
     }
 }

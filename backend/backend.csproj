@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Features/Auth/EmailTemplates/VerifyEmail.html" />
+    <EmbeddedResource Include="Features/Auth/EmailTemplates/ResetPassword.html" />
   </ItemGroup>
 
   <ItemGroup>

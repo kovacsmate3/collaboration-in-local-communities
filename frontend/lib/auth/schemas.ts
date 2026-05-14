@@ -128,3 +128,29 @@ export const REGISTER_ACCOUNT_FIELDS = [
   "password",
   "acceptTerms",
 ] as const
+
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+})
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword: registerPasswordSchema,
+    confirmPassword: z.string().min(1, "Confirm your new password."),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  })
+
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
+
+export const FORGOT_PASSWORD_FORM_DEFAULT_VALUES: ForgotPasswordFormValues = {
+  email: "",
+}
+
+export const RESET_PASSWORD_FORM_DEFAULT_VALUES: ResetPasswordFormValues = {
+  newPassword: "",
+  confirmPassword: "",
+}
