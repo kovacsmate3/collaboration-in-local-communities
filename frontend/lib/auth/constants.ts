@@ -12,6 +12,8 @@ export const AUTH_API_PATHS = {
   logout: "/api/auth/logout",
   confirmEmail: "/api/auth/confirm-email",
   resendVerification: "/api/auth/resend-verification",
+  forgotPassword: "/api/auth/forgot-password",
+  resetPassword: "/api/auth/reset-password",
 } as const
 
 export const BACKEND_AUTH_PATHS = {
@@ -28,6 +30,7 @@ export const APP_AUTH_ROUTES = {
   forgotPassword: "/login/forgot",
   register: "/register",
   verifyEmail: "/verify-email",
+  resetPassword: "/reset-password",
 } as const
 
 export const APP_HOME_ROUTES = {

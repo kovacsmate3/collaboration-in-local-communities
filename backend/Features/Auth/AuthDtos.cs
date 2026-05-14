@@ -42,3 +42,13 @@ public sealed record ConfirmEmailRequest(
 [PublicAPI]
 public sealed record ResendVerificationEmailRequest(
     [Required, EmailAddress] string Email);
+
+[PublicAPI]
+public sealed record ForgotPasswordRequest(
+    [Required, EmailAddress] string Email);
+
+[PublicAPI]
+public sealed record ResetPasswordRequest(
+    [Required] Guid UserId,
+    [Required] string Token,
+    [Required, MinLength(8)] string NewPassword);
