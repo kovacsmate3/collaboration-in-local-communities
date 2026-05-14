@@ -29,7 +29,7 @@ public sealed partial class AuthController
         using var stream = assembly.GetManifestResourceStream(
             "Backend.Features.Auth.EmailTemplates.VerifyEmail.html")!;
         using var reader = new StreamReader(stream);
-        return string.Format(reader.ReadToEnd(), confirmationLink);
+        return string.Format(System.Globalization.CultureInfo.InvariantCulture, reader.ReadToEnd(), confirmationLink);
     }
 
     private void SetTokenResponseHeaders()
