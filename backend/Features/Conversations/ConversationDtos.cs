@@ -15,6 +15,7 @@ public sealed record SendMessageRequest(
 [PublicAPI]
 public sealed record ParticipantInfo(Guid ProfileId, string DisplayName, string? PhotoUrl);
 
+[PublicAPI]
 public sealed record ConversationResponse(
     Guid Id,
     Guid TaskId,
