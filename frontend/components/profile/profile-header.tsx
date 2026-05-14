@@ -59,6 +59,16 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
               </li>
             ) : null}
           </ul>
+
+          {user.skills.length > 0 ? (
+            <ul className="mt-1 flex flex-wrap gap-1.5">
+              {user.skills.map((skill) => (
+                <li key={skill}>
+                  <Badge variant="muted">{skill}</Badge>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       </div>
       {actions ? <div className="flex gap-2">{actions}</div> : null}
