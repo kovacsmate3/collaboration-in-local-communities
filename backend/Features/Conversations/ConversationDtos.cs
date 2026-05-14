@@ -1,5 +1,5 @@
-using JetBrains.Annotations;
 using System.ComponentModel.DataAnnotations;
+using JetBrains.Annotations;
 
 namespace Backend.Features.Conversations;
 
