@@ -82,28 +82,56 @@ export function ResetPasswordForm() {
   }
 
   async function onSubmit(values: ResetPasswordFormValues) {
-    form.clearErrors("root")
-    const response = await fetch(AUTH_API_PATHS.resetPassword, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId,
-        token,
-        newPassword: values.newPassword,
-      }),
-      cache: "no-store",
-    })
-
-    if (!response.ok) {
+    form.clearErrors()
+    let response: Response
+    try {
+      response = await fetch(AUTH_API_PATHS.resetPassword, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          token,
+          newPassword: values.newPassword,
+        }),
+        cache: "no-store",
+      })
+    } catch {
       form.setError("root", {
         message:
-          "This link is invalid or has expired. Please request a new one.",
+          "Unable to send the request. Please check your connection and try again.",
       })
       return
     }
 
-    setSucceeded(true)
-    toast.success("Password updated successfully.")
+    if (response.ok) {
+      setSucceeded(true)
+      toast.success("Password updated successfully.")
+      return
+    }
+
+    if (response.status === 422) {
+      let body: unknown
+      try {
+        body = await response.json()
+      } catch {
+        body = undefined
+      }
+      const errors =
+        typeof body === "object" && body !== null
+          ? (body as { errors?: Record<string, string[]> }).errors
+          : undefined
+      const firstError = errors
+        ? Object.values(errors).find((msgs) => msgs.length > 0)?.[0]
+        : undefined
+      form.setError("newPassword", {
+        message: firstError ?? "The password does not meet the requirements.",
+      })
+      return
+    }
+
+    form.setError("root", {
+      message: "This link is invalid or has expired. Please request a new one.",
+    })
   }
 
   function handleFormSubmit(event: SubmitEvent<HTMLFormElement>) {

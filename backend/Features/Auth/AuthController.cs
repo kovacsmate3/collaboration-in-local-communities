@@ -313,7 +313,12 @@ public sealed partial class AuthController(
         var result = await userManager.ResetPasswordAsync(user, token, request.NewPassword);
         if (!result.Succeeded)
         {
-            return BadRequest("Invalid or expired password reset link.");
+            if (result.Errors.Any(e => e.Code == "InvalidToken"))
+            {
+                return BadRequest("Invalid or expired password reset link.");
+            }
+
+            return IdentityValidationProblem(result);
         }
 
         // Auto-confirm email if not already confirmed — a successful reset proves inbox access.
