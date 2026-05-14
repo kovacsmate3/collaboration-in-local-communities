@@ -7,12 +7,15 @@ public static class IdentityServiceCollectionExtensions
 {
     public static IdentityBuilder AddApplicationIdentity(this IServiceCollection services)
     {
+        services.Configure<DataProtectionTokenProviderOptions>(o => o.TokenLifespan = TimeSpan.FromHours(24));
+
         return services.AddIdentityCore<ApplicationUser>(options =>
             {
                 options.User.RequireUniqueEmail = true;
                 options.Password.RequiredLength = 8;
             })
             .AddRoles<ApplicationRole>()
-            .AddEntityFrameworkStores<AppDbContext>();
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
     }
 }

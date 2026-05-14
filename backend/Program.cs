@@ -3,6 +3,7 @@ using Azure.Core;
 using Azure.Identity;
 using Backend.Application.Categories;
 using Backend.Features.Auth;
+using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.OpenApi;
 using Backend.Infrastructure.Persistence;
@@ -135,6 +136,7 @@ builder.Services.AddOptions<RefreshTokenPruningOptions>()
 builder.Services.AddHostedService<RefreshTokenPruningBackgroundService>();
 
 builder.Services.AddApplicationIdentity();
+builder.Services.AddEmailSender(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddOutputCache();
