@@ -1,14 +1,18 @@
+using JetBrains.Annotations;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Features.Conversations;
 
+[PublicAPI]
 public sealed record StartConversationRequest([Required] Guid TaskId);
 
+[PublicAPI]
 public sealed record SendMessageRequest(
     [Required]
     [StringLength(4000, MinimumLength = 1)]
     string Content);
 
+[PublicAPI]
 public sealed record ParticipantInfo(Guid ProfileId, string DisplayName, string? PhotoUrl);
 
 public sealed record ConversationResponse(
@@ -18,6 +22,7 @@ public sealed record ConversationResponse(
     ParticipantInfo OtherParticipant,
     DateTimeOffset CreatedAt);
 
+[PublicAPI]
 public sealed record ConversationPreviewResponse(
     Guid Id,
     Guid TaskId,
@@ -26,6 +31,7 @@ public sealed record ConversationPreviewResponse(
     string? LastMessageContent,
     DateTimeOffset? LastMessageAt);
 
+[PublicAPI]
 public sealed record MessageResponse(
     Guid Id,
     string Content,
@@ -35,6 +41,7 @@ public sealed record MessageResponse(
     bool IsMine);
 
 // Sent over SignalR — omits IsMine so each client computes it from SenderProfileId.
+[PublicAPI]
 public sealed record HubMessageEvent(
     Guid Id,
     string Content,
