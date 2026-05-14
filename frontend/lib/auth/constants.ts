@@ -10,11 +10,13 @@ export const AUTH_API_PATHS = {
   login: "/api/auth/login",
   register: "/api/auth/register",
   logout: "/api/auth/logout",
+  confirmEmail: "/api/auth/confirm-email",
+  resendVerification: "/api/auth/resend-verification",
 } as const
 
 export const BACKEND_AUTH_PATHS = {
   refresh: ["auth", "refresh"],
-  tokenIssuing: ["auth/login", "auth/register", "auth/refresh"],
+  tokenIssuing: ["auth/login", "auth/refresh"],
 } as const
 
 export const BACKEND_PROFILE_PATHS = {
@@ -25,6 +27,7 @@ export const APP_AUTH_ROUTES = {
   login: "/login",
   forgotPassword: "/login/forgot",
   register: "/register",
+  verifyEmail: "/verify-email",
 } as const
 
 export const APP_HOME_ROUTES = {

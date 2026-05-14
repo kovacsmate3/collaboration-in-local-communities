@@ -19,4 +19,5 @@ internal static class TableNames
     public const string TaskStatusHistory = "task_status_history";
     public const string ActivityEvents = "activity_events";
     public const string AuditEvents = "audit_events";
+    public const string Messages = "messages";
 }

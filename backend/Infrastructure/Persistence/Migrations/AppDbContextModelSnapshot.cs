@@ -359,8 +359,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(3000)
-                        .HasColumnType("character varying(3000)")
+                        .HasColumnType("text")
                         .HasColumnName("description");
 
                     b.Property<Point>("Location")
@@ -1094,6 +1093,15 @@ namespace Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("helper_profile_id");
 
+                    b.Property<DateTimeOffset?>("LastMessageAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_message_at");
+
+                    b.Property<string>("LastMessageContent")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("last_message_content");
+
                     b.Property<Guid>("SeekerProfileId")
                         .HasColumnType("uuid")
                         .HasColumnName("seeker_profile_id");
@@ -1117,7 +1125,11 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TaskId")
                         .IsUnique()
-                        .HasDatabaseName("ux_task_conversations_task_id");
+                        .HasDatabaseName("ix_task_conversations_task_id");
+
+                    b.HasIndex("TaskId", "HelperProfileId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_task_conversations_task_helper");
 
                     b.ToTable("task_conversations", "data");
                 });

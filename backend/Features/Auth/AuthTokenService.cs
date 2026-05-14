@@ -27,7 +27,8 @@ public sealed class AuthTokenService(
             new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email ?? string.Empty)
+            new(ClaimTypes.Email, user.Email ?? string.Empty),
+            new("email_verified", user.EmailConfirmed ? "true" : "false"),
         };
 
         var roles = await userManager.GetRolesAsync(user);

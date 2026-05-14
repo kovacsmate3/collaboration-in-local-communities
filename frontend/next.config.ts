@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  async rewrites() {
+    const backendUrl = process.env.API_URL ?? "http://localhost:5073"
+    return [
+      {
+        source: "/hubs/:path*",
+        destination: `${backendUrl}/hubs/:path*`,
+      },
+    ]
+  },
 }
 
 export default nextConfig

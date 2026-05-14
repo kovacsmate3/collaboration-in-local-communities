@@ -113,7 +113,11 @@ function ProfileLoaded({
           ) : null
         }
       />
-      <ReputationCard reputation={profileUser.reputation} />
+      <ReputationCard
+        averageRating={profileUser.reputation.averageRating}
+        reviewCount={profileUser.reputation.reviewCount}
+        completedTaskCount={profileUser.reputation.completedTasks}
+      />
 
       <Tabs defaultValue="reviews">
         <TabsList>

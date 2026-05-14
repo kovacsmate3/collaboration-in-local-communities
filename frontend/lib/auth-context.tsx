@@ -26,7 +26,7 @@ interface AuthContextValue {
   isAdmin: boolean
   refreshSession: (signal?: AbortSignal) => Promise<AuthUser | undefined>
   login: (input: LoginInput) => Promise<AuthUser>
-  register: (input: RegisterInput) => Promise<AuthUser>
+  register: (input: RegisterInput) => Promise<string>
   logout: () => Promise<void>
 }
 
@@ -84,19 +84,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [refreshSession]
   )
 
-  const register = React.useCallback(
-    async (input: RegisterInput) => {
-      await authMutation(AUTH_API_PATHS.register, input)
-      const nextUser = await refreshSession()
-
-      if (!nextUser) {
-        throw new Error("Account created, but the session could not be loaded.")
-      }
-
-      return nextUser
-    },
-    [refreshSession]
-  )
+  const register = React.useCallback(async (input: RegisterInput) => {
+    const body = await authMutation(AUTH_API_PATHS.register, input)
+    if (
+      typeof body === "object" &&
+      body !== null &&
+      "message" in body &&
+      typeof (body as Record<string, unknown>).message === "string"
+    ) {
+      return (body as Record<string, unknown>).message as string
+    }
+    return "Registration successful. Please check your email to verify your account."
+  }, [])
 
   const logout = React.useCallback(async () => {
     try {

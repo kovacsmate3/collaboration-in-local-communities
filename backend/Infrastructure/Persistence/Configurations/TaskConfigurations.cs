@@ -36,7 +36,7 @@ internal sealed class CommunityTaskConfiguration : IEntityTypeConfiguration<Comm
             .HasDefaultValueSql("('TASK-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('data.task_public_code_seq')::text, 6, '0'))")
             .ValueGeneratedOnAdd();
         builder.Property(task => task.Title).HasMaxLength(160).IsRequired();
-        builder.Property(task => task.Description).HasMaxLength(3000).IsRequired();
+        builder.Property(task => task.Description).IsRequired();
         builder.Property(task => task.Location).HasColumnType("geography(Point,4326)");
         builder.Property(task => task.LocationText).HasMaxLength(300);
         builder.Property(task => task.CompensationType)
@@ -196,6 +196,9 @@ internal sealed class TaskConversationConfiguration : IEntityTypeConfiguration<T
         builder.Property(conversation => conversation.CosmosConversationId).HasMaxLength(200).IsRequired();
         builder.HasCreatedAt(conversation => conversation.CreatedAt);
 
+        builder.Property(conversation => conversation.LastMessageContent).HasMaxLength(500);
+        builder.Property(conversation => conversation.LastMessageAt);
+
         builder.HasOne(conversation => conversation.Task)
             .WithOne(task => task.Conversation)
             .HasForeignKey<TaskConversation>(conversation => conversation.TaskId)
@@ -211,9 +214,9 @@ internal sealed class TaskConversationConfiguration : IEntityTypeConfiguration<T
             .HasForeignKey(conversation => conversation.HelperProfileId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(conversation => conversation.TaskId)
+        builder.HasIndex(conversation => new { conversation.TaskId, conversation.HelperProfileId })
             .IsUnique()
-            .HasDatabaseName("ux_task_conversations_task_id");
+            .HasDatabaseName("ux_task_conversations_task_helper");
 
         builder.HasIndex(conversation => conversation.CosmosConversationId)
             .IsUnique()

@@ -17,12 +17,6 @@ interface ProfileHeaderProps {
   actions?: ReactNode
 }
 
-/**
- * Card-less identity header for profile pages.
- *
- * Splits stats into a sibling component (`ReputationCard`) so this stays
- * focused on identity + verification status.
- */
 export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
   return (
     <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -46,7 +40,7 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
           ) : null}
 
           <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            {user.workplace || user.position ? (
+            {user.position || user.workplace ? (
               <li className="flex items-center gap-1">
                 <HugeiconsIcon icon={Briefcase01Icon} className="size-3.5" />
                 {[user.position, user.workplace].filter(Boolean).join(" · ")}
