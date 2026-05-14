@@ -66,6 +66,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(role => role.Id)
                 .HasDefaultValueSql("gen_random_uuid()")
                 .ValueGeneratedOnAdd();
+
+            entity.HasData(
+                CreateSeedRole(
+                    new Guid("ba1e8ed9-809e-4a1a-a4b8-e3a80c87cf8f"),
+                    ApplicationRoleNames.Admin),
+                CreateSeedRole(
+                    new Guid("da637a4d-0e15-4e7d-977a-b978362e20bb"),
+                    ApplicationRoleNames.User));
         });
 
         builder.Entity<IdentityUserRole<Guid>>()
@@ -82,6 +90,17 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
         builder.Entity<IdentityUserToken<Guid>>()
             .ToTable("user_tokens", SchemaNames.Security);
+    }
+
+    private static ApplicationRole CreateSeedRole(Guid id, string name)
+    {
+        return new ApplicationRole
+        {
+            Id = id,
+            Name = name,
+            NormalizedName = name.ToUpperInvariant(),
+            ConcurrencyStamp = id.ToString()
+        };
     }
 
     private static void ConfigureAnalyticsViews(ModelBuilder builder)

@@ -2,12 +2,14 @@ name: Frontend CI
 
 on:
   pull_request:
-    branches: [ main, development ]
+    branches: [main, development]
 
 jobs:
   lint-build:
     name: Lint · Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: frontend
@@ -25,15 +27,46 @@ jobs:
         run: npm ci
 
       - name: Cache Next.js build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ github.workspace }}/frontend/.next/cache
           key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
           restore-keys: |
             ${{ runner.os }}-nextjs-${{ hashFiles('frontend/package-lock.json') }}-
 
+      # `npm run lint` runs `eslint --max-warnings=0` (see frontend/package.json),
+      # so any warning fails this step.
       - name: Lint
         run: npm run lint
 
+      - name: Format check
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Build
         run: npm run build
+
+      - name: Start server
+        run: |
+          npm start &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for server
+        run: timeout 30 sh -c 'until curl -sf http://localhost:3000 > /dev/null 2>&1; do sleep 1; done'
+
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >
+            --no-progress
+            http://localhost:3000
+            http://localhost:3000/login
+            http://localhost:3000/register
+          fail: true
+
+      - name: Stop server
+        if: always()
+        run: kill "$SERVER_PID" 2>/dev/null || true
+

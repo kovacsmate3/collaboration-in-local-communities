@@ -1,4 +1,5 @@
 using Backend.Domain.Entities;
+using Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,6 +15,10 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(category => category.Code).HasMaxLength(64).IsRequired();
         builder.Property(category => category.Name).HasMaxLength(120).IsRequired();
         builder.Property(category => category.Description).HasMaxLength(500);
+        builder.Property(category => category.Icon)
+            .HasMaxLength(64)
+            .HasDefaultValue(Category.DefaultIcon)
+            .IsRequired();
         builder.Property(category => category.SortOrder).HasDefaultValue(0);
         builder.Property(category => category.IsActive).HasDefaultValue(true);
         builder.HasCreatedAt(category => category.CreatedAt);
@@ -30,23 +35,24 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .HasDatabaseName("ix_categories_sort_order");
 
         builder.HasData(
-            SeedCategory("00000000-0000-0000-0000-000000000101", "moving", "Moving", 10),
-            SeedCategory("00000000-0000-0000-0000-000000000102", "tutoring", "Tutoring", 20),
-            SeedCategory("00000000-0000-0000-0000-000000000103", "repairs", "Repairs", 30),
-            SeedCategory("00000000-0000-0000-0000-000000000104", "shopping", "Shopping", 40),
-            SeedCategory("00000000-0000-0000-0000-000000000105", "pet_care", "Pet Care", 50),
-            SeedCategory("00000000-0000-0000-0000-000000000106", "cleaning", "Cleaning", 60),
-            SeedCategory("00000000-0000-0000-0000-000000000107", "errands", "Errands", 70),
-            SeedCategory("00000000-0000-0000-0000-000000000108", "other", "Other", 80));
+            SeedCategory("00000000-0000-0000-0000-000000000101", "moving", "Moving", "DeliveryTruck01Icon", 10),
+            SeedCategory("00000000-0000-0000-0000-000000000102", "tutoring", "Tutoring", "Mortarboard02Icon", 20),
+            SeedCategory("00000000-0000-0000-0000-000000000103", "repairs", "Repairs", "Wrench01Icon", 30),
+            SeedCategory("00000000-0000-0000-0000-000000000104", "shopping", "Shopping", "ShoppingBag03Icon", 40),
+            SeedCategory("00000000-0000-0000-0000-000000000105", "pet_care", "Pet Care", "Bone01Icon", 50),
+            SeedCategory("00000000-0000-0000-0000-000000000106", "cleaning", "Cleaning", "SparklesIcon", 60),
+            SeedCategory("00000000-0000-0000-0000-000000000107", "errands", "Errands", "RunningShoesIcon", 70),
+            SeedCategory("00000000-0000-0000-0000-000000000108", "other", "Other", Category.DefaultIcon, 80));
     }
 
-    private static Category SeedCategory(string id, string code, string name, int sortOrder)
+    private static Category SeedCategory(string id, string code, string name, string icon, int sortOrder)
     {
         return new Category
         {
             Id = Guid.Parse(id),
             Code = code,
             Name = name,
+            Icon = icon,
             SortOrder = sortOrder,
             IsActive = true,
             CreatedAt = ConfigurationHelpers.SeedTimestamp,
@@ -59,13 +65,24 @@ internal sealed class SkillConfiguration : IEntityTypeConfiguration<Skill>
 {
     public void Configure(EntityTypeBuilder<Skill> builder)
     {
-        builder.ToTable(TableNames.Skills, SchemaNames.Config);
+        builder.ToTable(
+            TableNames.Skills,
+            SchemaNames.Config,
+            table => table.HasCheckConstraint(
+                "ck_skills_status",
+                ConfigurationHelpers.EnumValuesCheck<SkillStatus>("status")));
 
         builder.HasGeneratedUuid(skill => skill.Id);
         builder.Property(skill => skill.Code).HasMaxLength(64).IsRequired();
         builder.Property(skill => skill.Name).HasMaxLength(120).IsRequired();
         builder.Property(skill => skill.Description).HasMaxLength(500);
         builder.Property(skill => skill.IsActive).HasDefaultValue(true);
+        builder.Property(skill => skill.Status)
+            .HasConversion<string>()
+            .HasMaxLength(16)
+            .HasDefaultValue(SkillStatus.Pending)
+            .IsRequired();
+        builder.Property(skill => skill.ApprovedAt);
         builder.HasCreatedAt(skill => skill.CreatedAt);
         builder.HasUpdatedAt(skill => skill.UpdatedAt);
 
@@ -78,6 +95,9 @@ internal sealed class SkillConfiguration : IEntityTypeConfiguration<Skill>
 
         builder.HasIndex(skill => skill.IsActive)
             .HasDatabaseName("ix_skills_is_active");
+
+        builder.HasIndex(skill => skill.Status)
+            .HasDatabaseName("ix_skills_status");
 
         builder.HasData(
             SeedSkill("00000000-0000-0000-0000-000000000201", "furniture_assembly", "Furniture Assembly"),
@@ -110,6 +130,8 @@ internal sealed class SkillConfiguration : IEntityTypeConfiguration<Skill>
             Code = code,
             Name = name,
             IsActive = true,
+            Status = SkillStatus.Approved,
+            ApprovedAt = ConfigurationHelpers.SeedTimestamp,
             CreatedAt = ConfigurationHelpers.SeedTimestamp,
             UpdatedAt = ConfigurationHelpers.SeedTimestamp
         };
@@ -125,7 +147,7 @@ internal sealed class TermsVersionConfiguration : IEntityTypeConfiguration<Terms
         builder.HasGeneratedUuid(terms => terms.Id);
         builder.Property(terms => terms.Version).HasMaxLength(32).IsRequired();
         builder.Property(terms => terms.Title).HasMaxLength(200).IsRequired();
-        builder.Property(terms => terms.ContentUrl);
+        builder.Property(terms => terms.ContentUrl).HasMaxLength(2048);
         builder.Property(terms => terms.IsActive).HasDefaultValue(true);
         builder.Property(terms => terms.EffectiveFrom).IsRequired();
         builder.HasCreatedAt(terms => terms.CreatedAt);

@@ -1,20 +1,35 @@
-using Backend.Infrastructure.Identity;
-using Backend.Infrastructure.Persistence;
-
+using System.Net;
 using Azure.Core;
 using Azure.Identity;
-
-using Microsoft.EntityFrameworkCore;
-
-using Npgsql;
-
+using Backend.Application.Categories;
+using Backend.Features.Auth;
+using Backend.Features.Conversations;
+using Backend.Infrastructure.Email;
+using Backend.Infrastructure.Identity;
+using Backend.Infrastructure.OpenApi;
+using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Persistence.Queries;
+using Backend.Infrastructure.Persistence.Seeding;
+using Backend.Infrastructure.Security;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var applicationInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
+{
+    // Only add Application Insights if the connection string is present in configuration
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ConnectionString = applicationInsightsConnectionString;
+    });
+}
 
-builder.Services.AddApplicationInsightsTelemetry();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApiWithJwt();
 
 builder.Services.AddSingleton(_ =>
 {
@@ -72,12 +87,16 @@ builder.Services.AddSingleton(_ =>
         dataSourceBuilder = new NpgsqlDataSourceBuilder(azureConnectionString);
         var credential = new DefaultAzureCredential();
 
-        dataSourceBuilder.UsePeriodicPasswordProvider(async (_, ct) =>
-        {
-            var token = await credential.GetTokenAsync(
-                new TokenRequestContext(["https://ossrdbms-aad.database.windows.net/.default"]), ct);
-            return token.Token;
-        }, TimeSpan.FromMinutes(50), TimeSpan.FromSeconds(10));
+        dataSourceBuilder.UsePeriodicPasswordProvider(
+            async (_, ct) =>
+            {
+                var token = await credential.GetTokenAsync(
+                    new TokenRequestContext(["https://ossrdbms-aad.database.windows.net/.default"]),
+                    ct);
+                return token.Token;
+            },
+            TimeSpan.FromMinutes(50),
+            TimeSpan.FromSeconds(10));
     }
     else
     {
@@ -97,19 +116,76 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
     var dataSource = serviceProvider.GetRequiredService<NpgsqlDataSource>();
     options.UseNpgsql(dataSource, npgsql => npgsql.UseNetTopologySuite());
 });
+builder.Services.AddScoped<IListCategoriesQuery, EfListCategoriesQuery>();
+builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
+builder.Services.AddScoped<RefreshTokenPruner>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient("Nominatim", client =>
+{
+    var baseUrl = builder.Configuration["Nominatim:BaseUrl"]?.Trim()
+        ?? "https://nominatim.openstreetmap.org";
+    var userAgent = builder.Configuration["Nominatim:UserAgent"]?.Trim()
+        ?? "2gather-local-community-platform/1.0";
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+    client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+});
+builder.Services.AddOptions<RefreshTokenPruningOptions>()
+    .Bind(builder.Configuration.GetSection(RefreshTokenPruningOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddHostedService<RefreshTokenPruningBackgroundService>();
 
-builder.Services.AddIdentityCore<ApplicationUser>(options =>
+builder.Services.AddApplicationIdentity();
+builder.Services.AddEmailSender(builder.Configuration);
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
     {
-        options.User.RequireUniqueEmail = true;
-        options.Password.RequiredLength = 8;
-    })
-    .AddRoles<ApplicationRole>()
-    .AddEntityFrameworkStores<AppDbContext>();
+        var frontendUrl = builder.Configuration["FRONTEND_URL"] ?? "http://localhost:3000";
+        policy
+            .WithOrigins(frontendUrl)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
-builder.Services.AddAuthentication();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<CosmosMessageService>();
+builder.Services.AddControllers();
+builder.Services.AddOutputCache();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    // Only trust X-Forwarded-Proto from upstream proxies so Request.IsHttps reflects the
+    // original scheme (used for Secure cookies). X-Forwarded-For is intentionally not
+    // processed: the real client IP comes from the signed proxy token (FrontendProxyAuth).
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+
+    // ACA's Envoy ingress reaches the app pod from a private RFC1918 address; trusting these
+    // ranges lets the framework accept the X-Forwarded-Proto header it sets.
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("10.0.0.0"), 8));
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("172.16.0.0"), 12));
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("192.168.0.0"), 16));
+});
+builder.Services.AddFrontendProxyAuth(builder.Configuration);
+builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
+builder.Services.AddDevelopmentDataSeeders(builder.Configuration, builder.Environment);
+
 var app = builder.Build();
+
+var proxyAuth = app.Services.GetRequiredService<IOptions<FrontendProxyAuthOptions>>().Value;
+if (proxyAuth.Enabled
+    && !app.Environment.IsDevelopment()
+    && string.IsNullOrWhiteSpace(proxyAuth.SigningKey))
+{
+    throw new InvalidOperationException(
+        "FrontendProxyAuth:SigningKey is required when FrontendProxyAuth is enabled outside Development. "
+        + "Set FrontendProxyAuth__SigningKey or disable it via FrontendProxyAuth__Enabled=false.");
+}
 
 using (var scope = app.Services.CreateScope())
 {
@@ -121,8 +197,10 @@ using (var scope = app.Services.CreateScope())
         await using var cmd = db.Database.GetDbConnection().CreateCommand();
         cmd.CommandText = "SELECT version()";
         var version = await cmd.ExecuteScalarAsync();
-        logger.LogInformation("Connected to database at {Host}: {Version}",
-            db.Database.GetDbConnection().DataSource, version);
+        logger.LogInformation(
+            "Connected to database at {Host}: {Version}",
+            db.Database.GetDbConnection().DataSource,
+            version);
     }
     catch (Exception ex)
     {
@@ -141,16 +219,51 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "CosmosDB connection check failed");
-        throw;
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "CosmosDB connection check failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
+    }
+}
+
+{
+    var cosmosMessages = app.Services.GetRequiredService<CosmosMessageService>();
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await cosmosMessages.InitializeAsync();
+        logger.LogInformation("CosmosDB messages container ready.");
+    }
+    catch (Exception ex)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "CosmosDB messages container initialization failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
     }
 }
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapScalarWithJwt();
+
+    using var seedScope = app.Services.CreateScope();
+    var db = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+    await seedScope.ServiceProvider.RunDataSeedersAsync();
 }
+
+app.UseForwardedHeaders();
+app.UseFrontendProxyAuth();
 
 // Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080)
 if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), out var inContainer) || !inContainer)
@@ -158,11 +271,17 @@ if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAIN
     app.UseHttpsRedirection();
 }
 
+app.UseRouting();
+app.UseCors();
+app.UseOutputCache();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("Health");
+
+app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
 
@@ -170,9 +289,16 @@ static int GetOptionalPort()
 {
     var value = Environment.GetEnvironmentVariable("AZURE_POSTGRESQL_PORT");
     if (string.IsNullOrWhiteSpace(value))
+    {
         return 5432;
+    }
+
     if (!int.TryParse(value, out var port))
-        throw new InvalidOperationException($"Environment variable 'AZURE_POSTGRESQL_PORT' has an invalid value '{value}'. Expected a valid integer port number.");
+    {
+        throw new InvalidOperationException(
+            $"Environment variable 'AZURE_POSTGRESQL_PORT' has an invalid value '{value}'. Expected a valid integer port number.");
+    }
+
     return port;
 }
 

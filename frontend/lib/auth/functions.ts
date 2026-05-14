@@ -1,0 +1,172 @@
+import {
+  APP_AUTH_ROUTES,
+  APP_HOME_ROUTES,
+  AUTH_API_PATHS,
+  PROTECTED_ROUTE_PREFIXES,
+} from "@/lib/auth/constants"
+import { getJwtRoles } from "@/lib/auth/jwt"
+import type { LoginInput, RegisterInput } from "@/lib/auth/types"
+
+export type RegistrationStep = "account" | "profile"
+
+export const EMAIL_NOT_VERIFIED_ERROR = "email_not_verified"
+
+export function getPostAuthRedirectPath(
+  nextPath: string | null,
+  role: string
+): string {
+  if (isSafeRelativePath(nextPath)) {
+    return nextPath
+  }
+
+  return getHomePathForRole(role)
+}
+
+export function getHomePathForRole(role: string): string {
+  return role === "Admin" ? APP_HOME_ROUTES.admin : APP_HOME_ROUTES.user
+}
+
+export function getHomePathForToken(accessToken: string): string {
+  return getJwtRoles(accessToken).includes("Admin")
+    ? APP_HOME_ROUTES.admin
+    : APP_HOME_ROUTES.user
+}
+
+export function getAuthErrorMessage(
+  error: unknown,
+  fallbackMessage: string
+): string {
+  return error instanceof Error ? error.message : fallbackMessage
+}
+
+export function getRegisterSubmitLabel(
+  step: RegistrationStep,
+  isSubmitting: boolean
+): string {
+  if (isSubmitting) {
+    return "Creating account..."
+  }
+
+  return step === "account" ? "Continue" : "Create account"
+}
+
+export function toOptionalString(value: string): string | undefined {
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
+export function toOptionalNumber(value: string): number | undefined {
+  const trimmed = value.trim()
+  if (trimmed.length === 0) {
+    return undefined
+  }
+
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+export function isAuthPath(pathname: string): boolean {
+  return Object.values(APP_AUTH_ROUTES).some((route) => pathname === route)
+}
+
+export function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_ROUTE_PREFIXES.some((route) =>
+    isPathWithinRoute(pathname, route)
+  )
+}
+
+export function isAdminPath(pathname: string): boolean {
+  return isPathWithinRoute(pathname, APP_HOME_ROUTES.admin)
+}
+
+export function getLoginRedirectUrl(
+  requestUrl: string,
+  pathname: string,
+  search: string
+): URL {
+  const loginUrl = new URL(APP_AUTH_ROUTES.login, requestUrl)
+  loginUrl.searchParams.set("next", `${pathname}${search}`)
+  return loginUrl
+}
+
+export async function resendVerificationEmail(email: string): Promise<void> {
+  const response = await fetch(AUTH_API_PATHS.resendVerification, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+    cache: "no-store",
+  })
+
+  if (!response.ok) {
+    throw new Error("Failed to resend verification email.")
+  }
+}
+
+export async function authMutation(
+  path: string,
+  input: LoginInput | RegisterInput
+): Promise<unknown> {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+    cache: "no-store",
+  })
+
+  if (!response.ok) {
+    throw new Error(await readAuthError(response))
+  }
+
+  try {
+    return await response.json()
+  } catch {
+    return undefined
+  }
+}
+
+function isSafeRelativePath(path: string | null): path is string {
+  return path?.startsWith("/") === true && !path.startsWith("//")
+}
+
+function isPathWithinRoute(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`)
+}
+
+async function readAuthError(response: Response): Promise<string> {
+  if (response.status === 403) return EMAIL_NOT_VERIFIED_ERROR
+  if (response.status === 401) return "The email or password is incorrect."
+
+  let body: unknown
+
+  try {
+    body = await response.json()
+  } catch {
+    body = undefined
+  }
+
+  if (isProblemDetails(body)) {
+    const { errors, title } = body
+    const validationError = firstValidationError(errors)
+    return validationError ?? title ?? response.statusText
+  }
+
+  return response.statusText
+}
+
+function isProblemDetails(
+  value: unknown
+): value is { title?: string; errors?: Record<string, string[]> } {
+  return typeof value === "object" && value !== null
+}
+
+function firstValidationError(
+  errors: Record<string, string[]> | undefined
+): string | undefined {
+  if (!errors) {
+    return undefined
+  }
+
+  return Object.values(errors).find((messages) => messages.length > 0)?.[0]
+}
