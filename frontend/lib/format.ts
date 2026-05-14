@@ -8,6 +8,34 @@
  * keeps allocations down without changing semantics.
  */
 
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+})
+
+/** Formats an ISO date string or Date as a short locale date (e.g. "May 14, 2026"). */
+export function formatDate(input: string | Date): string {
+  const date = typeof input === "string" ? new Date(input) : input
+  return dateFormatter.format(date)
+}
+
+const datetimeFormatter = new Intl.DateTimeFormat("en-GB", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+})
+
+/** Formats an ISO date string or Date as a precise datetime (e.g. "14 May 2026, 09:30:00"). */
+export function formatDatetime(input: string | Date): string {
+  const date = typeof input === "string" ? new Date(input) : input
+  return datetimeFormatter.format(date)
+}
+
 const currencyFormatters = new Map<string, Intl.NumberFormat>()
 
 function getCurrencyFormatter(currency: string): Intl.NumberFormat {
