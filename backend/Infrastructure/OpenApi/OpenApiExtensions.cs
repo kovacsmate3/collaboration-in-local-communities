@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.OpenApi;
 using Scalar.AspNetCore;
 
 namespace Backend.Infrastructure.OpenApi;
