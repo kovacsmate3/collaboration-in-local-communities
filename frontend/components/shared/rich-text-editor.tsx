@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Placeholder from "@tiptap/extension-placeholder"
@@ -11,6 +12,7 @@ interface RichTextEditorProps {
   onChange: (html: string) => void
   placeholder?: string
   className?: string
+  maxLength?: number
 }
 
 export function RichTextEditor({
@@ -18,15 +20,23 @@ export function RichTextEditor({
   onChange,
   placeholder = "Write something…",
   className,
+  maxLength,
 }: RichTextEditorProps) {
+  const [charCount, setCharCount] = useState(value.length)
+
   const editor = useEditor({
     extensions: [StarterKit, Placeholder.configure({ placeholder })],
     content: value || "<p></p>",
     onUpdate({ editor: e }) {
-      onChange(e.getHTML())
+      const html = e.getHTML()
+      setCharCount(html.length)
+      onChange(html)
     },
     immediatelyRender: false,
   })
+
+  const isNearLimit = maxLength !== undefined && charCount >= maxLength * 0.9
+  const isOverLimit = maxLength !== undefined && charCount > maxLength
 
   return (
     <div
@@ -96,6 +106,20 @@ export function RichTextEditor({
           "[&_.ProseMirror_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]"
         )}
       />
+      {maxLength !== undefined && (
+        <div
+          className={cn(
+            "border-t border-border px-3 py-1.5 text-right text-xs tabular-nums",
+            isOverLimit
+              ? "text-destructive"
+              : isNearLimit
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-muted-foreground"
+          )}
+        >
+          {charCount.toLocaleString()} / {maxLength.toLocaleString()}
+        </div>
+      )}
     </div>
   )
 }
