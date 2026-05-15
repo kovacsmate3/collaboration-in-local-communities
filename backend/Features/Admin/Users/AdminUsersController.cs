@@ -48,10 +48,11 @@ public sealed class AdminUsersController(
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var term = search.Trim();
+            var escaped = search.Trim().Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_");
+            var pattern = $"%{escaped}%";
             query = query.Where(x =>
-                (x.Email != null && x.Email.Contains(term)) ||
-                (x.profile != null && x.profile.DisplayName.Contains(term)));
+                (x.Email != null && EF.Functions.ILike(x.Email, pattern, @"\")) ||
+                (x.profile != null && EF.Functions.ILike(x.profile.DisplayName, pattern, @"\")));
         }
 
         if (!string.IsNullOrWhiteSpace(role))
