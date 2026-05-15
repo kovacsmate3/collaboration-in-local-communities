@@ -6,8 +6,10 @@ using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace backend.Tests;
@@ -123,6 +125,84 @@ public sealed class AdminUsersControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var paged = Assert.IsType<AdminUserPagedResponse>(ok.Value);
         Assert.Equal(1, paged.TotalCount);
+    }
+
+    // ── Role-filter and pagination tests ─────────────────────────────────────
+
+    [Fact]
+    public async Task ListAsync_WithRoleFilter_ReturnsOnlyUsersInThatRole()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+
+        var adminId = Guid.NewGuid();
+        var memberId = Guid.NewGuid();
+        var roleId = Guid.NewGuid();
+
+        db.Users.AddRange(
+            new ApplicationUser { Id = adminId, UserName = "admin@test.com", Email = "admin@test.com" },
+            new ApplicationUser { Id = memberId, UserName = "member@test.com", Email = "member@test.com" });
+        db.Roles.Add(new ApplicationRole { Id = roleId, Name = "Admin", NormalizedName = "ADMIN" });
+        db.UserRoles.Add(new IdentityUserRole<Guid> { UserId = adminId, RoleId = roleId });
+        await db.SaveChangesAsync(ct);
+
+        var controller = CreateListController(db);
+
+        var result = await controller.ListAsync(page: 1, pageSize: 20, role: "Admin", ct: ct);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var paged = Assert.IsType<AdminUserPagedResponse>(ok.Value);
+        Assert.Equal(1, paged.TotalCount);
+        Assert.Equal("admin@test.com", paged.Items[0].Email);
+    }
+
+    [Fact]
+    public async Task ListAsync_Pagination_ReturnsCorrectPageAndTotalPages()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+
+        for (var i = 0; i < 3; i++)
+        {
+            var userId = Guid.NewGuid();
+            db.Users.Add(new ApplicationUser { Id = userId, UserName = $"u{i}@test.com", Email = $"u{i}@test.com" });
+            db.Profiles.Add(new UserProfile
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                DisplayName = $"User {i}",
+                CreatedAt = DateTimeOffset.UtcNow.AddHours(-i)
+            });
+        }
+        await db.SaveChangesAsync(ct);
+
+        var controller = CreateListController(db);
+
+        var r1 = await controller.ListAsync(page: 1, pageSize: 2, ct: ct);
+        var p1 = Assert.IsType<AdminUserPagedResponse>(Assert.IsType<OkObjectResult>(r1).Value);
+        Assert.Equal(3, p1.TotalCount);
+        Assert.Equal(2, p1.TotalPages);
+        Assert.Equal(2, p1.Items.Count);
+
+        var r2 = await controller.ListAsync(page: 2, pageSize: 2, ct: ct);
+        var p2 = Assert.IsType<AdminUserPagedResponse>(Assert.IsType<OkObjectResult>(r2).Value);
+        Assert.Equal(1, p2.Items.Count);
+    }
+
+    [Theory]
+    [InlineData(0, 20)]   // page below minimum (1)
+    [InlineData(1, 0)]    // pageSize below minimum (1)
+    [InlineData(1, 101)]  // pageSize above maximum (100)
+    public async Task ListAsync_InvalidPagination_ReturnsValidationError(int page, int pageSize)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var controller = CreateListController(db);
+
+        var result = await controller.ListAsync(page: page, pageSize: pageSize, ct: ct);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.IsType<ValidationProblemDetails>(badRequest.Value);
     }
 
     // ── Make-admin / revoke-admin tests (UserManager needed) ─────────────────
@@ -261,17 +341,10 @@ public sealed class AdminUsersControllerTests
     {
         var actor = actorId ?? Guid.NewGuid();
 
-        // The list endpoint never calls UserManager, so we build a minimal DI
-        // container with a fresh in-memory DB just to resolve the dependency.
-        var services = new ServiceCollection();
-        services.AddDataProtection();
-        services.AddDbContext<AppDbContext>(o =>
-            o.UseInMemoryDatabase(Guid.NewGuid().ToString()));
-        services.AddApplicationIdentity();
-        using var sp = services.BuildServiceProvider();
-        var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
-
-        var controller = new AdminUsersController(db, userManager)
+        // The list endpoint never calls UserManager; passing null makes that
+        // contract explicit and avoids constructing a ServiceProvider whose
+        // scoped/disposable services would be torn down before the controller is used.
+        var controller = new AdminUsersController(db, null!)
         {
             ControllerContext = new ControllerContext
             {
@@ -285,6 +358,12 @@ public sealed class AdminUsersControllerTests
                 }
             }
         };
+
+        // ValidationProblem() resolves ProblemDetailsFactory from RequestServices;
+        // assign it directly so we don't need a full DI container in the test.
+        controller.ProblemDetailsFactory = new DefaultProblemDetailsFactory(
+            Options.Create(new ApiBehaviorOptions()),
+            Options.Create(new ProblemDetailsOptions()));
 
         return controller;
     }

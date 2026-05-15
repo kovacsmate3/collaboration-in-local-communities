@@ -20,17 +20,16 @@ export function formatDate(input: string | Date): string {
   return dateFormatter.format(date)
 }
 
-const datetimeFormatter = new Intl.DateTimeFormat("en-GB", {
+const datetimeFormatter = new Intl.DateTimeFormat(undefined, {
   year: "numeric",
   month: "short",
   day: "numeric",
   hour: "2-digit",
   minute: "2-digit",
   second: "2-digit",
-  hour12: false,
 })
 
-/** Formats an ISO date string or Date as a precise datetime (e.g. "14 May 2026, 09:30:00"). */
+/** Formats an ISO date string or Date as a precise locale datetime (e.g. "May 14, 2026, 09:30:00 AM"). */
 export function formatDatetime(input: string | Date): string {
   const date = typeof input === "string" ? new Date(input) : input
   return datetimeFormatter.format(date)
