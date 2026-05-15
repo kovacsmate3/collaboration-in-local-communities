@@ -12,7 +12,7 @@ import {
   DEFAULT_BACKEND_API_URL,
 } from "@/lib/auth/constants"
 import { applyProxyAuth } from "@/lib/auth/frontend-proxy-jws"
-import type { JwtUserClaims } from "@/lib/auth/jwt"
+import { isJwtFresh, type JwtUserClaims } from "@/lib/auth/jwt"
 import type {
   AuthUser,
   BackendAuthResponse,
@@ -20,6 +20,21 @@ import type {
   SafeAuthResponse,
   UserRole,
 } from "@/lib/auth/types"
+
+export type BackendRefreshResult = {
+  auth: BackendAuthResponse
+  setCookieHeaders: string[]
+}
+
+export type FreshAccessTokenResult =
+  | {
+      accessToken: string
+      refreshed: BackendRefreshResult | null
+    }
+  | {
+      accessToken: null
+      refreshed: BackendRefreshResult | null
+    }
 
 type HeadersWithSetCookie = Headers & {
   getSetCookie?: () => string[]
@@ -33,6 +48,17 @@ type OwnProfileFetchResult =
   | {
       status: "unauthorized"
     }
+
+const REFRESH_REPLAY_WINDOW_MS = 5_000
+
+const refreshRequests = new Map<string, Promise<BackendRefreshResult | null>>()
+const refreshResults = new Map<
+  string,
+  {
+    expiresAt: number
+    result: BackendRefreshResult
+  }
+>()
 
 export function getBackendUrl(path: string[], requestUrl?: string): URL {
   const backendBaseUrl = process.env.API_URL ?? DEFAULT_BACKEND_API_URL
@@ -99,7 +125,21 @@ export function appendBackendSetCookie(
   backendResponse: Response,
   response: NextResponse
 ) {
-  for (const cookie of getSetCookieHeaders(backendResponse.headers)) {
+  appendSetCookieHeaders(getSetCookieHeaders(backendResponse.headers), response)
+}
+
+export function appendRefreshSetCookie(
+  refreshResult: BackendRefreshResult,
+  response: NextResponse
+) {
+  appendSetCookieHeaders(refreshResult.setCookieHeaders, response)
+}
+
+export function appendSetCookieHeaders(
+  cookies: string[],
+  response: NextResponse
+) {
+  for (const cookie of cookies) {
     response.headers.append("set-cookie", cookie)
   }
 }
@@ -119,12 +159,62 @@ export async function readJson<T>(response: Response): Promise<T | null> {
 
 export async function refreshBackendToken(
   request: NextRequest
-): Promise<{ auth: BackendAuthResponse; response: Response } | null> {
+): Promise<BackendRefreshResult | null> {
   const cookie = getRefreshCookieHeader(request)
   if (!cookie) {
     return null
   }
 
+  pruneRefreshResultCache()
+
+  const cached = refreshResults.get(cookie)
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.result
+  }
+
+  const existing = refreshRequests.get(cookie)
+  if (existing) {
+    return existing
+  }
+
+  const refreshRequest = performRefreshBackendToken(request, cookie)
+    .then((result) => {
+      if (result) {
+        refreshResults.set(cookie, {
+          expiresAt: Date.now() + REFRESH_REPLAY_WINDOW_MS,
+          result,
+        })
+      }
+
+      return result
+    })
+    .finally(() => {
+      refreshRequests.delete(cookie)
+    })
+
+  refreshRequests.set(cookie, refreshRequest)
+  return refreshRequest
+}
+
+export async function getFreshAccessToken(
+  request: NextRequest
+): Promise<FreshAccessTokenResult> {
+  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
+  if (accessToken && isJwtFresh(accessToken)) {
+    return { accessToken, refreshed: null }
+  }
+
+  const refreshed = await refreshBackendToken(request)
+  return {
+    accessToken: refreshed?.auth.accessToken ?? null,
+    refreshed,
+  }
+}
+
+async function performRefreshBackendToken(
+  request: NextRequest,
+  cookie: string
+): Promise<BackendRefreshResult | null> {
   const backendUrl = getBackendUrl([...BACKEND_AUTH_PATHS.refresh])
   const headers = new Headers({ cookie })
   await applyProxyAuth(request, headers, backendUrl, "POST")
@@ -139,12 +229,13 @@ export async function refreshBackendToken(
     return null
   }
 
+  const setCookieHeaders = getSetCookieHeaders(response.headers)
   const auth = await readJson<BackendAuthResponse>(response.clone())
   if (!isBackendAuthResponse(auth)) {
     return null
   }
 
-  return { auth, response }
+  return { auth, setCookieHeaders }
 }
 
 export async function fetchOwnProfile(
@@ -214,6 +305,15 @@ function getSetCookieHeaders(headers: Headers): string[] {
 
   const cookie = headers.get("set-cookie")
   return cookie ? [cookie] : []
+}
+
+function pruneRefreshResultCache() {
+  const now = Date.now()
+  for (const [cookie, cached] of refreshResults) {
+    if (cached.expiresAt <= now) {
+      refreshResults.delete(cookie)
+    }
+  }
 }
 
 function normalizeRoles(roles: string[]): UserRole[] {

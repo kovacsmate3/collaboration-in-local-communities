@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/cookies"
 import {
-  appendBackendSetCookie,
+  appendRefreshSetCookie,
   clearAuthCookies,
   refreshBackendToken,
   setAccessTokenCookie,
@@ -86,6 +86,6 @@ function applyRefreshResult(
     return
   }
 
-  appendBackendSetCookie(refreshed.response, response)
+  appendRefreshSetCookie(refreshed, response)
   setAccessTokenCookie(response, request.url, refreshed.auth)
 }

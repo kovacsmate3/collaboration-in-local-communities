@@ -1,41 +1,41 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
-import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/cookies"
 import {
-  appendBackendSetCookie,
+  appendRefreshSetCookie,
   clearAuthCookies,
   fetchOwnProfile,
+  getFreshAccessToken,
   refreshBackendToken,
   setAccessTokenCookie,
   toAuthUser,
 } from "@/lib/auth/backend"
-import { getJwtUserClaims, isJwtFresh } from "@/lib/auth/jwt"
+import { getJwtUserClaims } from "@/lib/auth/jwt"
 import type { AuthUser, SessionResponse } from "@/lib/auth/types"
 
 export async function GET(request: NextRequest): Promise<Response> {
-  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
+  let tokenResult = await getFreshAccessToken(request)
+  let accessToken = tokenResult.accessToken
 
-  if (accessToken) {
-    const user = await getSessionUser(request, accessToken)
-    if (user) {
-      return NextResponse.json<SessionResponse>({
-        user,
-      })
-    }
-  }
-
-  const refreshResult = await refreshBackendToken(request)
-  if (!refreshResult) {
+  if (!accessToken) {
     const response = NextResponse.json<SessionResponse>({ user: null })
     clearAuthCookies(response, request.url)
     return response
   }
 
-  const user = await getSessionUser(request, refreshResult.auth.accessToken)
+  let user = await getSessionUser(request, accessToken)
+  if (!user && !tokenResult.refreshed) {
+    const refreshResult = await refreshBackendToken(request)
+    tokenResult = {
+      accessToken: refreshResult?.auth.accessToken ?? null,
+      refreshed: refreshResult,
+    }
+    accessToken = tokenResult.accessToken
+    user = accessToken ? await getSessionUser(request, accessToken) : null
+  }
+
   if (!user) {
     const response = NextResponse.json<SessionResponse>({ user: null })
-    appendBackendSetCookie(refreshResult.response, response)
     clearAuthCookies(response, request.url)
     return response
   }
@@ -43,8 +43,10 @@ export async function GET(request: NextRequest): Promise<Response> {
   const response = NextResponse.json<SessionResponse>({
     user,
   })
-  appendBackendSetCookie(refreshResult.response, response)
-  setAccessTokenCookie(response, request.url, refreshResult.auth)
+  if (tokenResult.refreshed) {
+    appendRefreshSetCookie(tokenResult.refreshed, response)
+    setAccessTokenCookie(response, request.url, tokenResult.refreshed.auth)
+  }
 
   return response
 }
@@ -53,10 +55,6 @@ async function getSessionUser(
   request: NextRequest,
   accessToken: string
 ): Promise<AuthUser | null> {
-  if (!isJwtFresh(accessToken)) {
-    return null
-  }
-
   const claims = getJwtUserClaims(accessToken)
   if (!claims) {
     return null

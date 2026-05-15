@@ -8,8 +8,10 @@ import {
 import { BACKEND_AUTH_PATHS } from "@/lib/auth/constants"
 import {
   appendBackendSetCookie,
+  appendRefreshSetCookie,
   clearAuthCookies,
   createForwardedResponse,
+  getFreshAccessToken,
   getBackendUrl,
   getRefreshCookieHeader,
   isBackendAuthResponse,
@@ -38,13 +40,15 @@ async function proxyRequest(
   const { path } = await context.params
   const pathKey = path.join("/")
   const requestBody = await getRequestBody(request)
-  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
+  const tokenResult = TOKEN_ISSUING_PATHS.has(pathKey)
+    ? { accessToken: null, refreshed: null }
+    : await getFreshAccessToken(request)
 
   const backendResponse = await fetchBackend(
     request,
     path,
     requestBody,
-    accessToken
+    tokenResult.accessToken ?? undefined
   )
 
   if (TOKEN_ISSUING_PATHS.has(pathKey)) {
@@ -57,11 +61,16 @@ async function proxyRequest(
 
   if (backendResponse.status !== 401) {
     const response = createForwardedResponse(backendResponse)
+    if (tokenResult.refreshed) {
+      appendRefreshSetCookie(tokenResult.refreshed, response)
+      setAccessTokenCookie(response, request.url, tokenResult.refreshed.auth)
+    }
     appendBackendSetCookie(backendResponse, response)
     return response
   }
 
-  const refreshResult = await refreshBackendToken(request)
+  const refreshResult =
+    tokenResult.refreshed ?? (await refreshBackendToken(request))
   if (!refreshResult) {
     const response = createForwardedResponse(backendResponse)
     response.cookies.set(
@@ -79,7 +88,7 @@ async function proxyRequest(
     refreshResult.auth.accessToken
   )
   const response = createForwardedResponse(retryResponse)
-  appendBackendSetCookie(refreshResult.response, response)
+  appendRefreshSetCookie(refreshResult, response)
   appendBackendSetCookie(retryResponse, response)
   setAccessTokenCookie(response, request.url, refreshResult.auth)
 
