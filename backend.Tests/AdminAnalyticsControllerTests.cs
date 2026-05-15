@@ -6,6 +6,7 @@ using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Xunit;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
@@ -13,6 +14,33 @@ namespace backend.Tests;
 
 public sealed class AdminAnalyticsControllerTests
 {
+    [Fact]
+    public void KpiCurrent_MapsSevenDayColumns_ToViewColumnNames()
+    {
+        using var db = CreateDbContext();
+        var entityType = db.Model.FindEntityType(typeof(Backend.Infrastructure.Persistence.Analytics.KpiCurrent));
+        Assert.NotNull(entityType);
+
+        var storeObject = StoreObjectIdentifier.View("kpi_current_v", "analytics");
+
+        Assert.Equal(
+            "active_users_7d",
+            entityType.FindProperty(nameof(Backend.Infrastructure.Persistence.Analytics.KpiCurrent.ActiveUsers7d))
+                ?.GetColumnName(storeObject));
+        Assert.Equal(
+            "tasks_posted_7d",
+            entityType.FindProperty(nameof(Backend.Infrastructure.Persistence.Analytics.KpiCurrent.TasksPosted7d))
+                ?.GetColumnName(storeObject));
+        Assert.Equal(
+            "completed_tasks_7d",
+            entityType.FindProperty(nameof(Backend.Infrastructure.Persistence.Analytics.KpiCurrent.CompletedTasks7d))
+                ?.GetColumnName(storeObject));
+        Assert.Equal(
+            "completion_rate_7d",
+            entityType.FindProperty(nameof(Backend.Infrastructure.Persistence.Analytics.KpiCurrent.CompletionRate7d))
+                ?.GetColumnName(storeObject));
+    }
+
     [Fact]
     public async Task GetKpiAsync_ReturnsNotFound_WhenReadModelIsEmpty()
     {

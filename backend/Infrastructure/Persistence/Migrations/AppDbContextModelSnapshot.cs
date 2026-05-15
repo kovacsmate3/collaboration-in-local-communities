@@ -1611,15 +1611,15 @@ namespace Backend.Infrastructure.Persistence.Migrations
                 {
                     b.Property<long>("ActiveUsers7d")
                         .HasColumnType("bigint")
-                        .HasColumnName("active_users7d");
+                        .HasColumnName("active_users_7d");
 
                     b.Property<long>("CompletedTasks7d")
                         .HasColumnType("bigint")
-                        .HasColumnName("completed_tasks7d");
+                        .HasColumnName("completed_tasks_7d");
 
                     b.Property<decimal>("CompletionRate7d")
                         .HasColumnType("numeric")
-                        .HasColumnName("completion_rate7d");
+                        .HasColumnName("completion_rate_7d");
 
                     b.Property<long>("RegisteredUsers")
                         .HasColumnType("bigint")
@@ -1627,7 +1627,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                     b.Property<long>("TasksPosted7d")
                         .HasColumnType("bigint")
-                        .HasColumnName("tasks_posted7d");
+                        .HasColumnName("tasks_posted_7d");
 
                     b.ToTable((string)null);
 
