@@ -28,6 +28,7 @@ export function AdminDashboardCharts() {
       data: toRows(taskStatus.data?.entries),
       colorClass: "bg-primary",
       isLoading: taskStatus.isLoading,
+      isError: taskStatus.isError,
     },
     {
       title: "Category Demand",
@@ -35,6 +36,7 @@ export function AdminDashboardCharts() {
       data: toRows(categoryDemand.data?.entries),
       colorClass: "bg-info",
       isLoading: categoryDemand.isLoading,
+      isError: categoryDemand.isError,
     },
     {
       title: "Compensation Mix",
@@ -42,6 +44,7 @@ export function AdminDashboardCharts() {
       data: toRows(compensationMix.data?.entries),
       colorClass: "bg-success",
       isLoading: compensationMix.isLoading,
+      isError: compensationMix.isError,
     },
   ]
 

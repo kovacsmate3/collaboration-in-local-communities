@@ -30,12 +30,13 @@ export const adminAnalyticsKeys = {
   all: ["admin", "analytics"] as const,
   kpi: () => [...adminAnalyticsKeys.all, "kpi"] as const,
   charts: {
+    all: () => [...adminAnalyticsKeys.all, "charts"] as const,
     taskStatus: () =>
-      [...adminAnalyticsKeys.all, "charts", "task-status"] as const,
+      [...adminAnalyticsKeys.charts.all(), "task-status"] as const,
     categoryDemand: () =>
-      [...adminAnalyticsKeys.all, "charts", "category-demand"] as const,
+      [...adminAnalyticsKeys.charts.all(), "category-demand"] as const,
     compensationMix: () =>
-      [...adminAnalyticsKeys.all, "charts", "compensation-mix"] as const,
+      [...adminAnalyticsKeys.charts.all(), "compensation-mix"] as const,
   },
 }
 
@@ -43,7 +44,6 @@ export function useAdminKpi() {
   return useQuery({
     queryKey: adminAnalyticsKeys.kpi(),
     queryFn: () => apiClient.get<KpiCurrent>("/admin/analytics/kpi"),
-    // Refresh every 5 minutes
     staleTime: 5 * 60 * 1000,
   })
 }

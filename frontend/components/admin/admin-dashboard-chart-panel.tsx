@@ -18,6 +18,7 @@ export interface AdminDashboardChartPanelProps {
   data: AdminBarChartRow[]
   colorClass: string
   isLoading?: boolean
+  isError?: boolean
   isLive?: boolean
 }
 
@@ -27,6 +28,7 @@ export function AdminDashboardChartPanel({
   data,
   colorClass,
   isLoading,
+  isError,
   isLive,
 }: AdminDashboardChartPanelProps) {
   return (
@@ -43,6 +45,10 @@ export function AdminDashboardChartPanel({
       <CardContent>
         {isLoading ? (
           <Skeleton className="h-32 w-full" />
+        ) : isError ? (
+          <p className="py-8 text-center text-sm text-destructive">
+            Failed to load chart data
+          </p>
         ) : (
           <AdminBarChart data={data} colorClass={colorClass} />
         )}

@@ -49,7 +49,7 @@ public sealed class AdminAnalyticsControllerTests
         // view is unavailable or the database is in an unexpected state.
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
-        var controller = new AdminAnalyticsController(db);
+        var controller = CreateController(db);
 
         var result = await controller.GetKpiAsync(cancellationToken);
 
@@ -153,10 +153,37 @@ public sealed class AdminAnalyticsControllerTests
 
         Assert.Equal(2, response.Entries.Count);
 
-        var topEntry = response.Entries.First();
+        var topEntry = response.Entries[0];
         Assert.Equal("Category A", topEntry.Label);
         Assert.Equal(2, topEntry.Count);
         Assert.Equal(100.0, topEntry.Pct);
+
+        var secondEntry = response.Entries[1];
+        Assert.Equal("Category B", secondEntry.Label);
+        Assert.Equal(1, secondEntry.Count);
+        Assert.Equal(50.0, secondEntry.Pct);
+    }
+
+    [Fact]
+    public async Task GetCategoryDemandChart_ExcludesTasksOlderThan30Days()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (catId, profileId) = await SeedMinimalRequiredEntities(db, cancellationToken);
+
+        db.Tasks.Add(MakeTask(catId, profileId, DomainTaskStatus.Open, CompensationType.Voluntary,
+            createdAt: DateTimeOffset.UtcNow.AddDays(-31)));
+        db.Tasks.Add(MakeTask(catId, profileId, DomainTaskStatus.Open, CompensationType.Voluntary));
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateController(db);
+        var result = await controller.GetCategoryDemandChartAsync(cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ChartDataResponse>(ok.Value);
+
+        Assert.Single(response.Entries);
+        Assert.Equal(1, response.Entries[0].Count);
     }
 
     [Fact]
@@ -223,7 +250,8 @@ public sealed class AdminAnalyticsControllerTests
         Guid catId,
         Guid profileId,
         DomainTaskStatus status,
-        CompensationType compensation) =>
+        CompensationType compensation,
+        DateTimeOffset? createdAt = null) =>
         new()
         {
             Id = Guid.NewGuid(),
@@ -234,7 +262,7 @@ public sealed class AdminAnalyticsControllerTests
             Description = "D",
             Status = status,
             CompensationType = compensation,
-            CreatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = createdAt ?? DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         };
 
