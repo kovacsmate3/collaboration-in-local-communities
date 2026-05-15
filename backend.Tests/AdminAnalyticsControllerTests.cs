@@ -2,12 +2,12 @@ using System.Security.Claims;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Features.Admin.Analytics;
-using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
 namespace backend.Tests;
 
