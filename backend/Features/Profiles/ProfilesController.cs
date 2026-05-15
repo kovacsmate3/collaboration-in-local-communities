@@ -295,6 +295,14 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             }
         }
 
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.ProfileUpdated,
+            nameof(UserProfile),
+            profile.Id,
+            new { UpdatedSkills = request.SkillIds is not null });
+
         await db.SaveChangesAsync(cancellationToken);
 
         var response = new OwnProfileResponse
@@ -364,6 +372,13 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         privacySettings.ShowLocation = request.ShowLocation!.Value;
         privacySettings.ShowAvailability = request.ShowAvailability!.Value;
         privacySettings.UpdatedAt = DateTimeOffset.UtcNow;
+
+        db.AddActivityEvent(
+            privacySettings.Profile.UserId,
+            privacySettings.ProfileId,
+            ActivityEventType.ProfileUpdated,
+            nameof(ProfilePrivacySettings),
+            privacySettings.Id);
 
         await db.SaveChangesAsync(cancellationToken);
 

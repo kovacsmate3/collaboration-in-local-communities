@@ -233,6 +233,14 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
                 ChangedByProfileId = profile.Id
             });
 
+            db.AddActivityEvent(
+                profile.UserId,
+                profile.Id,
+                ActivityEventType.TaskAccepted,
+                nameof(CommunityTask),
+                taskId,
+                new { application.HelperProfileId, ApplicationId = application.Id });
+
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
