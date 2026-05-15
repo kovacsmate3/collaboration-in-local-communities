@@ -197,8 +197,7 @@ public sealed partial class AuthController(
             profileId: null,
             ActivityEventType.UserLoggedIn,
             "ApplicationUser",
-            user.Id,
-            null);
+            user.Id);
         await db.SaveChangesAsync(cancellationToken);
 
         SetRefreshTokenCookie(tokens);

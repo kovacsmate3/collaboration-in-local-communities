@@ -378,8 +378,7 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             privacySettings.ProfileId,
             ActivityEventType.ProfileUpdated,
             nameof(ProfilePrivacySettings),
-            privacySettings.Id,
-            null);
+            privacySettings.Id);
 
         await db.SaveChangesAsync(cancellationToken);
 
