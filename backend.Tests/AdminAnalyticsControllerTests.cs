@@ -50,9 +50,9 @@ public sealed class AdminAnalyticsControllerTests
 
         var (catId, profileId) = await SeedMinimalRequiredEntities(db, cancellationToken);
 
-        db.Tasks.Add(MakeTask(catId, profileId, DomainTaskStatus.Open));
-        db.Tasks.Add(MakeTask(catId, profileId, DomainTaskStatus.Open));
-        db.Tasks.Add(MakeTask(catId, profileId, DomainTaskStatus.Completed));
+        db.Tasks.Add(MakeTask(catId, profileId, DomainTaskStatus.Open, CompensationType.Voluntary));
+        db.Tasks.Add(MakeTask(catId, profileId, DomainTaskStatus.Open, CompensationType.Voluntary));
+        db.Tasks.Add(MakeTask(catId, profileId, DomainTaskStatus.Completed, CompensationType.Voluntary));
         await db.SaveChangesAsync(cancellationToken);
 
         var controller = CreateController(db);
@@ -112,9 +112,9 @@ public sealed class AdminAnalyticsControllerTests
             UpdatedAt = DateTimeOffset.UtcNow,
         });
 
-        db.Tasks.Add(MakeTask(catAId, profileId, DomainTaskStatus.Open));
-        db.Tasks.Add(MakeTask(catAId, profileId, DomainTaskStatus.Open));
-        db.Tasks.Add(MakeTask(catBId, profileId, DomainTaskStatus.Open));
+        db.Tasks.Add(MakeTask(catAId, profileId, DomainTaskStatus.Open, CompensationType.Voluntary));
+        db.Tasks.Add(MakeTask(catAId, profileId, DomainTaskStatus.Open, CompensationType.Voluntary));
+        db.Tasks.Add(MakeTask(catBId, profileId, DomainTaskStatus.Open, CompensationType.Voluntary));
         await db.SaveChangesAsync(cancellationToken);
 
         var controller = CreateController(db);
@@ -195,7 +195,7 @@ public sealed class AdminAnalyticsControllerTests
         Guid catId,
         Guid profileId,
         DomainTaskStatus status,
-        CompensationType compensation = CompensationType.Voluntary) =>
+        CompensationType compensation) =>
         new()
         {
             Id = Guid.NewGuid(),
