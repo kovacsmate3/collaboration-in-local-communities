@@ -164,7 +164,7 @@ export function AuditLogViewer() {
     ...(entityType ? { entityType } : {}),
     ...(actorUserId ? { actorUserId } : {}),
     ...(from ? { from } : {}),
-    ...(to ? { to } : {}),
+    ...(to ? { to: `${to}T23:59:59.999Z` } : {}),
   }
 
   const { data, isLoading, isError } = useAuditLog(params)
