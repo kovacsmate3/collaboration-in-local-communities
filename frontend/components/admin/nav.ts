@@ -82,8 +82,6 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         href: "/admin/audit-log",
         label: "Audit Log",
         icon: ArchiveIcon,
-        badge: "Soon",
-        disabled: true,
         matches: (pathname) => pathname.startsWith("/admin/audit-log"),
       },
     ],
