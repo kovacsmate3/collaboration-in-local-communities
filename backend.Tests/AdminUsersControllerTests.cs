@@ -186,7 +186,7 @@ public sealed class AdminUsersControllerTests
 
         var r2 = await controller.ListAsync(page: 2, pageSize: 2, ct: ct);
         var p2 = Assert.IsType<AdminUserPagedResponse>(Assert.IsType<OkObjectResult>(r2).Value);
-        Assert.Equal(1, p2.Items.Count);
+        Assert.Single(p2.Items);
     }
 
     [Theory]

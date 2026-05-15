@@ -50,9 +50,13 @@ public sealed class AdminUsersController(
         {
             var escaped = search.Trim().Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_");
             var pattern = $"%{escaped}%";
+
+            // ReSharper disable EntityFramework.ClientSideDbFunctionCall
             query = query.Where(x =>
                 (x.Email != null && EF.Functions.ILike(x.Email, pattern, @"\")) ||
                 (x.profile != null && EF.Functions.ILike(x.profile.DisplayName, pattern, @"\")));
+
+            // ReSharper restore EntityFramework.ClientSideDbFunctionCall
         }
 
         if (!string.IsNullOrWhiteSpace(role))
