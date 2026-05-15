@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { type ChangeEvent, useState, useEffect, useRef } from "react"
 import {
   type AuditLogEntry,
   type AuditLogParams,
@@ -194,7 +194,7 @@ export function AuditLogViewer() {
   }
 
   function handleFilterChange(setter: (v: string) => void) {
-    return (e: React.ChangeEvent<HTMLInputElement>) => {
+    return (e: ChangeEvent<HTMLInputElement>) => {
       setter(e.target.value)
       setPage(1)
     }
