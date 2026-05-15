@@ -44,7 +44,7 @@ export function useAuditLog(params: AuditLogParams = {}) {
     queryFn: () => {
       const qs = new URLSearchParams()
       Object.entries(params).forEach(([k, v]) => {
-        if (v) qs.set(k, String(v))
+        if (v !== undefined && v !== null && v !== "") qs.set(k, String(v))
       })
       const q = qs.toString()
       return apiClient.get<AuditLogPagedResponse>(
