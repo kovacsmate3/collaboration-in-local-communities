@@ -135,6 +135,13 @@ function AuditLogRow({ entry }: { entry: AuditLogEntry }) {
   )
 }
 
+const GUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function isValidGuid(value: string) {
+  return GUID_RE.test(value)
+}
+
 export function AuditLogViewer() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
@@ -143,6 +150,9 @@ export function AuditLogViewer() {
   const [actorUserId, setActorUserId] = useState("")
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
+
+  const actorUserIdError =
+    actorUserId && !isValidGuid(actorUserId) ? "Must be a valid UUID" : null
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -162,7 +172,7 @@ export function AuditLogViewer() {
     pageSize: 20,
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
     ...(entityType ? { entityType } : {}),
-    ...(actorUserId ? { actorUserId } : {}),
+    ...(actorUserId && isValidGuid(actorUserId) ? { actorUserId } : {}),
     ...(from ? { from } : {}),
     ...(to ? { to: `${to}T23:59:59.999Z` } : {}),
   }
@@ -205,12 +215,20 @@ export function AuditLogViewer() {
           onChange={handleFilterChange(setEntityType)}
           className="w-40"
         />
-        <Input
-          placeholder="Actor user ID…"
-          value={actorUserId}
-          onChange={handleFilterChange(setActorUserId)}
-          className="w-72"
-        />
+        <div className="flex flex-col gap-1">
+          <Input
+            placeholder="Actor user ID…"
+            value={actorUserId}
+            onChange={handleFilterChange(setActorUserId)}
+            className={actorUserIdError ? "w-72 border-destructive" : "w-72"}
+            aria-describedby={actorUserIdError ? "actor-id-error" : undefined}
+          />
+          {actorUserIdError && (
+            <p id="actor-id-error" className="text-xs text-destructive">
+              {actorUserIdError}
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           <span className="text-xs text-muted-foreground">From</span>
           <Input
