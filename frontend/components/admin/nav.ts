@@ -61,8 +61,6 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         href: "/admin/users",
         label: "Users",
         icon: UserMultiple02Icon,
-        badge: "Soon",
-        disabled: true,
         matches: (pathname) => pathname.startsWith("/admin/users"),
       },
     ],
