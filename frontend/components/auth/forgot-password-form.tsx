@@ -22,16 +22,24 @@ export function ForgotPasswordForm() {
     mode: "onTouched",
   })
 
-  const { isSubmitting, isSubmitSuccessful } = form.formState
+  const { isSubmitting, isSubmitSuccessful, errors } = form.formState
 
   async function onSubmit(values: ForgotPasswordFormValues) {
-    await fetch(AUTH_API_PATHS.forgotPassword, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: values.email }),
-      cache: "no-store",
-    })
-    // Always treat as success to prevent email enumeration.
+    try {
+      await fetch(AUTH_API_PATHS.forgotPassword, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.email }),
+        cache: "no-store",
+      })
+      // Always treat HTTP responses as success to prevent email enumeration.
+    } catch (err) {
+      form.setError("root", {
+        message:
+          "Unable to send the request. Please check your connection and try again.",
+      })
+      throw err
+    }
   }
 
   function handleFormSubmit(event: SubmitEvent<HTMLFormElement>) {
@@ -72,6 +80,12 @@ export function ForgotPasswordForm() {
           placeholder="you@example.com"
           description="We'll send a reset link if that address is registered."
         />
+
+        {errors.root ? (
+          <p role="alert" className="text-sm font-medium text-destructive">
+            {errors.root.message}
+          </p>
+        ) : null}
 
         <Button type="submit" disabled={isSubmitting} className="mt-2">
           {isSubmitting ? "Sending..." : "Send reset link"}
