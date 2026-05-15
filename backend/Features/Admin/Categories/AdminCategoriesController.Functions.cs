@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using System.Text.Json;
 using Backend.Application.Categories;
 using Backend.Domain.Entities;
 using Backend.Features.Categories;
@@ -50,5 +52,24 @@ public sealed partial class AdminCategoriesController
     private ValueTask EvictCategoryListAsync(CancellationToken cancellationToken)
     {
         return outputCacheStore.EvictByTagAsync(CategoriesCache.Tag, cancellationToken);
+    }
+
+    private Guid? GetActorUserId()
+    {
+        var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(value, out var id) ? id : null;
+    }
+
+    private void AddAuditEvent(Guid? actorUserId, string eventType, string? entityType, Guid? entityId, object? payload)
+    {
+        db.AuditEvents.Add(new AuditEvent
+        {
+            ActorUserId = actorUserId,
+            EventType = eventType,
+            EntityType = entityType,
+            EntityId = entityId,
+            Payload = payload is null ? null : JsonSerializer.Serialize(payload),
+            CreatedAt = DateTimeOffset.UtcNow,
+        });
     }
 }
