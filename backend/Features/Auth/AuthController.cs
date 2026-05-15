@@ -119,6 +119,13 @@ public sealed partial class AuthController(
         }
 
         AddAuditEvent(user.Id, "auth.registered", "ApplicationUser", user.Id, new { user.Email });
+        db.AddActivityEvent(
+            user.Id,
+            profileId: null,
+            ActivityEventType.UserRegistered,
+            "ApplicationUser",
+            user.Id,
+            new { user.Email });
 
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -185,6 +192,13 @@ public sealed partial class AuthController(
         var tokens = await tokenService.CreateTokenPairAsync(user, cancellationToken);
         db.RefreshTokens.Add(CreateRefreshToken(user.Id, tokens, null));
         AddAuditEvent(user.Id, "auth.login_succeeded", "ApplicationUser", user.Id, new { user.Email });
+        db.AddActivityEvent(
+            user.Id,
+            profileId: null,
+            ActivityEventType.UserLoggedIn,
+            "ApplicationUser",
+            user.Id,
+            null);
         await db.SaveChangesAsync(cancellationToken);
 
         SetRefreshTokenCookie(tokens);

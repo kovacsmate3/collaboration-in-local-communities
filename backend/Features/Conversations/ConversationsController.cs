@@ -1,4 +1,5 @@
 using Backend.Domain.Entities;
+using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -200,6 +201,13 @@ public sealed partial class ConversationsController(
             ? document.Content[..500]
             : document.Content;
         conversation.LastMessageAt = document.SentAt;
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.MessageSent,
+            nameof(TaskConversation),
+            conversation.Id,
+            new { conversation.TaskId, MessageId = document.Id });
         await db.SaveChangesAsync(cancellationToken);
 
         var response = new MessageResponse(

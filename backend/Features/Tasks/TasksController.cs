@@ -168,6 +168,13 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         };
 
         db.Tasks.Add(task);
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.TaskPosted,
+            nameof(CommunityTask),
+            task.Id,
+            new { task.CategoryId, task.CompensationType });
         await db.SaveChangesAsync(cancellationToken);
 
         var created = await db.Tasks
