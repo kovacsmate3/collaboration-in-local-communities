@@ -109,7 +109,7 @@ export function ResetPasswordForm() {
       return
     }
 
-    if (response.status === 422) {
+    if (response.status === 400 || response.status === 422) {
       let body: unknown
       try {
         body = await response.json()

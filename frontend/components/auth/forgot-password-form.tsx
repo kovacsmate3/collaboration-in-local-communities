@@ -33,11 +33,12 @@ export function ForgotPasswordForm() {
         cache: "no-store",
       })
       // Always treat HTTP responses as success to prevent email enumeration.
-    } catch {
+    } catch (err) {
       form.setError("root", {
         message:
           "Unable to send the request. Please check your connection and try again.",
       })
+      throw err
     }
   }
 
