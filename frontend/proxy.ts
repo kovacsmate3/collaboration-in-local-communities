@@ -20,8 +20,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname
   const isAuthRoute = isAuthPath(pathname)
   const isProtectedRoute = isProtectedPath(pathname)
+  const isRootPath = pathname === "/"
 
-  if (!isAuthRoute && !isProtectedRoute) {
+  if (!isAuthRoute && !isProtectedRoute && !isRootPath) {
     return NextResponse.next()
   }
 
@@ -36,7 +37,11 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     accessToken = refreshed?.auth.accessToken
   }
 
-  if (isAuthRoute && accessToken && isJwtFresh(accessToken, 0)) {
+  if (
+    (isAuthRoute || isRootPath) &&
+    accessToken &&
+    isJwtFresh(accessToken, 0)
+  ) {
     const response = NextResponse.redirect(
       new URL(getHomePathForToken(accessToken), request.url)
     )
