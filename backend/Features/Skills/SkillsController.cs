@@ -1,4 +1,5 @@
 using Backend.Common;
+using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Validation;
@@ -127,40 +128,5 @@ public sealed partial class SkillsController(AppDbContext db) : ControllerBase
         }
 
         return CreatedAtAction("GetSkill", new { id = skill.Id }, SkillResponse.FromEntity(skill));
-    }
-
-    private static string GenerateCode(string name)
-    {
-        var builder = new StringBuilder();
-        var previousUnderscore = false;
-
-        foreach (var ch in name.ToLowerInvariant())
-        {
-            if (char.IsLetterOrDigit(ch))
-            {
-                builder.Append(ch);
-                previousUnderscore = false;
-            }
-            else if (!previousUnderscore && builder.Length > 0)
-            {
-                builder.Append('_');
-                previousUnderscore = true;
-            }
-        }
-
-        return builder.ToString().TrimEnd('_');
-    }
-
-    private async Task<UserProfile?> GetCurrentProfileAsync(CancellationToken cancellationToken)
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(claim, out var userId))
-        {
-            return null;
-        }
-
-        return await db.Profiles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
     }
 }
