@@ -53,8 +53,6 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         href: "/admin/skills",
         label: "Skills",
         icon: FlipBottomIcon,
-        badge: "Soon",
-        disabled: true,
         matches: (pathname) => pathname.startsWith("/admin/skills"),
       },
       {

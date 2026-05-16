@@ -79,6 +79,24 @@ public sealed class SkillsControllersTests
     }
 
     [Fact]
+    public async Task GetSkillAsync_ReturnsDeactivatedApprovedSkillById()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+
+        var skill = CreateSkill("carpentry", "Carpentry", SkillStatus.Approved, isActive: false);
+        db.Skills.Add(skill);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateSkillsController(db, Guid.NewGuid());
+        var result = await controller.GetSkillAsync(skill.Id, cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<SkillResponse>(ok.Value);
+        Assert.Equal(skill.Id, response.Id);
+    }
+
+    [Fact]
     public async Task CreateAsync_CreatesPendingSkillAndLinksItToCurrentProfile()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

@@ -1,6 +1,3 @@
-using System.Security.Claims;
-using System.Text.Json;
-using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +9,7 @@ namespace Backend.Features.Admin.Skills;
 [ApiController]
 [Route("api/admin/skills")]
 [Authorize(Roles = "Admin")]
-public sealed class AdminSkillsController(AppDbContext db) : ControllerBase
+public sealed partial class AdminSkillsController(AppDbContext db) : ControllerBase
 {
     private const int DefaultPageSize = 20;
     private const int MaxPageSize = 100;
@@ -75,9 +72,13 @@ public sealed class AdminSkillsController(AppDbContext db) : ControllerBase
         PatchSkillRequest request,
         CancellationToken cancellationToken)
     {
-        if (!string.Equals(request.Action, "Approve", StringComparison.OrdinalIgnoreCase))
+        var action = request.Action;
+
+        if (!string.Equals(action, "Approve", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(action, "Deactivate", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(action, "Activate", StringComparison.OrdinalIgnoreCase))
         {
-            ModelState.AddModelError(nameof(request.Action), $"Invalid action '{request.Action}'. Allowed: 'Approve'.");
+            ModelState.AddModelError(nameof(request.Action), $"Invalid action '{action}'. Allowed: 'Approve', 'Deactivate', 'Activate'.");
             return ValidationProblem(ModelState);
         }
 
@@ -89,38 +90,63 @@ public sealed class AdminSkillsController(AppDbContext db) : ControllerBase
             return NotFound();
         }
 
-        if (skill.Status == SkillStatus.Approved)
+        if (string.Equals(action, "Approve", StringComparison.OrdinalIgnoreCase))
         {
-            return Ok(AdminSkillResponse.FromEntity(skill));
+            if (skill.Status != SkillStatus.Approved)
+            {
+                skill.Status = SkillStatus.Approved;
+                skill.ApprovedAt = DateTimeOffset.UtcNow;
+                skill.UpdatedAt = DateTimeOffset.UtcNow;
+
+                AddAuditEvent(GetActorUserId(), "admin.skill_approved", "Skill", skill.Id, new { skill.Name, skill.Code });
+
+                await db.SaveChangesAsync(cancellationToken);
+            }
         }
+        else if (string.Equals(action, "Deactivate", StringComparison.OrdinalIgnoreCase))
+        {
+            if (skill.IsActive)
+            {
+                skill.IsActive = false;
+                skill.UpdatedAt = DateTimeOffset.UtcNow;
 
-        skill.Status = SkillStatus.Approved;
-        skill.ApprovedAt = DateTimeOffset.UtcNow;
-        skill.UpdatedAt = DateTimeOffset.UtcNow;
+                AddAuditEvent(GetActorUserId(), "admin.skill_deactivated", "Skill", skill.Id, new { skill.Name, skill.Code });
 
-        AddAuditEvent(GetActorUserId(), "admin.skill_approved", "Skill", skill.Id, new { skill.Name, skill.Code });
-
-        await db.SaveChangesAsync(cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
+            }
+        }
+        else if (string.Equals(action, "Activate", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!skill.IsActive)
+            {
+                skill.IsActive = true;
+                skill.UpdatedAt = DateTimeOffset.UtcNow;
+                await db.SaveChangesAsync(cancellationToken);
+            }
+        }
 
         return Ok(AdminSkillResponse.FromEntity(skill));
     }
 
-    private Guid? GetActorUserId()
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return Guid.TryParse(value, out var id) ? id : null;
-    }
+        var skill = await db.Skills.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
-    private void AddAuditEvent(Guid? actorUserId, string eventType, string? entityType, Guid? entityId, object? payload)
-    {
-        db.AuditEvents.Add(new AuditEvent
+        if (skill is null)
         {
-            ActorUserId = actorUserId,
-            EventType = eventType,
-            EntityType = entityType,
-            EntityId = entityId,
-            Payload = payload is null ? null : JsonSerializer.Serialize(payload),
-            CreatedAt = DateTimeOffset.UtcNow,
-        });
+            return NotFound();
+        }
+
+        bool isLinked = await db.ProfileSkills.AnyAsync(ps => ps.SkillId == id, cancellationToken);
+
+        if (isLinked)
+        {
+            return Conflict("This skill is linked to user profiles and cannot be deleted. Deactivate it instead.");
+        }
+
+        db.Skills.Remove(skill);
+        await db.SaveChangesAsync(cancellationToken);
+        return NoContent();
     }
 }
