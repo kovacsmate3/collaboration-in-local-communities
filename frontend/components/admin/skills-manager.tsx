@@ -264,21 +264,21 @@ function SkillsTableSkeleton() {
 
 export function SkillsManager() {
   const [statusFilter, setStatusFilter] = React.useState<
-    "" | "Pending" | "Approved"
-  >("")
+    "all" | "Pending" | "Approved"
+  >("all")
   const [page, setPage] = React.useState(1)
   const [deleteTarget, setDeleteTarget] =
     React.useState<AdminSkillResponse | null>(null)
 
   function handleStatusChange(value: string) {
-    setStatusFilter(value as "" | "Pending" | "Approved")
+    setStatusFilter(value as "all" | "Pending" | "Approved")
     setPage(1)
   }
 
   const params = {
     page,
     pageSize: PAGE_SIZE,
-    status: statusFilter || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter,
   }
 
   const { data, isLoading, isError, error, refetch } = useAdminSkills(params)
@@ -387,7 +387,7 @@ export function SkillsManager() {
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All</SelectItem>
+            <SelectItem value="all">All</SelectItem>
             <SelectItem value="Pending">Pending</SelectItem>
             <SelectItem value="Approved">Approved</SelectItem>
           </SelectContent>
