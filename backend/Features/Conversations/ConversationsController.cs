@@ -139,6 +139,7 @@ public sealed partial class ConversationsController(
         }
 
         var conversation = await db.TaskConversations
+            .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
         if (conversation is null)
@@ -150,18 +151,6 @@ public sealed partial class ConversationsController(
         {
             return Forbid();
         }
-
-        var now = DateTimeOffset.UtcNow;
-        if (conversation.SeekerProfileId == profile.Id)
-        {
-            conversation.SeekerLastReadAt = now;
-        }
-        else
-        {
-            conversation.HelperLastReadAt = now;
-        }
-
-        await db.SaveChangesAsync(cancellationToken);
 
         var documents = await cosmosMessages.GetByConversationAsync(
             id.ToString(),
