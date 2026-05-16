@@ -12,7 +12,7 @@ namespace Backend.Features.Admin.Skills;
 [ApiController]
 [Route("api/admin/skills")]
 [Authorize(Roles = "Admin")]
-public sealed class AdminSkillsController(AppDbContext db) : ControllerBase
+public sealed partial class AdminSkillsController(AppDbContext db) : ControllerBase
 {
     private const int DefaultPageSize = 20;
     private const int MaxPageSize = 100;
