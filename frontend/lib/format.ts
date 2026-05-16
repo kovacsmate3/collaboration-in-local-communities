@@ -8,6 +8,18 @@
  * keeps allocations down without changing semantics.
  */
 
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+})
+
+export function formatDate(input: string | Date | null | undefined): string {
+  if (!input) return "—"
+  const date = typeof input === "string" ? new Date(input) : input
+  return dateFormatter.format(date)
+}
+
 const currencyFormatters = new Map<string, Intl.NumberFormat>()
 
 function getCurrencyFormatter(currency: string): Intl.NumberFormat {
@@ -48,18 +60,6 @@ function getRelativeTimeFormatter(locale?: string): Intl.RelativeTimeFormat {
  * (locale-aware bucketing, "yesterday" vs "1 day ago", plural rules)
  * consider dayjs/date-fns later - the call sites won't need to change.
  */
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-})
-
-export function formatDate(input: string | Date | null | undefined): string {
-  if (!input) return "—"
-  const date = typeof input === "string" ? new Date(input) : input
-  return dateFormatter.format(date)
-}
-
 export function formatRelativeTime(input: string | Date): string {
   const date = typeof input === "string" ? new Date(input) : input
   const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000)
