@@ -47,7 +47,13 @@ export function ChatList({ conversations, activeId }: ChatListProps) {
                       {c.otherParticipant.displayName}
                     </span>
                     {c.hasUnread && (
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+                      <>
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full bg-primary"
+                          aria-hidden="true"
+                        />
+                        <span className="sr-only">Unread</span>
+                      </>
                     )}
                   </div>
                   {c.lastMessageAt ? (

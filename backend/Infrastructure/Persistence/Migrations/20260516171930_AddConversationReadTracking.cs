@@ -24,6 +24,15 @@ namespace Backend.Infrastructure.Persistence.Migrations
                 table: "task_conversations",
                 type: "timestamp with time zone",
                 nullable: true);
+
+            // Backfill: treat existing messages as already read so deployment
+            // doesn't flood all users with false unread indicators.
+            migrationBuilder.Sql(@"
+                UPDATE data.task_conversations
+                SET seeker_last_read_at = last_message_at,
+                    helper_last_read_at = last_message_at
+                WHERE last_message_at IS NOT NULL;
+            ");
         }
 
         /// <inheritdoc />

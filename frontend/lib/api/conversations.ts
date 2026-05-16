@@ -50,6 +50,7 @@ export function useConversations() {
   return useQuery({
     queryKey: conversationKeys.list,
     queryFn: () => apiClient.get<ApiConversationPreview[]>("/conversations"),
+    staleTime: 60_000,
   })
 }
 

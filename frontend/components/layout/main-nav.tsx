@@ -33,6 +33,11 @@ export function MainNav({ className }: MainNavProps) {
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
+            aria-label={
+              item.href === "/messages" && unreadCount > 0
+                ? `${item.label}, ${unreadCount} unread`
+                : undefined
+            }
             className={cn(
               "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               active

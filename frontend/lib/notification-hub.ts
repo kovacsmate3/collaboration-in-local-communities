@@ -5,20 +5,7 @@ import * as signalR from "@microsoft/signalr"
 import { useQueryClient } from "@tanstack/react-query"
 
 import { conversationKeys } from "@/lib/api/conversations"
-import { refreshAccessToken } from "@/lib/auth/token-bridge"
-
-async function fetchToken(): Promise<string> {
-  let res = await fetch("/api/auth/token")
-  if (res.status === 401) {
-    const refreshed = await refreshAccessToken()
-    if (refreshed) {
-      res = await fetch("/api/auth/token")
-    }
-  }
-  if (!res.ok) return ""
-  const data = (await res.json()) as { token: string }
-  return data.token
-}
+import { fetchSignalRToken } from "@/lib/signalr-token"
 
 export function useNotificationHub(profileId: string | undefined) {
   const qc = useQueryClient()
@@ -27,7 +14,7 @@ export function useNotificationHub(profileId: string | undefined) {
     if (!profileId) return
 
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("/hubs/chat", { accessTokenFactory: fetchToken })
+      .withUrl("/hubs/chat", { accessTokenFactory: fetchSignalRToken })
       .withAutomaticReconnect()
       .build()
 

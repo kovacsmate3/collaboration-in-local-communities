@@ -31,6 +31,11 @@ export function MobileNav() {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                aria-label={
+                  item.href === "/messages" && unreadCount > 0
+                    ? `${item.label}, ${unreadCount} unread`
+                    : undefined
+                }
                 className={cn(
                   "flex flex-col items-center gap-1 px-2 py-2 text-[0.65rem] font-medium transition-colors",
                   active

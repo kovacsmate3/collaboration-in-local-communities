@@ -219,6 +219,16 @@ public sealed partial class ConversationsController(
             ? document.Content[..500]
             : document.Content;
         conversation.LastMessageAt = document.SentAt;
+
+        if (conversation.SeekerProfileId == profile.Id)
+        {
+            conversation.SeekerLastReadAt = document.SentAt;
+        }
+        else
+        {
+            conversation.HelperLastReadAt = document.SentAt;
+        }
+
         db.AddActivityEvent(
             profile.UserId,
             profile.Id,
