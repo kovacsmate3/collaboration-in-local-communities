@@ -1,7 +1,4 @@
-using System.Security.Claims;
-using System.Text;
 using Backend.Common;
-using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Validation;
@@ -14,7 +11,7 @@ namespace Backend.Features.Skills;
 [ApiController]
 [Route("api/skills")]
 [Authorize]
-public sealed class SkillsController(AppDbContext db) : ControllerBase
+public sealed partial class SkillsController(AppDbContext db) : ControllerBase
 {
     private const int MaxSearchResults = 20;
 
@@ -48,7 +45,7 @@ public sealed class SkillsController(AppDbContext db) : ControllerBase
     {
         var skill = await db.Skills
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == id && s.IsActive, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
         if (skill is null)
         {
