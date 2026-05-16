@@ -73,6 +73,6 @@ public sealed class RateLimitingTests
 
     private sealed class StubClientIpAccessor : IClientIpAccessor
     {
-        public string? GetClientIp() => "203.0.113.1";
+        public string GetClientIp() => "203.0.113.1";
     }
 }
