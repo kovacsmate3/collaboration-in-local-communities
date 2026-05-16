@@ -2,11 +2,17 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/cookies"
+import { isJwtFresh } from "@/lib/auth/jwt"
 
-export async function GET(request: NextRequest) {
-  const token = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
-  if (!token) {
+// Returns the current access token for SignalR's accessTokenFactory.
+// No refresh logic — the caller (fetchToken in chat-hub) is responsible for
+// triggering a refresh on 401 and retrying.
+export function GET(request: NextRequest) {
+  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
+
+  if (!accessToken || !isJwtFresh(accessToken, 0)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-  return NextResponse.json({ token })
+
+  return NextResponse.json({ token: accessToken })
 }

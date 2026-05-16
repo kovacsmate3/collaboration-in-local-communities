@@ -21,6 +21,11 @@ import type {
   UserRole,
 } from "@/lib/auth/types"
 
+export type BackendRefreshResult = {
+  auth: BackendAuthResponse
+  setCookieHeaders: string[]
+}
+
 type HeadersWithSetCookie = Headers & {
   getSetCookie?: () => string[]
 }
@@ -99,14 +104,35 @@ export function appendBackendSetCookie(
   backendResponse: Response,
   response: NextResponse
 ) {
-  for (const cookie of getSetCookieHeaders(backendResponse.headers)) {
+  appendSetCookieHeaders(getSetCookieHeaders(backendResponse.headers), response)
+}
+
+export function appendRefreshSetCookie(
+  refreshResult: BackendRefreshResult,
+  response: NextResponse
+) {
+  appendSetCookieHeaders(refreshResult.setCookieHeaders, response)
+}
+
+export function appendSetCookieHeaders(
+  cookies: string[],
+  response: NextResponse
+) {
+  for (const cookie of cookies) {
     response.headers.append("set-cookie", cookie)
   }
 }
 
 export function getRefreshCookieHeader(request: NextRequest): string | null {
+  // Next.js's request.cookies.get() runs decodeURIComponent on the value
+  // (see @edge-runtime/cookies). The backend (ASP.NET Core) URL-decodes again
+  // when reading Request.Cookies, so we have to re-encode here — otherwise the
+  // base64 refresh token's '+' characters get interpreted as spaces and the
+  // backend rejects every refresh with 401 (Convert.FromBase64String throws).
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value
-  return refreshToken ? `${REFRESH_TOKEN_COOKIE}=${refreshToken}` : null
+  return refreshToken
+    ? `${REFRESH_TOKEN_COOKIE}=${encodeURIComponent(refreshToken)}`
+    : null
 }
 
 export async function readJson<T>(response: Response): Promise<T | null> {
@@ -117,9 +143,12 @@ export async function readJson<T>(response: Response): Promise<T | null> {
   }
 }
 
+// Calls the backend's /api/auth/refresh endpoint. Used only by the
+// /api/auth/refresh route (no in-memory dedup needed — the AuthProvider's
+// singleton in-flight promise prevents concurrent client-side callers).
 export async function refreshBackendToken(
   request: NextRequest
-): Promise<{ auth: BackendAuthResponse; response: Response } | null> {
+): Promise<BackendRefreshResult | null> {
   const cookie = getRefreshCookieHeader(request)
   if (!cookie) {
     return null
@@ -139,12 +168,13 @@ export async function refreshBackendToken(
     return null
   }
 
+  const setCookieHeaders = getSetCookieHeaders(response.headers)
   const auth = await readJson<BackendAuthResponse>(response.clone())
   if (!isBackendAuthResponse(auth)) {
     return null
   }
 
-  return { auth, response }
+  return { auth, setCookieHeaders }
 }
 
 export async function fetchOwnProfile(

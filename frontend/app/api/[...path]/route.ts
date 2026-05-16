@@ -1,10 +1,7 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
-import {
-  ACCESS_TOKEN_COOKIE,
-  getExpiredCookieOptions,
-} from "@/lib/auth/cookies"
+import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/cookies"
 import { BACKEND_AUTH_PATHS } from "@/lib/auth/constants"
 import {
   appendBackendSetCookie,
@@ -14,7 +11,6 @@ import {
   getRefreshCookieHeader,
   isBackendAuthResponse,
   readJson,
-  refreshBackendToken,
   setAccessTokenCookie,
   toSafeAuthResponse,
 } from "@/lib/auth/backend"
@@ -31,6 +27,9 @@ const TOKEN_ISSUING_PATHS: ReadonlySet<string> = new Set(
   BACKEND_AUTH_PATHS.tokenIssuing
 )
 
+// Forwards requests to the backend with the current access token. No refresh
+// logic here — if the backend returns 401, the client's apiClient handles it
+// by triggering a refresh through the AuthProvider's singleton, then retries.
 async function proxyRequest(
   request: NextRequest,
   context: ApiRouteContext
@@ -38,7 +37,12 @@ async function proxyRequest(
   const { path } = await context.params
   const pathKey = path.join("/")
   const requestBody = await getRequestBody(request)
-  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
+
+  // login/refresh issue tokens, so we must NOT send one in.
+  // logout requires [Authorize] on the backend, so we do send it.
+  const accessToken = TOKEN_ISSUING_PATHS.has(pathKey)
+    ? undefined
+    : request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
 
   const backendResponse = await fetchBackend(
     request,
@@ -55,34 +59,8 @@ async function proxyRequest(
     return handleLogoutResponse(request, backendResponse)
   }
 
-  if (backendResponse.status !== 401) {
-    const response = createForwardedResponse(backendResponse)
-    appendBackendSetCookie(backendResponse, response)
-    return response
-  }
-
-  const refreshResult = await refreshBackendToken(request)
-  if (!refreshResult) {
-    const response = createForwardedResponse(backendResponse)
-    response.cookies.set(
-      ACCESS_TOKEN_COOKIE,
-      "",
-      getExpiredCookieOptions(request.url)
-    )
-    return response
-  }
-
-  const retryResponse = await fetchBackend(
-    request,
-    path,
-    requestBody,
-    refreshResult.auth.accessToken
-  )
-  const response = createForwardedResponse(retryResponse)
-  appendBackendSetCookie(refreshResult.response, response)
-  appendBackendSetCookie(retryResponse, response)
-  setAccessTokenCookie(response, request.url, refreshResult.auth)
-
+  const response = createForwardedResponse(backendResponse)
+  appendBackendSetCookie(backendResponse, response)
   return response
 }
 
@@ -98,11 +76,7 @@ async function handleTokenIssuingResponse(
       : new NextResponse(null, { status: backendResponse.status })
 
     if (backendResponse.status === 401) {
-      response.cookies.set(
-        ACCESS_TOKEN_COOKIE,
-        "",
-        getExpiredCookieOptions(request.url)
-      )
+      clearAuthCookies(response, request.url)
     }
 
     appendBackendSetCookie(backendResponse, response)
@@ -112,8 +86,14 @@ async function handleTokenIssuingResponse(
   const response = NextResponse.json(toSafeAuthResponse(body), {
     status: backendResponse.status,
   })
-  appendBackendSetCookie(backendResponse, response)
+  // ORDER MATTERS: response.cookies.set() wipes all Set-Cookie headers and
+  // rewrites them from its internal Map (see @edge-runtime/cookies `replace`).
+  // So we MUST call setAccessTokenCookie (which uses response.cookies.set)
+  // BEFORE appendBackendSetCookie (which uses headers.append). Otherwise the
+  // backend's refresh-token Set-Cookie is silently deleted before reaching
+  // the browser.
   setAccessTokenCookie(response, request.url, body)
+  appendBackendSetCookie(backendResponse, response)
 
   return response
 }

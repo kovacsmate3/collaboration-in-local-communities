@@ -7,6 +7,7 @@ export const AUTH_COOKIES = {
 
 export const AUTH_API_PATHS = {
   session: "/api/auth/session",
+  refresh: "/api/auth/refresh",
   login: "/api/auth/login",
   register: "/api/auth/register",
   logout: "/api/auth/logout",
@@ -30,8 +31,9 @@ export const APP_AUTH_ROUTES = {
   forgotPassword: "/login/forgot",
   register: "/register",
   verifyEmail: "/verify-email",
-  resetPassword: "/reset-password",
 } as const
+
+export const APP_RESET_PASSWORD_ROUTE = "/reset-password" as const
 
 export const APP_HOME_ROUTES = {
   admin: "/admin",

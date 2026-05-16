@@ -110,6 +110,28 @@ public sealed class ProfilesControllerTests
     }
 
     [Fact]
+    public async Task UpdateOwnProfileAsync_LogsProfileUpdatedActivity()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
+        var controller = CreateProfilesController(db, userId);
+
+        var result = await controller.UpdateOwnProfileAsync(
+            new UpdateOwnProfileRequest { DisplayName = "Updated User" },
+            cancellationToken);
+
+        Assert.IsType<OkObjectResult>(result);
+
+        var activity = Assert.Single(db.ActivityEvents);
+        Assert.Equal(userId, activity.UserId);
+        Assert.Equal(profileId, activity.ProfileId);
+        Assert.Equal(ActivityEventType.ProfileUpdated, activity.EventType);
+        Assert.Equal(nameof(UserProfile), activity.EntityType);
+        Assert.Equal(profileId, activity.EntityId);
+    }
+
+    [Fact]
     public async Task GetProfileReviewsAsync_ReturnsReviewsReceivedByProfileNewestFirst()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

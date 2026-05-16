@@ -150,7 +150,7 @@ public sealed class SkillsControllersTests
 
         await db.SaveChangesAsync(cancellationToken);
 
-        var controller = new AdminSkillsController(db);
+        var controller = CreateAdminSkillsController(db);
 
         var result = await controller.ListAsync(page: 1, pageSize: 1, status: "Pending", cancellationToken);
 
@@ -174,7 +174,7 @@ public sealed class SkillsControllersTests
         db.Skills.Add(skill);
         await db.SaveChangesAsync(cancellationToken);
 
-        var controller = new AdminSkillsController(db);
+        var controller = CreateAdminSkillsController(db);
         var request = new PatchSkillRequest { Action = "Approve" };
 
         var firstResult = await controller.PatchAsync(skill.Id, request, cancellationToken);
@@ -225,20 +225,32 @@ public sealed class SkillsControllersTests
 
     private static SkillsController CreateSkillsController(AppDbContext db, Guid userId)
     {
-        var controller = new SkillsController(db)
+        return new SkillsController(db)
         {
-            ControllerContext = new ControllerContext
+            ControllerContext = CreateControllerContext(userId)
+        };
+    }
+
+    private static AdminSkillsController CreateAdminSkillsController(AppDbContext db)
+    {
+        return new AdminSkillsController(db)
+        {
+            ControllerContext = CreateControllerContext(Guid.NewGuid())
+        };
+    }
+
+    private static ControllerContext CreateControllerContext(Guid userId)
+    {
+        return new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
             {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(new ClaimsIdentity(
-                    [
-                        new Claim(ClaimTypes.NameIdentifier, userId.ToString())
-                    ], "TestAuth"))
-                }
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                    new Claim(ClaimTypes.Role, "Admin")
+                ], "TestAuth"))
             }
         };
-
-        return controller;
     }
 }

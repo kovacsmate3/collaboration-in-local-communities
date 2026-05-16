@@ -1,3 +1,6 @@
+using System.Security.Claims;
+using System.Text.Json;
+using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -97,6 +100,9 @@ public sealed class AdminSkillsController(AppDbContext db) : ControllerBase
                 skill.Status = SkillStatus.Approved;
                 skill.ApprovedAt = DateTimeOffset.UtcNow;
                 skill.UpdatedAt = DateTimeOffset.UtcNow;
+
+                AddAuditEvent(GetActorUserId(), "admin.skill_approved", "Skill", skill.Id, new { skill.Name, skill.Code });
+
                 await db.SaveChangesAsync(cancellationToken);
             }
         }
@@ -106,6 +112,9 @@ public sealed class AdminSkillsController(AppDbContext db) : ControllerBase
             {
                 skill.IsActive = false;
                 skill.UpdatedAt = DateTimeOffset.UtcNow;
+
+                AddAuditEvent(GetActorUserId(), "admin.skill_deactivated", "Skill", skill.Id, new { skill.Name, skill.Code });
+
                 await db.SaveChangesAsync(cancellationToken);
             }
         }
