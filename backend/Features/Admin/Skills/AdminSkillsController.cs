@@ -1,6 +1,3 @@
-using System.Security.Claims;
-using System.Text.Json;
-using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
