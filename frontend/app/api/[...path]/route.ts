@@ -40,9 +40,10 @@ async function proxyRequest(
   const { path } = await context.params
   const pathKey = path.join("/")
   const requestBody = await getRequestBody(request)
-  const tokenResult = TOKEN_ISSUING_PATHS.has(pathKey)
-    ? { accessToken: null, refreshed: null }
-    : await getFreshAccessToken(request)
+  const tokenResult =
+    TOKEN_ISSUING_PATHS.has(pathKey) || pathKey === "auth/logout"
+      ? { accessToken: null, refreshed: null }
+      : await getFreshAccessToken(request)
 
   const backendResponse = await fetchBackend(
     request,
