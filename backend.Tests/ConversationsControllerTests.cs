@@ -273,7 +273,7 @@ public sealed class ConversationsControllerTests
             Title = "Test task",
             Description = "Description",
             CompensationType = CompensationType.Voluntary,
-            Status = TaskStatus.Open,
+            Status = Backend.Domain.Enums.TaskStatus.Open,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         };
