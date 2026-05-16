@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { PRIMARY_NAV } from "@/lib/nav"
+import { useUnreadCount } from "@/lib/api/conversations"
 import { cn } from "@/lib/utils"
 
 /**
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils"
  */
 export function MobileNav() {
   const pathname = usePathname()
+  const unreadCount = useUnreadCount()
 
   return (
     <nav
@@ -36,7 +38,12 @@ export function MobileNav() {
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <HugeiconsIcon icon={item.icon} className="size-5" />
+                <span className="relative">
+                  <HugeiconsIcon icon={item.icon} className="size-5" />
+                  {item.href === "/messages" && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
+                  )}
+                </span>
                 <span className="truncate">{item.label.split(" ")[0]}</span>
               </Link>
             </li>

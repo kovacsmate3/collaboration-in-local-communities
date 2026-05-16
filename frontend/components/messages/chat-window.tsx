@@ -28,6 +28,7 @@ export function ChatWindow({ conversation, messages }: ChatWindowProps) {
   const { user } = useAuth()
   const [draft, setDraft] = React.useState("")
   const bottomRef = React.useRef<HTMLDivElement>(null)
+  const inputRef = React.useRef<HTMLInputElement>(null)
   const { mutate: sendMessage, isPending } = useSendMessage(conversation.id)
 
   useConversationHub(conversation.id, user?.profileId)
@@ -41,6 +42,7 @@ export function ChatWindow({ conversation, messages }: ChatWindowProps) {
     const content = draft.trim()
     if (!content) return
     setDraft("")
+    inputRef.current?.focus()
     sendMessage(content)
   }
 
@@ -85,11 +87,11 @@ export function ChatWindow({ conversation, messages }: ChatWindowProps) {
         className="flex items-center gap-2 border-t border-border px-4 py-3"
       >
         <Input
+          ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Message…"
           aria-label="Message"
-          disabled={isPending}
         />
         <Button
           type="submit"

@@ -25,6 +25,7 @@ export interface ApiConversationPreview {
   otherParticipant: ApiParticipant
   lastMessageContent: string | null
   lastMessageAt: string | null
+  hasUnread: boolean
 }
 
 export interface ApiMessage {
@@ -71,6 +72,26 @@ export function useStartConversation() {
   })
 }
 
+export function useMarkConversationRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      apiClient.put<void>(`/conversations/${conversationId}/read`, {}),
+    onSuccess: (_data, conversationId) => {
+      qc.setQueryData<ApiConversationPreview[]>(conversationKeys.list, (prev) =>
+        prev?.map((c) =>
+          c.id === conversationId ? { ...c, hasUnread: false } : c
+        )
+      )
+    },
+  })
+}
+
+export function useUnreadCount(): number {
+  const { data: conversations = [] } = useConversations()
+  return conversations.filter((c) => c.hasUnread).length
+}
+
 export function useSendMessage(conversationId: string) {
   const qc = useQueryClient()
   return useMutation({
@@ -81,7 +102,11 @@ export function useSendMessage(conversationId: string) {
     onSuccess: (message) => {
       qc.setQueryData<ApiMessage[]>(
         conversationKeys.messages(conversationId),
-        (prev) => (prev ? [...prev, message] : [message])
+        (prev) => {
+          if (!prev) return [message]
+          if (prev.some((m) => m.id === message.id)) return prev
+          return [...prev, message]
+        }
       )
       void qc.invalidateQueries({ queryKey: conversationKeys.list })
     },

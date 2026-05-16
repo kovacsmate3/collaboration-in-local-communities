@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { PRIMARY_NAV } from "@/lib/nav"
+import { useUnreadCount } from "@/lib/api/conversations"
 import { cn } from "@/lib/utils"
 
 interface MainNavProps {
@@ -19,6 +20,7 @@ interface MainNavProps {
  */
 export function MainNav({ className }: MainNavProps) {
   const pathname = usePathname()
+  const unreadCount = useUnreadCount()
 
   return (
     <nav className={cn("flex items-center gap-1", className)}>
@@ -38,7 +40,12 @@ export function MainNav({ className }: MainNavProps) {
                 : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
             )}
           >
-            <HugeiconsIcon icon={item.icon} className="size-4" />
+            <span className="relative">
+              <HugeiconsIcon icon={item.icon} className="size-4" />
+              {item.href === "/messages" && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
+              )}
+            </span>
             {item.label}
           </Link>
         )

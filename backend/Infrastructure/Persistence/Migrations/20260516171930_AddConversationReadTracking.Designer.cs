@@ -3,6 +3,7 @@ using System;
 using Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260516171930_AddConversationReadTracking")]
+    partial class AddConversationReadTracking
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1132,6 +1135,10 @@ namespace Backend.Infrastructure.Persistence.Migrations
                     b.HasIndex("SeekerProfileId")
                         .HasDatabaseName("ix_task_conversations_seeker_profile_id");
 
+                    b.HasIndex("TaskId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_task_conversations_task_id");
+
                     b.HasIndex("TaskId", "HelperProfileId")
                         .IsUnique()
                         .HasDatabaseName("ux_task_conversations_task_helper");
@@ -2003,8 +2010,8 @@ namespace Backend.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_task_conversations_profiles_seeker_profile_id");
 
                     b.HasOne("Backend.Domain.Entities.CommunityTask", "Task")
-                        .WithMany("Conversations")
-                        .HasForeignKey("TaskId")
+                        .WithOne("Conversation")
+                        .HasForeignKey("Backend.Domain.Entities.TaskConversation", "TaskId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_task_conversations_tasks_task_id");
@@ -2145,7 +2152,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                     b.Navigation("CompletionConfirmations");
 
-                    b.Navigation("Conversations");
+                    b.Navigation("Conversation");
 
                     b.Navigation("PointsLedgerEntries");
 
