@@ -1,8 +1,10 @@
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +13,7 @@ namespace Backend.Features.Conversations;
 [ApiController]
 [Route("api/conversations")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.ConversationsPolicy)]
 public sealed partial class ConversationsController(
     AppDbContext db,
     IHubContext<ChatHub> chatHub,

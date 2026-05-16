@@ -2,8 +2,10 @@ using System.Security.Claims;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 
@@ -65,6 +67,7 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
     /// 404 Not Found if the profile does not exist.
     /// </returns>
     [HttpGet("{id:guid}/reviews")]
+    [EnableRateLimiting(RateLimitingExtensions.ReviewsPolicy)]
     public async Task<IActionResult> GetProfileReviewsAsync(Guid id, CancellationToken cancellationToken)
     {
         if (!await ProfileExistsAsync(id, cancellationToken))

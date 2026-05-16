@@ -10,6 +10,7 @@ using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -18,6 +19,7 @@ namespace Backend.Features.Auth;
 
 [ApiController]
 [Route("api/auth")]
+[EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
 public sealed partial class AuthController(
     AppDbContext db,
     UserManager<ApplicationUser> userManager,
