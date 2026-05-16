@@ -7,6 +7,7 @@ export const AUTH_COOKIES = {
 
 export const AUTH_API_PATHS = {
   session: "/api/auth/session",
+  refresh: "/api/auth/refresh",
   login: "/api/auth/login",
   register: "/api/auth/register",
   logout: "/api/auth/logout",
