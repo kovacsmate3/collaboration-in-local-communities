@@ -6,9 +6,16 @@ import { useQueryClient } from "@tanstack/react-query"
 
 import { conversationKeys } from "@/lib/api/conversations"
 import type { ApiMessage } from "@/lib/api/conversations"
+import { refreshAccessToken } from "@/lib/auth/token-bridge"
 
 async function fetchToken(): Promise<string> {
-  const res = await fetch("/api/auth/token")
+  let res = await fetch("/api/auth/token")
+  if (res.status === 401) {
+    const refreshed = await refreshAccessToken()
+    if (refreshed) {
+      res = await fetch("/api/auth/token")
+    }
+  }
   if (!res.ok) return ""
   const data = (await res.json()) as { token: string }
   return data.token

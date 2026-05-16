@@ -12,7 +12,7 @@ import {
   DEFAULT_BACKEND_API_URL,
 } from "@/lib/auth/constants"
 import { applyProxyAuth } from "@/lib/auth/frontend-proxy-jws"
-import { isJwtFresh, type JwtUserClaims } from "@/lib/auth/jwt"
+import type { JwtUserClaims } from "@/lib/auth/jwt"
 import type {
   AuthUser,
   BackendAuthResponse,
@@ -26,16 +26,6 @@ export type BackendRefreshResult = {
   setCookieHeaders: string[]
 }
 
-export type FreshAccessTokenResult =
-  | {
-      accessToken: string
-      refreshed: BackendRefreshResult | null
-    }
-  | {
-      accessToken: null
-      refreshed: BackendRefreshResult | null
-    }
-
 type HeadersWithSetCookie = Headers & {
   getSetCookie?: () => string[]
 }
@@ -48,17 +38,6 @@ type OwnProfileFetchResult =
   | {
       status: "unauthorized"
     }
-
-const REFRESH_REPLAY_WINDOW_MS = 5_000
-
-const refreshRequests = new Map<string, Promise<BackendRefreshResult | null>>()
-const refreshResults = new Map<
-  string,
-  {
-    expiresAt: number
-    result: BackendRefreshResult
-  }
->()
 
 export function getBackendUrl(path: string[], requestUrl?: string): URL {
   const backendBaseUrl = process.env.API_URL ?? DEFAULT_BACKEND_API_URL
@@ -145,8 +124,15 @@ export function appendSetCookieHeaders(
 }
 
 export function getRefreshCookieHeader(request: NextRequest): string | null {
+  // Next.js's request.cookies.get() runs decodeURIComponent on the value
+  // (see @edge-runtime/cookies). The backend (ASP.NET Core) URL-decodes again
+  // when reading Request.Cookies, so we have to re-encode here — otherwise the
+  // base64 refresh token's '+' characters get interpreted as spaces and the
+  // backend rejects every refresh with 401 (Convert.FromBase64String throws).
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value
-  return refreshToken ? `${REFRESH_TOKEN_COOKIE}=${refreshToken}` : null
+  return refreshToken
+    ? `${REFRESH_TOKEN_COOKIE}=${encodeURIComponent(refreshToken)}`
+    : null
 }
 
 export async function readJson<T>(response: Response): Promise<T | null> {
@@ -157,6 +143,9 @@ export async function readJson<T>(response: Response): Promise<T | null> {
   }
 }
 
+// Calls the backend's /api/auth/refresh endpoint. Used only by the
+// /api/auth/refresh route (no in-memory dedup needed — the AuthProvider's
+// singleton in-flight promise prevents concurrent client-side callers).
 export async function refreshBackendToken(
   request: NextRequest
 ): Promise<BackendRefreshResult | null> {
@@ -165,56 +154,6 @@ export async function refreshBackendToken(
     return null
   }
 
-  pruneRefreshResultCache()
-
-  const cached = refreshResults.get(cookie)
-  if (cached && cached.expiresAt > Date.now()) {
-    return cached.result
-  }
-
-  const existing = refreshRequests.get(cookie)
-  if (existing) {
-    return existing
-  }
-
-  const refreshRequest = performRefreshBackendToken(request, cookie)
-    .then((result) => {
-      if (result) {
-        refreshResults.set(cookie, {
-          expiresAt: Date.now() + REFRESH_REPLAY_WINDOW_MS,
-          result,
-        })
-      }
-
-      return result
-    })
-    .finally(() => {
-      refreshRequests.delete(cookie)
-    })
-
-  refreshRequests.set(cookie, refreshRequest)
-  return refreshRequest
-}
-
-export async function getFreshAccessToken(
-  request: NextRequest
-): Promise<FreshAccessTokenResult> {
-  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
-  if (accessToken && isJwtFresh(accessToken)) {
-    return { accessToken, refreshed: null }
-  }
-
-  const refreshed = await refreshBackendToken(request)
-  return {
-    accessToken: refreshed?.auth.accessToken ?? null,
-    refreshed,
-  }
-}
-
-async function performRefreshBackendToken(
-  request: NextRequest,
-  cookie: string
-): Promise<BackendRefreshResult | null> {
   const backendUrl = getBackendUrl([...BACKEND_AUTH_PATHS.refresh])
   const headers = new Headers({ cookie })
   await applyProxyAuth(request, headers, backendUrl, "POST")
@@ -305,15 +244,6 @@ function getSetCookieHeaders(headers: Headers): string[] {
 
   const cookie = headers.get("set-cookie")
   return cookie ? [cookie] : []
-}
-
-function pruneRefreshResultCache() {
-  const now = Date.now()
-  for (const [cookie, cached] of refreshResults) {
-    if (cached.expiresAt <= now) {
-      refreshResults.delete(cookie)
-    }
-  }
 }
 
 function normalizeRoles(roles: string[]): UserRole[] {
