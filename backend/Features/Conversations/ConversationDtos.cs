@@ -30,7 +30,15 @@ public sealed record ConversationPreviewResponse(
     string TaskTitle,
     ParticipantInfo OtherParticipant,
     string? LastMessageContent,
-    DateTimeOffset? LastMessageAt);
+    DateTimeOffset? LastMessageAt,
+    bool HasUnread);
+
+// Sent over SignalR to the recipient's personal user group when they receive a new message.
+[PublicAPI]
+public sealed record NewMessageNotification(
+    Guid ConversationId,
+    string SenderDisplayName,
+    string ContentPreview);
 
 [PublicAPI]
 public sealed record MessageResponse(
@@ -40,6 +48,11 @@ public sealed record MessageResponse(
     Guid SenderProfileId,
     string SenderDisplayName,
     bool IsMine);
+
+[PublicAPI]
+public sealed record MessagesPageResponse(
+    IEnumerable<MessageResponse> Messages,
+    bool HasMore);
 
 // Sent over SignalR — omits IsMine so each client computes it from SenderProfileId.
 [PublicAPI]

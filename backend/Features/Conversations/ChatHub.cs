@@ -44,4 +44,24 @@ public sealed class ChatHub(AppDbContext db) : Hub
 
         await Groups.AddToGroupAsync(Context.ConnectionId, $"conversation-{id}");
     }
+
+    public async Task JoinUserGroupAsync()
+    {
+        var userIdClaim = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdClaim, out var userId))
+        {
+            return;
+        }
+
+        var profile = await db.Profiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.UserId == userId);
+
+        if (profile is null)
+        {
+            return;
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{profile.Id}");
+    }
 }

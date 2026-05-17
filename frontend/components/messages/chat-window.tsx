@@ -22,25 +22,38 @@ import { useConversationHub } from "@/lib/chat-hub"
 interface ChatWindowProps {
   conversation: ApiConversationPreview
   messages: ApiMessage[]
+  hasPreviousPage: boolean
+  fetchPreviousPage: () => void
+  isFetchingPreviousPage: boolean
 }
 
-export function ChatWindow({ conversation, messages }: ChatWindowProps) {
+export function ChatWindow({
+  conversation,
+  messages,
+  hasPreviousPage,
+  fetchPreviousPage,
+  isFetchingPreviousPage,
+}: ChatWindowProps) {
   const { user } = useAuth()
   const [draft, setDraft] = React.useState("")
   const bottomRef = React.useRef<HTMLDivElement>(null)
+  const inputRef = React.useRef<HTMLInputElement>(null)
   const { mutate: sendMessage, isPending } = useSendMessage(conversation.id)
 
   useConversationHub(conversation.id, user?.profileId)
 
+  const lastMessageId = messages[messages.length - 1]?.id
+
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [lastMessageId])
 
   function handleSend(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     const content = draft.trim()
     if (!content) return
     setDraft("")
+    inputRef.current?.focus()
     sendMessage(content)
   }
 
@@ -68,6 +81,18 @@ export function ChatWindow({ conversation, messages }: ChatWindowProps) {
 
       <ScrollArea className="flex-1 px-4">
         <div className="flex flex-col gap-2 py-4">
+          {hasPreviousPage && (
+            <div className="flex justify-center py-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchPreviousPage}
+                disabled={isFetchingPreviousPage}
+              >
+                {isFetchingPreviousPage ? "Loading…" : "Load older messages"}
+              </Button>
+            </div>
+          )}
           {messages.length === 0 ? (
             <p className="text-center text-xs text-muted-foreground">
               No messages yet. Say hello!
@@ -85,11 +110,11 @@ export function ChatWindow({ conversation, messages }: ChatWindowProps) {
         className="flex items-center gap-2 border-t border-border px-4 py-3"
       >
         <Input
+          ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Message…"
           aria-label="Message"
-          disabled={isPending}
         />
         <Button
           type="submit"

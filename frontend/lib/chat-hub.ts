@@ -2,24 +2,11 @@
 
 import * as React from "react"
 import * as signalR from "@microsoft/signalr"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQueryClient, type InfiniteData } from "@tanstack/react-query"
 
 import { conversationKeys } from "@/lib/api/conversations"
-import type { ApiMessage } from "@/lib/api/conversations"
-import { refreshAccessToken } from "@/lib/auth/token-bridge"
-
-async function fetchToken(): Promise<string> {
-  let res = await fetch("/api/auth/token")
-  if (res.status === 401) {
-    const refreshed = await refreshAccessToken()
-    if (refreshed) {
-      res = await fetch("/api/auth/token")
-    }
-  }
-  if (!res.ok) return ""
-  const data = (await res.json()) as { token: string }
-  return data.token
-}
+import type { ApiMessage, MessagesPage } from "@/lib/api/conversations"
+import { fetchSignalRToken } from "@/lib/signalr-token"
 
 export function useConversationHub(
   conversationId: string,
@@ -32,7 +19,7 @@ export function useConversationHub(
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl("/hubs/chat", {
-        accessTokenFactory: fetchToken,
+        accessTokenFactory: fetchSignalRToken,
       })
       .withAutomaticReconnect()
       .build()
@@ -42,12 +29,24 @@ export function useConversationHub(
         ...msg,
         isMine: msg.senderProfileId === currentProfileId,
       }
-      qc.setQueryData<ApiMessage[]>(
+      qc.setQueryData<InfiniteData<MessagesPage>>(
         conversationKeys.messages(conversationId),
         (prev) => {
-          if (!prev) return [message]
-          if (prev.some((m) => m.id === message.id)) return prev
-          return [...prev, message]
+          if (!prev) {
+            return {
+              pages: [{ messages: [message], hasMore: false }],
+              pageParams: [undefined],
+            }
+          }
+          const lastPage = prev.pages[prev.pages.length - 1]
+          if (lastPage.messages.some((m) => m.id === message.id)) return prev
+          return {
+            ...prev,
+            pages: [
+              ...prev.pages.slice(0, -1),
+              { ...lastPage, messages: [...lastPage.messages, message] },
+            ],
+          }
         }
       )
       void qc.invalidateQueries({ queryKey: conversationKeys.list })

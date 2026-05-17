@@ -198,10 +198,12 @@ internal sealed class TaskConversationConfiguration : IEntityTypeConfiguration<T
 
         builder.Property(conversation => conversation.LastMessageContent).HasMaxLength(500);
         builder.Property(conversation => conversation.LastMessageAt);
+        builder.Property(conversation => conversation.SeekerLastReadAt);
+        builder.Property(conversation => conversation.HelperLastReadAt);
 
         builder.HasOne(conversation => conversation.Task)
-            .WithOne(task => task.Conversation)
-            .HasForeignKey<TaskConversation>(conversation => conversation.TaskId)
+            .WithMany(task => task.Conversations)
+            .HasForeignKey(conversation => conversation.TaskId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(conversation => conversation.SeekerProfile)
