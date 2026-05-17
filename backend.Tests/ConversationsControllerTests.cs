@@ -5,7 +5,6 @@ using Backend.Features.Conversations;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -21,7 +20,7 @@ public sealed class ConversationsControllerTests
         var ct = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
 
-        var (seeker, helper, conversation) = await SeedConversationAsync(db, ct);
+        (UserProfile seeker, _, TaskConversation conversation) = await SeedConversationAsync(db, ct);
         conversation.LastMessageAt = DateTimeOffset.UtcNow;
         conversation.SeekerLastReadAt = null;
         await db.SaveChangesAsync(ct);
@@ -41,8 +40,9 @@ public sealed class ConversationsControllerTests
         var ct = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
 
+        // ReSharper disable once InconsistentNaming
         var base_ = DateTimeOffset.UtcNow;
-        var (seeker, helper, conversation) = await SeedConversationAsync(db, ct);
+        (UserProfile seeker, _, TaskConversation conversation) = await SeedConversationAsync(db, ct);
         conversation.LastMessageAt = base_.AddMinutes(1);
         conversation.SeekerLastReadAt = base_;
         await db.SaveChangesAsync(ct);
@@ -51,7 +51,7 @@ public sealed class ConversationsControllerTests
         var result = await controller.ListAsync(ct);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var previews = Assert.IsAssignableFrom<IEnumerable<ConversationPreviewResponse>>(ok.Value);
+        var previews = Assert.IsType<IEnumerable<ConversationPreviewResponse>>(ok.Value, exactMatch: false);
         Assert.True(Assert.Single(previews).HasUnread);
     }
 
@@ -61,8 +61,9 @@ public sealed class ConversationsControllerTests
         var ct = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
 
+        // ReSharper disable once InconsistentNaming
         var base_ = DateTimeOffset.UtcNow;
-        var (seeker, helper, conversation) = await SeedConversationAsync(db, ct);
+        (UserProfile seeker, _, TaskConversation conversation) = await SeedConversationAsync(db, ct);
         conversation.LastMessageAt = base_;
         conversation.SeekerLastReadAt = base_.AddSeconds(1);
         await db.SaveChangesAsync(ct);
@@ -71,7 +72,7 @@ public sealed class ConversationsControllerTests
         var result = await controller.ListAsync(ct);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var previews = Assert.IsAssignableFrom<IEnumerable<ConversationPreviewResponse>>(ok.Value);
+        var previews = Assert.IsType<IEnumerable<ConversationPreviewResponse>>(ok.Value, exactMatch: false);
         Assert.False(Assert.Single(previews).HasUnread);
     }
 
@@ -97,8 +98,9 @@ public sealed class ConversationsControllerTests
         var ct = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
 
+        // ReSharper disable once InconsistentNaming
         var base_ = DateTimeOffset.UtcNow;
-        var (seeker, helper, conversation) = await SeedConversationAsync(db, ct);
+        (UserProfile seeker, UserProfile helper, TaskConversation conversation) = await SeedConversationAsync(db, ct);
         conversation.LastMessageAt = base_.AddMinutes(1);
         conversation.SeekerLastReadAt = base_.AddMinutes(2); // seeker already read it
         conversation.HelperLastReadAt = null;                // helper has not
@@ -113,7 +115,7 @@ public sealed class ConversationsControllerTests
         var helperController = CreateController(db, helper.UserId);
         var helperResult = await helperController.ListAsync(ct);
         var helperOk = Assert.IsType<OkObjectResult>(helperResult);
-        var helperPreviews = Assert.IsAssignableFrom<IEnumerable<ConversationPreviewResponse>>(helperOk.Value);
+        var helperPreviews = Assert.IsType<IEnumerable<ConversationPreviewResponse>>(helperOk.Value, exactMatch: false);
         Assert.True(Assert.Single(helperPreviews).HasUnread);
     }
 
@@ -125,7 +127,7 @@ public sealed class ConversationsControllerTests
         var ct = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
 
-        var (seeker, _, conversation) = await SeedConversationAsync(db, ct);
+        (UserProfile seeker, _, TaskConversation conversation) = await SeedConversationAsync(db, ct);
 
         var controller = CreateController(db, seeker.UserId);
         var result = await controller.MarkReadAsync(conversation.Id, ct);
@@ -143,7 +145,7 @@ public sealed class ConversationsControllerTests
         var ct = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
 
-        var (_, helper, conversation) = await SeedConversationAsync(db, ct);
+        (_, UserProfile helper, TaskConversation conversation) = await SeedConversationAsync(db, ct);
 
         var controller = CreateController(db, helper.UserId);
         var result = await controller.MarkReadAsync(conversation.Id, ct);
@@ -161,7 +163,7 @@ public sealed class ConversationsControllerTests
         var ct = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
 
-        var (_, _, conversation) = await SeedConversationAsync(db, ct);
+        (_, _, TaskConversation conversation) = await SeedConversationAsync(db, ct);
 
         var outsider = CreateProfile("Outsider");
         db.Profiles.Add(outsider);
@@ -197,7 +199,7 @@ public sealed class ConversationsControllerTests
         var ct = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
 
-        var (_, _, conversation) = await SeedConversationAsync(db, ct);
+        (_, _, TaskConversation conversation) = await SeedConversationAsync(db, ct);
 
         var outsider = CreateProfile("Outsider");
         db.Profiles.Add(outsider);
