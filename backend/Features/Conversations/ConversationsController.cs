@@ -130,8 +130,14 @@ public sealed partial class ConversationsController(
     }
 
     [HttpGet("{id:guid}/messages")]
-    public async Task<IActionResult> GetMessagesAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetMessagesAsync(
+        Guid id,
+        [FromQuery] DateTimeOffset? before,
+        [FromQuery] int limit,
+        CancellationToken cancellationToken)
     {
+        limit = limit <= 0 ? 50 : Math.Min(limit, 100);
+
         var profile = await GetCurrentProfileAsync(cancellationToken);
         if (profile is null)
         {
@@ -152,8 +158,10 @@ public sealed partial class ConversationsController(
             return Forbid();
         }
 
-        var documents = await cosmosMessages.GetByConversationAsync(
+        var (documents, hasMore) = await cosmosMessages.GetByConversationAsync(
             id.ToString(),
+            before,
+            limit,
             cancellationToken);
 
         var messages = documents.Select(d => new MessageResponse(
@@ -164,7 +172,7 @@ public sealed partial class ConversationsController(
             d.SenderDisplayName,
             IsMine: d.SenderProfileId == profile.Id.ToString()));
 
-        return Ok(messages);
+        return Ok(new MessagesPageResponse(messages, hasMore));
     }
 
     [HttpPost("{id:guid}/messages")]

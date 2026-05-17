@@ -22,9 +22,18 @@ import { useConversationHub } from "@/lib/chat-hub"
 interface ChatWindowProps {
   conversation: ApiConversationPreview
   messages: ApiMessage[]
+  hasPreviousPage: boolean
+  fetchPreviousPage: () => void
+  isFetchingPreviousPage: boolean
 }
 
-export function ChatWindow({ conversation, messages }: ChatWindowProps) {
+export function ChatWindow({
+  conversation,
+  messages,
+  hasPreviousPage,
+  fetchPreviousPage,
+  isFetchingPreviousPage,
+}: ChatWindowProps) {
   const { user } = useAuth()
   const [draft, setDraft] = React.useState("")
   const bottomRef = React.useRef<HTMLDivElement>(null)
@@ -70,6 +79,18 @@ export function ChatWindow({ conversation, messages }: ChatWindowProps) {
 
       <ScrollArea className="flex-1 px-4">
         <div className="flex flex-col gap-2 py-4">
+          {hasPreviousPage && (
+            <div className="flex justify-center py-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchPreviousPage}
+                disabled={isFetchingPreviousPage}
+              >
+                {isFetchingPreviousPage ? "Loading…" : "Load older messages"}
+              </Button>
+            </div>
+          )}
           {messages.length === 0 ? (
             <p className="text-center text-xs text-muted-foreground">
               No messages yet. Say hello!

@@ -206,7 +206,7 @@ public sealed class ConversationsControllerTests
         await db.SaveChangesAsync(ct);
 
         var controller = CreateController(db, outsider.UserId);
-        var result = await controller.GetMessagesAsync(conversation.Id, ct);
+        var result = await controller.GetMessagesAsync(conversation.Id, null, 0, ct);
 
         Assert.IsType<ForbidResult>(result);
     }

@@ -2,10 +2,10 @@
 
 import * as React from "react"
 import * as signalR from "@microsoft/signalr"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQueryClient, type InfiniteData } from "@tanstack/react-query"
 
 import { conversationKeys } from "@/lib/api/conversations"
-import type { ApiMessage } from "@/lib/api/conversations"
+import type { ApiMessage, MessagesPage } from "@/lib/api/conversations"
 import { fetchSignalRToken } from "@/lib/signalr-token"
 
 export function useConversationHub(
@@ -29,12 +29,24 @@ export function useConversationHub(
         ...msg,
         isMine: msg.senderProfileId === currentProfileId,
       }
-      qc.setQueryData<ApiMessage[]>(
+      qc.setQueryData<InfiniteData<MessagesPage>>(
         conversationKeys.messages(conversationId),
         (prev) => {
-          if (!prev) return [message]
-          if (prev.some((m) => m.id === message.id)) return prev
-          return [...prev, message]
+          if (!prev) {
+            return {
+              pages: [{ messages: [message], hasMore: false }],
+              pageParams: [undefined],
+            }
+          }
+          const lastPage = prev.pages[prev.pages.length - 1]
+          if (lastPage.messages.some((m) => m.id === message.id)) return prev
+          return {
+            ...prev,
+            pages: [
+              ...prev.pages.slice(0, -1),
+              { ...lastPage, messages: [...lastPage.messages, message] },
+            ],
+          }
         }
       )
       void qc.invalidateQueries({ queryKey: conversationKeys.list })

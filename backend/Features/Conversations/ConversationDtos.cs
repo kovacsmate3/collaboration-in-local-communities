@@ -49,6 +49,11 @@ public sealed record MessageResponse(
     string SenderDisplayName,
     bool IsMine);
 
+[PublicAPI]
+public sealed record MessagesPageResponse(
+    IEnumerable<MessageResponse> Messages,
+    bool HasMore);
+
 // Sent over SignalR — omits IsMine so each client computes it from SenderProfileId.
 [PublicAPI]
 public sealed record HubMessageEvent(
