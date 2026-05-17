@@ -31,13 +31,12 @@ export function ChatPageClient({ chatId }: ChatPageClientProps) {
   } = useConversationMessages(chatId)
 
   const messages = messagesData?.pages.flatMap((p) => p.messages) ?? []
+  const lastMessageId = messages[messages.length - 1]?.id
   const { mutate: markRead } = useMarkConversationRead()
 
   React.useEffect(() => {
-    if (chatId) {
-      markRead(chatId)
-    }
-  }, [chatId, markRead])
+    if (chatId) markRead(chatId)
+  }, [chatId, lastMessageId, markRead])
 
   const conversation = conversations.find((c) => c.id === chatId)
 
