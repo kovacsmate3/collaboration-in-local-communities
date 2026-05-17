@@ -42,9 +42,11 @@ export function ChatWindow({
 
   useConversationHub(conversation.id, user?.profileId)
 
+  const lastMessageId = messages[messages.length - 1]?.id
+
   React.useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [lastMessageId])
 
   function handleSend(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
