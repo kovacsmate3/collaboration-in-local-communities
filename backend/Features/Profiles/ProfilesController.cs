@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 
 namespace Backend.Features.Profiles;
 
@@ -410,6 +409,8 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
     [HttpPost("me/photo")]
     [Consumes("multipart/form-data")]
     [EnableRateLimiting(RateLimitingExtensions.PhotoUploadPolicy)]
+    [RequestSizeLimit(MaxPhotoSizeBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxPhotoSizeBytes)]
     public async Task<IActionResult> UploadProfilePhotoAsync(
         IFormFile? photo,
         CancellationToken cancellationToken)
