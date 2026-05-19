@@ -35,19 +35,14 @@ public sealed class AzureBlobStorageService(
     {
         try
         {
-            var uri = new Uri(blobUrl);
-
-            // URI path is /<container>/<blob-name…>
-            var containerName = options.Value.ContainerName;
-            var prefix = $"/{containerName}/";
-            if (!uri.AbsolutePath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            var parsed = new BlobUriBuilder(new Uri(blobUrl));
+            if (!string.Equals(parsed.BlobContainerName, options.Value.ContainerName, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
-            var blobName = uri.AbsolutePath[prefix.Length..];
             var container = GetContainer();
-            await container.GetBlobClient(blobName).DeleteIfExistsAsync(cancellationToken: cancellationToken);
+            await container.GetBlobClient(parsed.BlobName).DeleteIfExistsAsync(cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
