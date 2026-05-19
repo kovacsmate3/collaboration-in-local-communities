@@ -28,7 +28,7 @@ public sealed class AzureBlobStorageService(
             },
             cancellationToken);
 
-        return blobClient.Uri;
+        return ToPublicUri(blobClient.Uri);
     }
 
     public async Task DeleteBlobByUrlAsync(string blobUrl, CancellationToken cancellationToken)
@@ -54,6 +54,29 @@ public sealed class AzureBlobStorageService(
     {
         var container = GetContainer();
         await container.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
+    }
+
+    public string? RewriteToPublicUrl(string? url)
+    {
+        return string.IsNullOrEmpty(url) ? url : ToPublicUri(new Uri(url)).ToString();
+    }
+
+    private Uri ToPublicUri(Uri internalUri)
+    {
+        var publicEndpoint = options.Value.PublicEndpoint;
+        if (string.IsNullOrEmpty(publicEndpoint))
+        {
+            return internalUri;
+        }
+
+        var pub = new Uri(publicEndpoint);
+        var builder = new BlobUriBuilder(internalUri)
+        {
+            Scheme = pub.Scheme,
+            Host = pub.Host,
+            Port = pub.Port,
+        };
+        return builder.ToUri();
     }
 
     private BlobContainerClient GetContainer() =>

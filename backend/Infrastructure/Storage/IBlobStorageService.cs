@@ -37,4 +37,16 @@ public interface IBlobStorageService
     /// <param name="cancellationToken">The cancellation token for the request.</param>
     /// <returns>A task that represents the asynchronous initialization operation.</returns>
     Task EnsureContainerExistsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Rewrites a blob URL stored in the database so that its host matches the configured
+    /// public endpoint. Use this whenever a stored photo URL is included in an API response,
+    /// so clients always receive a URL they can reach (e.g. <c>localhost</c> rather than an
+    /// internal Docker service name). Returns <see langword="null"/> when <paramref name="url"/>
+    /// is <see langword="null"/> or empty, and returns the URL unchanged when no public
+    /// endpoint override is configured.
+    /// </summary>
+    /// <param name="url">The blob URL as stored in the database, or <see langword="null"/>.</param>
+    /// <returns>The client-facing URL, or <see langword="null"/>.</returns>
+    string? RewriteToPublicUrl(string? url);
 }

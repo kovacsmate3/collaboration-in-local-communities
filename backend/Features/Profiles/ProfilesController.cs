@@ -47,7 +47,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             Workplace = privacy?.ShowWorkplace == true ? profile.Workplace : null,
             Position = privacy?.ShowPosition == true ? profile.Position : null,
             Availability = privacy?.ShowAvailability == true ? profile.Availability : null,
-            PhotoUrl = profile.PhotoUrl,
+            PhotoUrl = blobStorage.RewriteToPublicUrl(profile.PhotoUrl),
             LocationText = privacy?.ShowLocation == true ? profile.LocationText : null,
             AverageRating = profile.AverageRating,
             ReviewCount = profile.ReviewCount,
@@ -75,21 +75,36 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             return NotFound();
         }
 
-        var reviews = await db.Reviews
+        var rawReviews = await db.Reviews
             .AsNoTracking()
             .Where(review => review.RevieweeProfileId == id)
             .OrderByDescending(review => review.CreatedAt)
+            .Select(review => new
+            {
+                review.Id,
+                review.TaskId,
+                review.ReviewerProfileId,
+                ReviewerDisplayName = review.ReviewerProfile.DisplayName,
+                ReviewerPhotoUrl = review.ReviewerProfile.PhotoUrl,
+                review.RevieweeProfileId,
+                review.Rating,
+                review.Comment,
+                review.CreatedAt,
+            })
+            .ToListAsync(cancellationToken);
+
+        var reviews = rawReviews
             .Select(review => new ProfileReviewResponse(
                 review.Id,
                 review.TaskId,
                 review.ReviewerProfileId,
-                review.ReviewerProfile.DisplayName,
-                review.ReviewerProfile.PhotoUrl,
+                review.ReviewerDisplayName,
+                blobStorage.RewriteToPublicUrl(review.ReviewerPhotoUrl),
                 review.RevieweeProfileId,
                 review.Rating,
                 review.Comment ?? string.Empty,
                 review.CreatedAt))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return Ok(reviews);
     }
@@ -204,7 +219,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             Workplace = profile.Workplace,
             Position = profile.Position,
             Availability = profile.Availability,
-            PhotoUrl = profile.PhotoUrl,
+            PhotoUrl = blobStorage.RewriteToPublicUrl(profile.PhotoUrl),
             LocationText = profile.LocationText,
             Latitude = profile.Location?.Y,
             Longitude = profile.Location?.X,
@@ -316,7 +331,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             Workplace = profile.Workplace,
             Position = profile.Position,
             Availability = profile.Availability,
-            PhotoUrl = profile.PhotoUrl,
+            PhotoUrl = blobStorage.RewriteToPublicUrl(profile.PhotoUrl),
             LocationText = profile.LocationText,
             Latitude = profile.Location?.Y,
             Longitude = profile.Location?.X,

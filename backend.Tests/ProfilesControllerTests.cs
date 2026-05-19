@@ -373,6 +373,8 @@ public sealed class ProfilesControllerTests
 
         public Task EnsureContainerExistsAsync(CancellationToken cancellationToken)
             => Task.CompletedTask;
+
+        public string? RewriteToPublicUrl(string? url) => url;
     }
 
     private sealed class FakeProblemDetailsFactory : ProblemDetailsFactory
