@@ -3,6 +3,7 @@ using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Security;
+using Backend.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -14,7 +15,7 @@ namespace Backend.Features.Profiles;
 [ApiController]
 [Route("api/profiles")]
 [Authorize]
-public sealed class ProfilesController(AppDbContext db) : ControllerBase
+public sealed class ProfilesController(AppDbContext db, IBlobStorageService blobStorage, ILogger<ProfilesController> logger) : ControllerBase
 {
     /// <summary>
     /// Get a public profile by ID, respecting privacy settings.
@@ -268,7 +269,6 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         profile.Workplace = request.Workplace;
         profile.Position = request.Position;
         profile.Availability = request.Availability;
-        profile.PhotoUrl = request.PhotoUrl;
         profile.LocationText = request.LocationText;
         profile.Location = location;
         profile.UpdatedAt = DateTimeOffset.UtcNow;
@@ -394,6 +394,150 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    private static readonly Dictionary<string, string> AllowedMimeTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["image/jpeg"] = "jpg",
+        ["image/png"] = "png",
+        ["image/webp"] = "webp",
+    };
+
+    private const long MaxPhotoSizeBytes = 5 * 1024 * 1024;
+
+    /// <summary>
+    /// Upload or replace the current authenticated user's profile photo.
+    /// </summary>
+    /// <param name="photo">The image file (JPEG, PNG, or WebP; max 5 MB).</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>
+    /// 200 OK with the new photo URL.
+    /// 400 Bad Request if the file is missing, too large, or has an unsupported type.
+    /// 404 Not Found if the user has no profile.
+    /// 401 Unauthorized if not authenticated.
+    /// </returns>
+    [HttpPost("me/photo")]
+    [Consumes("multipart/form-data")]
+    [EnableRateLimiting(RateLimitingExtensions.PhotoUploadPolicy)]
+    public async Task<IActionResult> UploadProfilePhotoAsync(
+        IFormFile? photo,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
+        {
+            return Unauthorized();
+        }
+
+        if (photo is null)
+        {
+            ModelState.AddModelError(nameof(photo), "A photo file is required.");
+            return ValidationProblem(ModelState);
+        }
+
+        if (photo.Length is 0 or > MaxPhotoSizeBytes)
+        {
+            ModelState.AddModelError(nameof(photo), "Photo must be between 1 byte and 5 MB.");
+            return ValidationProblem(ModelState);
+        }
+
+        if (!AllowedMimeTypes.TryGetValue(photo.ContentType, out var fileExtension))
+        {
+            ModelState.AddModelError(nameof(photo), "Only JPEG, PNG, and WebP images are accepted.");
+            return ValidationProblem(ModelState);
+        }
+
+        var profile = await db.Profiles
+            .FirstOrDefaultAsync(p => p.UserId == userIdGuid, cancellationToken);
+
+        if (profile is null)
+        {
+            return NotFound();
+        }
+
+        var oldPhotoUrl = profile.PhotoUrl;
+
+        Uri newPhotoUri;
+        try
+        {
+            await using var stream = photo.OpenReadStream();
+            newPhotoUri = await blobStorage.UploadProfilePhotoAsync(
+                userIdGuid, stream, photo.ContentType, fileExtension, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to upload profile photo for user {UserId}.", userIdGuid);
+            return Problem("Failed to upload photo. Please try again.");
+        }
+
+        profile.PhotoUrl = newPhotoUri.ToString();
+        profile.UpdatedAt = DateTimeOffset.UtcNow;
+
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.ProfileUpdated,
+            nameof(UserProfile),
+            profile.Id,
+            new { PhotoUpdated = true });
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        if (!string.IsNullOrEmpty(oldPhotoUrl))
+        {
+            await blobStorage.DeleteBlobByUrlAsync(oldPhotoUrl, cancellationToken);
+        }
+
+        return Ok(new { photoUrl = newPhotoUri.ToString() });
+    }
+
+    /// <summary>
+    /// Remove the current authenticated user's profile photo.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>
+    /// 204 No Content on success (also returned if no photo was set).
+    /// 404 Not Found if the user has no profile.
+    /// 401 Unauthorized if not authenticated.
+    /// </returns>
+    [HttpDelete("me/photo")]
+    public async Task<IActionResult> DeleteProfilePhotoAsync(CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
+        {
+            return Unauthorized();
+        }
+
+        var profile = await db.Profiles
+            .FirstOrDefaultAsync(p => p.UserId == userIdGuid, cancellationToken);
+
+        if (profile is null)
+        {
+            return NotFound();
+        }
+
+        var oldPhotoUrl = profile.PhotoUrl;
+        if (string.IsNullOrEmpty(oldPhotoUrl))
+        {
+            return NoContent();
+        }
+
+        profile.PhotoUrl = null;
+        profile.UpdatedAt = DateTimeOffset.UtcNow;
+
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.ProfileUpdated,
+            nameof(UserProfile),
+            profile.Id,
+            new { PhotoRemoved = true });
+
+        await db.SaveChangesAsync(cancellationToken);
+        await blobStorage.DeleteBlobByUrlAsync(oldPhotoUrl, cancellationToken);
+
+        return NoContent();
     }
 
     private bool TryBuildLocation(double? latitude, double? longitude, out Point? location)

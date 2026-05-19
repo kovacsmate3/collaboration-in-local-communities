@@ -7,6 +7,7 @@ public static class RateLimitingExtensions
     public const string AuthPolicy = "auth";
     public const string ConversationsPolicy = "conversations";
     public const string ReviewsPolicy = "reviews";
+    public const string PhotoUploadPolicy = "photo-upload";
 
     public static IServiceCollection AddAppRateLimiting(
         this IServiceCollection services,
@@ -46,6 +47,16 @@ public static class RateLimitingExtensions
                 {
                     PermitLimit = opts.Reviews.PermitLimit,
                     Window = TimeSpan.FromSeconds(opts.Reviews.WindowSeconds)
+                });
+            });
+
+            limiterOptions.AddPolicy(PhotoUploadPolicy, context =>
+            {
+                var ip = context.RequestServices.GetRequiredService<IClientIpAccessor>().GetClientIp() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = opts.PhotoUpload.PermitLimit,
+                    Window = TimeSpan.FromSeconds(opts.PhotoUpload.WindowSeconds)
                 });
             });
         });

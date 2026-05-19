@@ -5,6 +5,7 @@ using Backend.Application.Categories;
 using Backend.Features.Auth;
 using Backend.Features.Conversations;
 using Backend.Infrastructure.Email;
+using Backend.Infrastructure.Storage;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.OpenApi;
 using Backend.Infrastructure.Persistence;
@@ -138,6 +139,7 @@ builder.Services.AddHostedService<RefreshTokenPruningBackgroundService>();
 
 builder.Services.AddApplicationIdentity();
 builder.Services.AddEmailSender(builder.Configuration);
+builder.Services.AddBlobStorage(builder.Configuration);
 
 builder.Services.AddCors(options =>
 {
@@ -244,6 +246,27 @@ using (var scope = app.Services.CreateScope())
         if (app.Environment.IsDevelopment())
         {
             logger.LogWarning(ex, "CosmosDB messages container initialization failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
+    }
+}
+
+{
+    var blobStorage = app.Services.GetRequiredService<IBlobStorageService>();
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await blobStorage.EnsureContainerExistsAsync(CancellationToken.None);
+        logger.LogInformation("Blob storage container ready.");
+    }
+    catch (Exception ex)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "Blob storage container initialization failed (non-fatal in Development)");
         }
         else
         {

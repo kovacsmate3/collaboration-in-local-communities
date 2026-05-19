@@ -25,7 +25,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const init: RequestInit = {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      // Omit Content-Type for FormData — the browser must set the multipart boundary
+      ...(options?.body instanceof FormData
+        ? {}
+        : { "Content-Type": "application/json" }),
       ...(options?.headers ?? {}),
     },
   }
@@ -86,4 +89,7 @@ export const apiClient = {
 
   delete: <T = void>(path: string, init?: RequestInit) =>
     request<T>(path, { method: "DELETE", ...init }),
+
+  upload: <T>(path: string, formData: FormData) =>
+    request<T>(path, { method: "POST", body: formData }),
 }

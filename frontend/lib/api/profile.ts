@@ -58,11 +58,14 @@ export interface UpdateOwnProfileRequest {
   workplace?: string
   position?: string
   availability?: string
-  photoUrl?: string
   locationText?: string
   latitude?: number
   longitude?: number
   skillIds?: string[]
+}
+
+export interface UploadProfilePhotoResponse {
+  photoUrl: string
 }
 
 export interface SkillResponse {
@@ -141,6 +144,41 @@ export function useUpdateOwnProfile() {
     onSuccess: (profile) => {
       qc.setQueryData(profileKeys.me(), profile)
       void qc.invalidateQueries({ queryKey: profileKeys.all })
+    },
+  })
+}
+
+export function useUploadProfilePhoto() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData()
+      formData.append("photo", file)
+      return apiClient.upload<UploadProfilePhotoResponse>(
+        "/profiles/me/photo",
+        formData
+      )
+    },
+    onSuccess: (data) => {
+      qc.setQueryData<OwnProfileResponse | undefined>(
+        profileKeys.me(),
+        (prev) => (prev ? { ...prev, photoUrl: data.photoUrl } : prev)
+      )
+    },
+  })
+}
+
+export function useDeleteProfilePhoto() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => apiClient.delete("/profiles/me/photo"),
+    onSuccess: () => {
+      qc.setQueryData<OwnProfileResponse | undefined>(
+        profileKeys.me(),
+        (prev) => (prev ? { ...prev, photoUrl: null } : prev)
+      )
     },
   })
 }
