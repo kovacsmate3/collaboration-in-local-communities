@@ -255,8 +255,9 @@ using (var scope = app.Services.CreateScope())
 }
 
 {
-    var blobStorage = app.Services.GetRequiredService<IBlobStorageService>();
-    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    using var blobScope = app.Services.CreateScope();
+    var blobStorage = blobScope.ServiceProvider.GetRequiredService<IBlobStorageService>();
+    var logger = blobScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
         await blobStorage.EnsureContainerExistsAsync(CancellationToken.None);
