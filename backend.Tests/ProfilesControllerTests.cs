@@ -3,11 +3,13 @@ using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Features.Profiles;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Storage;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
@@ -186,7 +188,7 @@ public sealed class ProfilesControllerTests
 
         await db.SaveChangesAsync(cancellationToken);
 
-        var controller = new ProfilesController(db);
+        var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
         var result = await controller.GetProfileReviewsAsync(profile.Id, cancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -236,7 +238,7 @@ public sealed class ProfilesControllerTests
 
         await db.SaveChangesAsync(cancellationToken);
 
-        var controller = new ProfilesController(db);
+        var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
         var result = await controller.GetProfileTaskHistoryAsync(profile.Id, cancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -252,7 +254,7 @@ public sealed class ProfilesControllerTests
     public async Task GetProfileTaskHistoryAsync_ReturnsNotFoundForMissingProfile()
     {
         await using var db = CreateDbContext();
-        var controller = new ProfilesController(db);
+        var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
 
         var result = await controller.GetProfileTaskHistoryAsync(
             Guid.NewGuid(),
@@ -343,7 +345,7 @@ public sealed class ProfilesControllerTests
 
     private static ProfilesController CreateProfilesController(AppDbContext db, Guid userId)
     {
-        var controller = new ProfilesController(db)
+        var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance)
         {
             ControllerContext = new ControllerContext
             {
@@ -359,6 +361,18 @@ public sealed class ProfilesControllerTests
         };
 
         return controller;
+    }
+
+    private sealed class NullBlobStorageService : IBlobStorageService
+    {
+        public Task<Uri> UploadProfilePhotoAsync(Guid userId, Stream content, string contentType, string fileExtension, CancellationToken cancellationToken)
+            => Task.FromResult(new Uri("https://example.com/photo"));
+
+        public Task DeleteBlobByUrlAsync(string blobUrl, CancellationToken cancellationToken)
+            => Task.CompletedTask;
+
+        public Task EnsureContainerExistsAsync(CancellationToken cancellationToken)
+            => Task.CompletedTask;
     }
 
     private sealed class FakeProblemDetailsFactory : ProblemDetailsFactory
