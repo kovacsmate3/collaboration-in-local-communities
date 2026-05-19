@@ -9,16 +9,6 @@ public sealed class AzureBlobStorageService(
     IOptions<BlobStorageOptions> options,
     ILogger<AzureBlobStorageService> logger) : IBlobStorageService
 {
-    private static readonly Dictionary<string, string> MimeToExtension = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["image/jpeg"] = "jpg",
-        ["image/png"] = "png",
-        ["image/webp"] = "webp",
-    };
-
-    private BlobContainerClient GetContainer() =>
-        blobServiceClient.GetBlobContainerClient(options.Value.ContainerName);
-
     public async Task<Uri> UploadProfilePhotoAsync(
         Guid userId,
         Stream content,
@@ -30,10 +20,13 @@ public sealed class AzureBlobStorageService(
         var container = GetContainer();
         var blobClient = container.GetBlobClient(blobName);
 
-        await blobClient.UploadAsync(content, new BlobUploadOptions
-        {
-            HttpHeaders = new BlobHttpHeaders { ContentType = contentType },
-        }, cancellationToken);
+        await blobClient.UploadAsync(
+            content,
+            new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders { ContentType = contentType },
+            },
+            cancellationToken);
 
         return blobClient.Uri;
     }
@@ -43,6 +36,7 @@ public sealed class AzureBlobStorageService(
         try
         {
             var uri = new Uri(blobUrl);
+
             // URI path is /<container>/<blob-name…>
             var containerName = options.Value.ContainerName;
             var prefix = $"/{containerName}/";
@@ -66,4 +60,7 @@ public sealed class AzureBlobStorageService(
         var container = GetContainer();
         await container.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
     }
+
+    private BlobContainerClient GetContainer() =>
+        blobServiceClient.GetBlobContainerClient(options.Value.ContainerName);
 }
