@@ -165,6 +165,7 @@ export function useUploadProfilePhoto() {
         profileKeys.me(),
         (prev) => (prev ? { ...prev, photoUrl: data.photoUrl } : prev)
       )
+      void qc.invalidateQueries({ queryKey: profileKeys.all })
     },
   })
 }
@@ -179,6 +180,7 @@ export function useDeleteProfilePhoto() {
         profileKeys.me(),
         (prev) => (prev ? { ...prev, photoUrl: null } : prev)
       )
+      void qc.invalidateQueries({ queryKey: profileKeys.all })
     },
   })
 }
