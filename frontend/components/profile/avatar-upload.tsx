@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog"
 import { Slider } from "@/components/ui/slider"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/lib/auth-context"
 import { useDeleteProfilePhoto, useUploadProfilePhoto } from "@/lib/api/profile"
 
 interface AvatarUploadProps {
@@ -29,6 +30,7 @@ interface AvatarUploadProps {
   currentPhotoUrl?: string | null
 }
 
+const ACCEPTED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"])
 const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp"
 const MAX_COMPRESSED_BYTES = 500 * 1024
 const MAX_OUTPUT_PX = 800
@@ -105,6 +107,7 @@ async function getCroppedBlob(
 export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [preview, setPreview] = React.useState<string | null>(null)
+  const [isDraggingOver, setIsDraggingOver] = React.useState(false)
 
   // Crop dialog state
   const [cropSrc, setCropSrc] = React.useState<string | null>(null)
@@ -117,6 +120,7 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
 
   const uploadPhoto = useUploadProfilePhoto()
   const deletePhoto = useDeleteProfilePhoto()
+  const { refreshSession } = useAuth()
 
   const isPending = uploadPhoto.isPending || deletePhoto.isPending || isCropping
   const displaySrc = preview ?? currentPhotoUrl ?? undefined
@@ -129,16 +133,42 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ""
-
+  function processFile(file: File) {
+    if (!ACCEPTED_MIME_TYPES.has(file.type)) {
+      toast.error("Only JPEG, PNG, and WebP images are accepted.")
+      return
+    }
     const objectUrl = URL.createObjectURL(file)
     setCrop({ x: 0, y: 0 })
     setZoom(1)
     setCroppedAreaPixels(null)
     setCropSrc(objectUrl)
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ""
+    processFile(file)
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDraggingOver(false)
+    if (isPending) return
+    const file = e.dataTransfer.files?.[0]
+    if (file) processFile(file)
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault()
+    if (!isPending) setIsDraggingOver(true)
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node))
+      return
+    setIsDraggingOver(false)
   }
 
   async function handleApplyCrop() {
@@ -151,12 +181,16 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
       URL.revokeObjectURL(cropSrc)
       setCropSrc(null)
 
+      const newPreviewUrl = URL.createObjectURL(blob)
       if (preview) URL.revokeObjectURL(preview)
-      setPreview(URL.createObjectURL(blob))
+      setPreview(newPreviewUrl)
 
       uploadPhoto.mutate(file, {
+        onSuccess: () => {
+          void refreshSession()
+        },
         onError: (err) => {
-          if (preview) URL.revokeObjectURL(preview)
+          URL.revokeObjectURL(newPreviewUrl)
           setPreview(null)
           toast.error(
             err instanceof Error ? err.message : "Failed to upload photo."
@@ -180,6 +214,7 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
       onSuccess: () => {
         if (preview) URL.revokeObjectURL(preview)
         setPreview(null)
+        void refreshSession()
       },
       onError: (err) => {
         toast.error(
@@ -193,7 +228,15 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
 
   return (
     <>
-      <div className="flex items-center gap-3">
+      <div
+        className={cn(
+          "flex items-center gap-3 rounded-lg transition-colors",
+          isDraggingOver && "bg-muted/60"
+        )}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
         <div className="relative">
           <UserAvatar name={name} src={displaySrc} size="lg" />
 

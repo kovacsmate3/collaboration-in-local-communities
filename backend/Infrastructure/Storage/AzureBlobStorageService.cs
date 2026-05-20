@@ -24,7 +24,11 @@ public sealed class AzureBlobStorageService(
             content,
             new BlobUploadOptions
             {
-                HttpHeaders = new BlobHttpHeaders { ContentType = contentType },
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = contentType,
+                    CacheControl = "public, max-age=31536000, immutable",
+                },
             },
             cancellationToken);
 
