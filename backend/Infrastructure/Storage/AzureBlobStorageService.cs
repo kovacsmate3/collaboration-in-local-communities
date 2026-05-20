@@ -63,16 +63,19 @@ public sealed class AzureBlobStorageService(
     public string? RewriteToPublicUrl(string? url)
     {
         if (string.IsNullOrEmpty(url))
+        {
             return url;
+        }
 
         try
         {
             var uri = new Uri(url);
             var blobBuilder = new BlobUriBuilder(uri);
-            if (!string.Equals(blobBuilder.BlobContainerName, options.Value.ContainerName, StringComparison.OrdinalIgnoreCase))
-                return url;
-
-            return ToPublicUri(uri).ToString();
+            return !string.Equals(
+                blobBuilder.BlobContainerName,
+                options.Value.ContainerName,
+                StringComparison.OrdinalIgnoreCase) ?
+                url : ToPublicUri(uri).ToString();
         }
         catch
         {
