@@ -160,9 +160,13 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
     if (file) processFile(file)
   }
 
-  function handleDragOver(e: React.DragEvent) {
+  function handleDragEnter(e: React.DragEvent) {
     e.preventDefault()
     if (!isPending) setIsDraggingOver(true)
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault()
   }
 
   function handleDragLeave(e: React.DragEvent) {
@@ -234,6 +238,7 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
           isDraggingOver && "bg-muted/60"
         )}
         onDrop={handleDrop}
+        onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
       >
@@ -265,27 +270,34 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
           )}
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={isPending}
-            className="text-sm font-medium underline-offset-4 hover:underline disabled:opacity-50"
-          >
-            {hasPhoto ? "Change photo" : "Upload photo"}
-          </button>
-
-          {hasPhoto && (
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-sm">
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => inputRef.current?.click()}
               disabled={isPending}
-              className="flex items-center gap-1 text-sm text-muted-foreground underline-offset-4 hover:text-destructive hover:underline disabled:opacity-50"
+              className="font-medium underline-offset-4 hover:underline disabled:opacity-50"
             >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
-              Remove
+              {hasPhoto ? "Change photo" : "Upload photo"}
             </button>
-          )}
+
+            {hasPhoto && (
+              <>
+                <span aria-hidden="true" className="text-muted-foreground">
+                  ·
+                </span>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={isPending}
+                  className="flex items-center gap-1 text-muted-foreground underline-offset-4 hover:text-destructive hover:underline disabled:opacity-50"
+                >
+                  <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
+                  Remove
+                </button>
+              </>
+            )}
+          </div>
 
           <p className="text-xs text-muted-foreground">
             JPEG, PNG or WebP · compressed to ≤ 500 KB
