@@ -24,8 +24,7 @@ export function AdminDashboard() {
         <Alert variant="destructive">
           <AlertDescription>
             Could not load KPI data -{" "}
-            {error instanceof Error ? error.message : "unknown error"}. The
-            analytics endpoint may not be available yet (issue #72).
+            {error instanceof Error ? error.message : "unknown error"}.
           </AlertDescription>
         </Alert>
       ) : null}

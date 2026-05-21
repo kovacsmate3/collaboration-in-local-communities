@@ -10,12 +10,16 @@ import {
   type AdminBarChartRow,
 } from "@/components/admin/admin-bar-chart"
 import { AdminPlaceholderBadge } from "@/components/admin/admin-placeholder-badge"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export interface AdminDashboardChartPanelProps {
   title: string
   description: string
   data: AdminBarChartRow[]
   colorClass: string
+  isLoading?: boolean
+  isError?: boolean
+  isLive?: boolean
 }
 
 export function AdminDashboardChartPanel({
@@ -23,6 +27,9 @@ export function AdminDashboardChartPanel({
   description,
   data,
   colorClass,
+  isLoading,
+  isError,
+  isLive,
 }: AdminDashboardChartPanelProps) {
   return (
     <Card>
@@ -32,11 +39,19 @@ export function AdminDashboardChartPanel({
             <CardTitle className="text-base">{title}</CardTitle>
             <CardDescription className="mt-1">{description}</CardDescription>
           </div>
-          <AdminPlaceholderBadge />
+          {!isLive && <AdminPlaceholderBadge />}
         </div>
       </CardHeader>
       <CardContent>
-        <AdminBarChart data={data} colorClass={colorClass} />
+        {isLoading ? (
+          <Skeleton className="h-32 w-full" />
+        ) : isError ? (
+          <p className="py-8 text-center text-sm text-destructive">
+            Failed to load chart data
+          </p>
+        ) : (
+          <AdminBarChart data={data} colorClass={colorClass} />
+        )}
       </CardContent>
     </Card>
   )

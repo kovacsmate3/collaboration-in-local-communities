@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { notFound } from "next/navigation"
 
 import { Card } from "@/components/ui/card"
@@ -8,6 +9,7 @@ import { ChatWindow } from "@/components/messages/chat-window"
 import {
   useConversations,
   useConversationMessages,
+  useMarkConversationRead,
 } from "@/lib/api/conversations"
 
 interface ChatPageClientProps {
@@ -20,8 +22,21 @@ export function ChatPageClient({ chatId }: ChatPageClientProps) {
     isLoading: listLoading,
     isFetching: listFetching,
   } = useConversations()
-  const { data: messages = [], isLoading: messagesLoading } =
-    useConversationMessages(chatId)
+  const {
+    data: messagesData,
+    isLoading: messagesLoading,
+    hasPreviousPage,
+    fetchPreviousPage,
+    isFetchingPreviousPage,
+  } = useConversationMessages(chatId)
+
+  const messages = messagesData?.pages.flatMap((p) => p.messages) ?? []
+  const lastMessageId = messages[messages.length - 1]?.id
+  const { mutate: markRead } = useMarkConversationRead()
+
+  React.useEffect(() => {
+    if (chatId) markRead(chatId)
+  }, [chatId, lastMessageId, markRead])
 
   const conversation = conversations.find((c) => c.id === chatId)
 
@@ -41,7 +56,13 @@ export function ChatPageClient({ chatId }: ChatPageClientProps) {
             <p className="text-sm text-muted-foreground">Loading…</p>
           </div>
         ) : conversation ? (
-          <ChatWindow conversation={conversation} messages={messages} />
+          <ChatWindow
+            conversation={conversation}
+            messages={messages}
+            hasPreviousPage={hasPreviousPage}
+            fetchPreviousPage={fetchPreviousPage}
+            isFetchingPreviousPage={isFetchingPreviousPage}
+          />
         ) : null}
       </Card>
     </div>

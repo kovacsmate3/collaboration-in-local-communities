@@ -10,6 +10,7 @@ using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -18,6 +19,7 @@ namespace Backend.Features.Auth;
 
 [ApiController]
 [Route("api/auth")]
+[EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
 public sealed partial class AuthController(
     AppDbContext db,
     UserManager<ApplicationUser> userManager,
@@ -119,6 +121,13 @@ public sealed partial class AuthController(
         }
 
         AddAuditEvent(user.Id, "auth.registered", "ApplicationUser", user.Id, new { user.Email });
+        db.AddActivityEvent(
+            user.Id,
+            profileId: null,
+            ActivityEventType.UserRegistered,
+            "ApplicationUser",
+            user.Id,
+            new { user.Email });
 
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -185,6 +194,12 @@ public sealed partial class AuthController(
         var tokens = await tokenService.CreateTokenPairAsync(user, cancellationToken);
         db.RefreshTokens.Add(CreateRefreshToken(user.Id, tokens, null));
         AddAuditEvent(user.Id, "auth.login_succeeded", "ApplicationUser", user.Id, new { user.Email });
+        db.AddActivityEvent(
+            user.Id,
+            profileId: null,
+            ActivityEventType.UserLoggedIn,
+            "ApplicationUser",
+            user.Id);
         await db.SaveChangesAsync(cancellationToken);
 
         SetRefreshTokenCookie(tokens);
@@ -248,6 +263,92 @@ public sealed partial class AuthController(
         {
             logger.LogError(ex, "Failed to resend verification email to {Email}", user.Email);
         }
+
+        return Ok();
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPasswordAsync(
+        ForgotPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        // Always return 200 to prevent email enumeration.
+        var user = await userManager.FindByEmailAsync(request.Email.Trim());
+        if (user is null)
+        {
+            return Ok();
+        }
+
+        bool emailSent = true;
+        try
+        {
+            await SendPasswordResetEmailAsync(user, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            emailSent = false;
+            logger.LogError(ex, "Failed to send password reset email to {Email}", user.Email);
+        }
+
+        AddAuditEvent(
+            user.Id,
+            "auth.password_reset_requested",
+            "ApplicationUser",
+            user.Id,
+            new { user.Email, emailSent });
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Ok();
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPasswordAsync(
+        ResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var user = await userManager.FindByIdAsync(request.UserId.ToString());
+        if (user is null)
+        {
+            return BadRequest("Invalid or expired password reset link.");
+        }
+
+        byte[] tokenBytes;
+        try
+        {
+            tokenBytes = WebEncoders.Base64UrlDecode(request.Token);
+        }
+        catch (FormatException)
+        {
+            return BadRequest("Invalid or expired password reset link.");
+        }
+
+        var token = Encoding.UTF8.GetString(tokenBytes);
+        var result = await userManager.ResetPasswordAsync(user, token, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            if (result.Errors.Any(e => e.Code == "InvalidToken"))
+            {
+                return BadRequest("Invalid or expired password reset link.");
+            }
+
+            return IdentityValidationProblem(result);
+        }
+
+        // Auto-confirm email if not already confirmed — a successful reset proves inbox access.
+        if (!user.EmailConfirmed)
+        {
+            var freshUser = await userManager.FindByIdAsync(user.Id.ToString());
+            if (freshUser is not null && !freshUser.EmailConfirmed)
+            {
+                var confirmToken = await userManager.GenerateEmailConfirmationTokenAsync(freshUser);
+                await userManager.ConfirmEmailAsync(freshUser, confirmToken);
+            }
+        }
+
+        AddAuditEvent(user.Id, "auth.password_reset_completed", "ApplicationUser", user.Id, new { user.Email });
+        await db.SaveChangesAsync(cancellationToken);
 
         return Ok();
     }

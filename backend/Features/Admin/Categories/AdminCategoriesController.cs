@@ -84,6 +84,7 @@ public sealed partial class AdminCategoriesController(
         };
 
         db.Categories.Add(category);
+        AddAuditEvent(GetActorUserId(), "admin.category_created", "Category", category.Id, new { category.Code, category.Name });
 
         try
         {
@@ -129,6 +130,8 @@ public sealed partial class AdminCategoriesController(
         category.SortOrder = request.SortOrder;
         category.UpdatedAt = DateTimeOffset.UtcNow;
 
+        AddAuditEvent(GetActorUserId(), "admin.category_updated", "Category", category.Id, new { category.Code, category.Name });
+
         await db.SaveChangesAsync(cancellationToken);
         await EvictCategoryListAsync(cancellationToken);
 
@@ -150,6 +153,7 @@ public sealed partial class AdminCategoriesController(
             return NotFound();
         }
 
+        AddAuditEvent(GetActorUserId(), "admin.category_deleted", "Category", category.Id, new { category.Code, category.Name });
         db.Categories.Remove(category);
 
         try
@@ -205,6 +209,9 @@ public sealed partial class AdminCategoriesController(
 
         category.IsActive = isActive;
         category.UpdatedAt = DateTimeOffset.UtcNow;
+
+        var eventType = isActive ? "admin.category_activated" : "admin.category_deactivated";
+        AddAuditEvent(GetActorUserId(), eventType, "Category", category.Id, new { category.Code, category.Name });
 
         await db.SaveChangesAsync(cancellationToken);
         await EvictCategoryListAsync(cancellationToken);

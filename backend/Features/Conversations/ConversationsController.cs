@@ -1,7 +1,10 @@
 using Backend.Domain.Entities;
+using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +13,7 @@ namespace Backend.Features.Conversations;
 [ApiController]
 [Route("api/conversations")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.ConversationsPolicy)]
 public sealed partial class ConversationsController(
     AppDbContext db,
     IHubContext<ChatHub> chatHub,
@@ -97,6 +101,8 @@ public sealed partial class ConversationsController(
                 HelperPhotoUrl = c.HelperProfile.PhotoUrl,
                 c.LastMessageContent,
                 c.LastMessageAt,
+                c.SeekerLastReadAt,
+                c.HelperLastReadAt,
                 c.CreatedAt,
             })
             .OrderByDescending(x => x.LastMessageAt.HasValue ? x.LastMessageAt.Value : x.CreatedAt)
@@ -109,21 +115,32 @@ public sealed partial class ConversationsController(
                 ? new ParticipantInfo(r.HelperProfileId, r.HelperDisplayName, r.HelperPhotoUrl)
                 : new ParticipantInfo(r.SeekerProfileId, r.SeekerDisplayName, r.SeekerPhotoUrl);
 
+            var lastReadAt = isSeeker ? r.SeekerLastReadAt : r.HelperLastReadAt;
+            var hasUnread = r.LastMessageAt.HasValue &&
+                            (lastReadAt is null || r.LastMessageAt.Value > lastReadAt.Value);
+
             return new ConversationPreviewResponse(
                 r.Id,
                 r.TaskId,
                 r.TaskTitle,
                 other,
                 r.LastMessageContent,
-                r.LastMessageAt);
+                r.LastMessageAt,
+                hasUnread);
         });
 
         return Ok(result);
     }
 
     [HttpGet("{id:guid}/messages")]
-    public async Task<IActionResult> GetMessagesAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetMessagesAsync(
+        Guid id,
+        [FromQuery] DateTimeOffset? before,
+        [FromQuery] int limit,
+        CancellationToken cancellationToken)
     {
+        limit = limit <= 0 ? 50 : Math.Min(limit, 100);
+
         var profile = await GetCurrentProfileAsync(cancellationToken);
         if (profile is null)
         {
@@ -144,8 +161,10 @@ public sealed partial class ConversationsController(
             return Forbid();
         }
 
-        var documents = await cosmosMessages.GetByConversationAsync(
+        var (documents, hasMore) = await cosmosMessages.GetByConversationAsync(
             id.ToString(),
+            before,
+            limit,
             cancellationToken);
 
         var messages = documents.Select(d => new MessageResponse(
@@ -156,7 +175,7 @@ public sealed partial class ConversationsController(
             d.SenderDisplayName,
             IsMine: d.SenderProfileId == profile.Id.ToString()));
 
-        return Ok(messages);
+        return Ok(new MessagesPageResponse(messages, hasMore));
     }
 
     [HttpPost("{id:guid}/messages")]
@@ -200,6 +219,23 @@ public sealed partial class ConversationsController(
             ? document.Content[..500]
             : document.Content;
         conversation.LastMessageAt = document.SentAt;
+
+        if (conversation.SeekerProfileId == profile.Id)
+        {
+            conversation.SeekerLastReadAt = document.SentAt;
+        }
+        else
+        {
+            conversation.HelperLastReadAt = document.SentAt;
+        }
+
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.MessageSent,
+            nameof(TaskConversation),
+            conversation.Id,
+            new { conversation.TaskId, MessageId = document.Id });
         await db.SaveChangesAsync(cancellationToken);
 
         var response = new MessageResponse(
@@ -221,6 +257,55 @@ public sealed partial class ConversationsController(
             .Group($"conversation-{id}")
             .SendAsync("ReceiveMessage", hubEvent, cancellationToken);
 
+        var recipientProfileId = conversation.SeekerProfileId == profile.Id
+            ? conversation.HelperProfileId
+            : conversation.SeekerProfileId;
+
+        var notification = new NewMessageNotification(
+            id,
+            profile.DisplayName,
+            document.Content.Length > 100 ? document.Content[..100] : document.Content);
+
+        await chatHub.Clients
+            .Group($"user-{recipientProfileId}")
+            .SendAsync("NewMessageNotification", notification, cancellationToken);
+
         return Ok(response);
+    }
+
+    [HttpPut("{id:guid}/read")]
+    public async Task<IActionResult> MarkReadAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var profile = await GetCurrentProfileAsync(cancellationToken);
+        if (profile is null)
+        {
+            return Unauthorized();
+        }
+
+        var conversation = await db.TaskConversations
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+        if (conversation is null)
+        {
+            return NotFound();
+        }
+
+        if (conversation.SeekerProfileId != profile.Id && conversation.HelperProfileId != profile.Id)
+        {
+            return Forbid();
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        if (conversation.SeekerProfileId == profile.Id)
+        {
+            conversation.SeekerLastReadAt = now;
+        }
+        else
+        {
+            conversation.HelperLastReadAt = now;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return NoContent();
     }
 }

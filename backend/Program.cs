@@ -11,6 +11,7 @@ using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
 using Backend.Infrastructure.Persistence.Seeding;
 using Backend.Infrastructure.Security;
+using Backend.Infrastructure.Storage;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
@@ -138,6 +139,7 @@ builder.Services.AddHostedService<RefreshTokenPruningBackgroundService>();
 
 builder.Services.AddApplicationIdentity();
 builder.Services.AddEmailSender(builder.Configuration);
+builder.Services.AddBlobStorage(builder.Configuration);
 
 builder.Services.AddCors(options =>
 {
@@ -170,6 +172,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("192.168.0.0"), 16));
 });
 builder.Services.AddFrontendProxyAuth(builder.Configuration);
+builder.Services.AddAppRateLimiting(builder.Configuration);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
@@ -251,6 +254,28 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+{
+    using var blobScope = app.Services.CreateScope();
+    var blobStorage = blobScope.ServiceProvider.GetRequiredService<IBlobStorageService>();
+    var logger = blobScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await blobStorage.EnsureContainerExistsAsync(CancellationToken.None);
+        logger.LogInformation("Blob storage container ready.");
+    }
+    catch (Exception ex)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "Blob storage container initialization failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -273,6 +298,7 @@ if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAIN
 
 app.UseRouting();
 app.UseCors();
+app.UseRateLimiter();
 app.UseOutputCache();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -109,6 +109,10 @@ export function PostTaskForm() {
       toast.error("Description must be at least 10 characters.")
       return
     }
+    if (form.description.length > 50_000) {
+      toast.error("Description is too long. Please shorten it.")
+      return
+    }
 
     const amount =
       form.compensationType === "paid" && form.compensationAmount
@@ -160,6 +164,7 @@ export function PostTaskForm() {
           value={form.description}
           onChange={(html) => update("description", html)}
           placeholder="Describe what you need help with, when, and any constraints."
+          maxLength={50_000}
         />
       </div>
 

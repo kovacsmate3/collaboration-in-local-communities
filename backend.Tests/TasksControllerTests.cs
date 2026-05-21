@@ -1,5 +1,9 @@
+using System.Security.Claims;
+using Backend.Domain.Entities;
+using Backend.Domain.Enums;
 using Backend.Features.Tasks;
 using Backend.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
@@ -9,6 +13,59 @@ namespace backend.Tests;
 
 public sealed class TasksControllerTests
 {
+    [Fact]
+    public async Task CreateAsync_LogsTaskPostedActivity()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var userId = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        db.Profiles.Add(new UserProfile
+        {
+            Id = profileId,
+            UserId = userId,
+            DisplayName = "Task seeker",
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
+        db.Categories.Add(new Category
+        {
+            Id = categoryId,
+            Code = "help",
+            Name = "Help",
+            Icon = Category.DefaultIcon,
+            IsActive = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateTasksController(db, userId);
+
+        var result = await controller.CreateAsync(
+            new CreateTaskRequest(
+                "Carry boxes",
+                "Need help carrying boxes up two flights.",
+                categoryId,
+                "Voluntary",
+                null,
+                null,
+                null,
+                null),
+            cancellationToken);
+
+        Assert.IsType<CreatedAtActionResult>(result);
+
+        var activity = Assert.Single(db.ActivityEvents);
+        Assert.Equal(userId, activity.UserId);
+        Assert.Equal(profileId, activity.ProfileId);
+        Assert.Equal(ActivityEventType.TaskPosted, activity.EventType);
+        Assert.Equal(nameof(CommunityTask), activity.EntityType);
+        Assert.NotEqual(Guid.Empty, activity.EntityId);
+    }
+
     [Fact]
     public async Task ListAsync_RejectsPartialProximityFilter()
     {
@@ -49,7 +106,7 @@ public sealed class TasksControllerTests
     private static AppDbContext CreateInMemoryDbContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(Guid.NewGuid().ToString(), options => options.EnableNullChecks(false))
             .Options;
 
         return new AppDbContext(options);
@@ -62,5 +119,23 @@ public sealed class TasksControllerTests
             .Options;
 
         return new AppDbContext(options);
+    }
+
+    private static TasksController CreateTasksController(AppDbContext db, Guid userId)
+    {
+        return new TasksController(db)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [
+                        new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                        new Claim("email_verified", "true")
+                    ], "TestAuth"))
+                }
+            }
+        };
     }
 }

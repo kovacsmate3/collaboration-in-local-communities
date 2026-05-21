@@ -36,7 +36,7 @@ internal sealed class CommunityTaskConfiguration : IEntityTypeConfiguration<Comm
             .HasDefaultValueSql("('TASK-' || to_char(now(), 'YYYY') || '-' || lpad(nextval('data.task_public_code_seq')::text, 6, '0'))")
             .ValueGeneratedOnAdd();
         builder.Property(task => task.Title).HasMaxLength(160).IsRequired();
-        builder.Property(task => task.Description).IsRequired();
+        builder.Property(task => task.Description).HasMaxLength(50_000).IsRequired();
         builder.Property(task => task.Location).HasColumnType("geography(Point,4326)");
         builder.Property(task => task.LocationText).HasMaxLength(300);
         builder.Property(task => task.CompensationType)
@@ -198,10 +198,12 @@ internal sealed class TaskConversationConfiguration : IEntityTypeConfiguration<T
 
         builder.Property(conversation => conversation.LastMessageContent).HasMaxLength(500);
         builder.Property(conversation => conversation.LastMessageAt);
+        builder.Property(conversation => conversation.SeekerLastReadAt);
+        builder.Property(conversation => conversation.HelperLastReadAt);
 
         builder.HasOne(conversation => conversation.Task)
-            .WithOne(task => task.Conversation)
-            .HasForeignKey<TaskConversation>(conversation => conversation.TaskId)
+            .WithMany(task => task.Conversations)
+            .HasForeignKey(conversation => conversation.TaskId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(conversation => conversation.SeekerProfile)

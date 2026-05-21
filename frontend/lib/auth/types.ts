@@ -55,4 +55,9 @@ export interface OwnProfileResponse {
 
 export interface SessionResponse {
   user: AuthUser | null
+  expiresAt: string | null
+}
+
+export interface RefreshResponse {
+  expiresAt: string | null
 }
