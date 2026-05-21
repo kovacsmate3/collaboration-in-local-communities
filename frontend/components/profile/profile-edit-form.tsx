@@ -19,8 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { AvatarUpload } from "@/components/profile/avatar-upload"
 import { LocationInput } from "@/components/shared/location-input"
-import { UserAvatar } from "@/components/shared/user-avatar"
 import { useAuth } from "@/lib/auth-context"
 import { toOptionalString } from "@/lib/auth/functions"
 import {
@@ -43,7 +43,6 @@ interface ProfileFormState {
   workplace: string
   location: LocationValue
   availability: string
-  photoUrl: string
   bio: string
   skillIds: string[]
 }
@@ -70,7 +69,6 @@ export function ProfileEditForm({
       longitude: profile.longitude ?? undefined,
     },
     availability: profile.availability ?? "",
-    photoUrl: profile.photoUrl ?? "",
     bio: profile.bio ?? "",
     skillIds: profile.skillIds,
   }))
@@ -130,7 +128,6 @@ export function ProfileEditForm({
         latitude,
         longitude,
         availability: toOptionalString(form.availability),
-        photoUrl: toOptionalString(form.photoUrl),
         bio: toOptionalString(form.bio),
         skillIds: form.skillIds,
       })
@@ -151,20 +148,10 @@ export function ProfileEditForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <div className="flex items-center gap-4">
-        <UserAvatar
-          name={form.displayName || profile.displayName}
-          src={toOptionalString(form.photoUrl)}
-          size="lg"
-        />
-        <Field
-          id="photoUrl"
-          label="Photo URL"
-          inputMode="url"
-          value={form.photoUrl}
-          onChange={(e) => updateField("photoUrl", e.target.value)}
-        />
-      </div>
+      <AvatarUpload
+        name={form.displayName || profile.displayName}
+        currentPhotoUrl={profile.photoUrl}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field

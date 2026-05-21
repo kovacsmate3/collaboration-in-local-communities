@@ -3,18 +3,18 @@ using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Security;
+using Backend.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite.Geometries;
 
 namespace Backend.Features.Profiles;
 
 [ApiController]
 [Route("api/profiles")]
 [Authorize]
-public sealed class ProfilesController(AppDbContext db) : ControllerBase
+public sealed partial class ProfilesController(AppDbContext db, IBlobStorageService blobStorage, ILogger<ProfilesController> logger) : ControllerBase
 {
     /// <summary>
     /// Get a public profile by ID, respecting privacy settings.
@@ -47,7 +47,7 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             Workplace = privacy?.ShowWorkplace == true ? profile.Workplace : null,
             Position = privacy?.ShowPosition == true ? profile.Position : null,
             Availability = privacy?.ShowAvailability == true ? profile.Availability : null,
-            PhotoUrl = profile.PhotoUrl,
+            PhotoUrl = blobStorage.RewriteToPublicUrl(profile.PhotoUrl),
             LocationText = privacy?.ShowLocation == true ? profile.LocationText : null,
             AverageRating = profile.AverageRating,
             ReviewCount = profile.ReviewCount,
@@ -75,21 +75,36 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             return NotFound();
         }
 
-        var reviews = await db.Reviews
+        var rawReviews = await db.Reviews
             .AsNoTracking()
             .Where(review => review.RevieweeProfileId == id)
             .OrderByDescending(review => review.CreatedAt)
+            .Select(review => new
+            {
+                review.Id,
+                review.TaskId,
+                review.ReviewerProfileId,
+                ReviewerDisplayName = review.ReviewerProfile.DisplayName,
+                ReviewerPhotoUrl = review.ReviewerProfile.PhotoUrl,
+                review.RevieweeProfileId,
+                review.Rating,
+                review.Comment,
+                review.CreatedAt,
+            })
+            .ToListAsync(cancellationToken);
+
+        var reviews = rawReviews
             .Select(review => new ProfileReviewResponse(
                 review.Id,
                 review.TaskId,
                 review.ReviewerProfileId,
-                review.ReviewerProfile.DisplayName,
-                review.ReviewerProfile.PhotoUrl,
+                review.ReviewerDisplayName,
+                blobStorage.RewriteToPublicUrl(review.ReviewerPhotoUrl),
                 review.RevieweeProfileId,
                 review.Rating,
                 review.Comment ?? string.Empty,
                 review.CreatedAt))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return Ok(reviews);
     }
@@ -204,7 +219,7 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             Workplace = profile.Workplace,
             Position = profile.Position,
             Availability = profile.Availability,
-            PhotoUrl = profile.PhotoUrl,
+            PhotoUrl = blobStorage.RewriteToPublicUrl(profile.PhotoUrl),
             LocationText = profile.LocationText,
             Latitude = profile.Location?.Y,
             Longitude = profile.Location?.X,
@@ -268,7 +283,6 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         profile.Workplace = request.Workplace;
         profile.Position = request.Position;
         profile.Availability = request.Availability;
-        profile.PhotoUrl = request.PhotoUrl;
         profile.LocationText = request.LocationText;
         profile.Location = location;
         profile.UpdatedAt = DateTimeOffset.UtcNow;
@@ -317,7 +331,7 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
             Workplace = profile.Workplace,
             Position = profile.Position,
             Availability = profile.Availability,
-            PhotoUrl = profile.PhotoUrl,
+            PhotoUrl = blobStorage.RewriteToPublicUrl(profile.PhotoUrl),
             LocationText = profile.LocationText,
             Latitude = profile.Location?.Y,
             Longitude = profile.Location?.X,
@@ -396,42 +410,140 @@ public sealed class ProfilesController(AppDbContext db) : ControllerBase
         return Ok(response);
     }
 
-    private bool TryBuildLocation(double? latitude, double? longitude, out Point? location)
+    /// <summary>
+    /// Upload or replace the current authenticated user's profile photo.
+    /// </summary>
+    /// <param name="photo">The image file (JPEG, PNG, or WebP; max 5 MB).</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>
+    /// 200 OK with the new photo URL.
+    /// 400 Bad Request if the file is missing, too large, or has an unsupported type.
+    /// 404 Not Found if the user has no profile.
+    /// 401 Unauthorized if not authenticated.
+    /// </returns>
+    [HttpPost("me/photo")]
+    [Consumes("multipart/form-data")]
+    [EnableRateLimiting(RateLimitingExtensions.PhotoUploadPolicy)]
+    [RequestSizeLimit(MaxPhotoSizeBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxPhotoSizeBytes)]
+    public async Task<IActionResult> UploadProfilePhotoAsync(
+        IFormFile? photo,
+        CancellationToken cancellationToken)
     {
-        location = null;
-
-        if (latitude.HasValue != longitude.HasValue)
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
         {
-            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Latitude), "Both Latitude and Longitude must be provided together.");
-            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Longitude), "Both Latitude and Longitude must be provided together.");
-            return false;
+            return Unauthorized();
         }
 
-        if (!latitude.HasValue || !longitude.HasValue)
+        if (photo is null)
         {
-            return true;
+            ModelState.AddModelError(nameof(photo), "A photo file is required.");
+            return ValidationProblem(ModelState);
         }
 
-        if (!double.IsFinite(latitude.Value) || latitude.Value is < -90 or > 90)
+        if (photo.Length is 0 or > MaxPhotoSizeBytes)
         {
-            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Latitude), "Latitude must be between -90 and 90.");
-            return false;
+            ModelState.AddModelError(nameof(photo), "Photo must be between 1 byte and 5 MB.");
+            return ValidationProblem(ModelState);
         }
 
-        if (!double.IsFinite(longitude.Value) || longitude.Value is < -180 or > 180)
+        if (!_allowedMimeTypes.TryGetValue(photo.ContentType, out var fileExtension))
         {
-            ModelState.AddModelError(nameof(UpdateOwnProfileRequest.Longitude), "Longitude must be between -180 and 180.");
-            return false;
+            ModelState.AddModelError(nameof(photo), "Only JPEG, PNG, and WebP images are accepted.");
+            return ValidationProblem(ModelState);
         }
 
-        location = new Point(longitude.Value, latitude.Value) { SRID = 4326 };
-        return true;
+        var profile = await db.Profiles
+            .FirstOrDefaultAsync(p => p.UserId == userIdGuid, cancellationToken);
+
+        if (profile is null)
+        {
+            return NotFound();
+        }
+
+        var oldPhotoUrl = profile.PhotoUrl;
+
+        Uri newPhotoUri;
+        try
+        {
+            await using var stream = photo.OpenReadStream();
+            newPhotoUri = await blobStorage.UploadProfilePhotoAsync(
+                userIdGuid, stream, photo.ContentType, fileExtension, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to upload profile photo for user {UserId}.", userIdGuid);
+            return Problem("Failed to upload photo. Please try again.");
+        }
+
+        profile.PhotoUrl = newPhotoUri.ToString();
+        profile.UpdatedAt = DateTimeOffset.UtcNow;
+
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.ProfileUpdated,
+            nameof(UserProfile),
+            profile.Id,
+            new { PhotoUpdated = true });
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        if (!string.IsNullOrEmpty(oldPhotoUrl))
+        {
+            await blobStorage.DeleteBlobByUrlAsync(oldPhotoUrl, cancellationToken);
+        }
+
+        return Ok(new { photoUrl = newPhotoUri.ToString() });
     }
 
-    private Task<bool> ProfileExistsAsync(Guid id, CancellationToken cancellationToken)
+    /// <summary>
+    /// Remove the current authenticated user's profile photo.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>
+    /// 204 No Content on success (also returned if no photo was set).
+    /// 404 Not Found if the user has no profile.
+    /// 401 Unauthorized if not authenticated.
+    /// </returns>
+    [HttpDelete("me/photo")]
+    public async Task<IActionResult> DeleteProfilePhotoAsync(CancellationToken cancellationToken)
     {
-        return db.Profiles
-            .AsNoTracking()
-            .AnyAsync(profile => profile.Id == id, cancellationToken);
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userIdGuid))
+        {
+            return Unauthorized();
+        }
+
+        var profile = await db.Profiles
+            .FirstOrDefaultAsync(p => p.UserId == userIdGuid, cancellationToken);
+
+        if (profile is null)
+        {
+            return NotFound();
+        }
+
+        var oldPhotoUrl = profile.PhotoUrl;
+        if (string.IsNullOrEmpty(oldPhotoUrl))
+        {
+            return NoContent();
+        }
+
+        profile.PhotoUrl = null;
+        profile.UpdatedAt = DateTimeOffset.UtcNow;
+
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.ProfileUpdated,
+            nameof(UserProfile),
+            profile.Id,
+            new { PhotoRemoved = true });
+
+        await db.SaveChangesAsync(cancellationToken);
+        await blobStorage.DeleteBlobByUrlAsync(oldPhotoUrl, cancellationToken);
+
+        return NoContent();
     }
 }

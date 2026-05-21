@@ -11,6 +11,7 @@ using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
 using Backend.Infrastructure.Persistence.Seeding;
 using Backend.Infrastructure.Security;
+using Backend.Infrastructure.Storage;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
@@ -138,6 +139,7 @@ builder.Services.AddHostedService<RefreshTokenPruningBackgroundService>();
 
 builder.Services.AddApplicationIdentity();
 builder.Services.AddEmailSender(builder.Configuration);
+builder.Services.AddBlobStorage(builder.Configuration);
 
 builder.Services.AddCors(options =>
 {
@@ -244,6 +246,28 @@ using (var scope = app.Services.CreateScope())
         if (app.Environment.IsDevelopment())
         {
             logger.LogWarning(ex, "CosmosDB messages container initialization failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
+    }
+}
+
+{
+    using var blobScope = app.Services.CreateScope();
+    var blobStorage = blobScope.ServiceProvider.GetRequiredService<IBlobStorageService>();
+    var logger = blobScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await blobStorage.EnsureContainerExistsAsync(CancellationToken.None);
+        logger.LogInformation("Blob storage container ready.");
+    }
+    catch (Exception ex)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "Blob storage container initialization failed (non-fatal in Development)");
         }
         else
         {

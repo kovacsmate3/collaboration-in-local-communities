@@ -27,6 +27,22 @@ services:
     volumes:
       - cosmos_data:/tmp/cosmos/appdata
 
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    volumes:
+      - azurite_data:/data
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "10000"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
   backend:
     build:
       context: ./backend
@@ -49,8 +65,13 @@ services:
       AUTH_SIGNING_KEY: ${AUTH_SIGNING_KEY:-change-me-to-a-32-byte-minimum-secret}
       SendGrid__ApiKey: ${SENDGRID_API_KEY:-}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      BlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      BlobStorage__ContainerName: "profile-photos"
+      BlobStorage__PublicEndpoint: "http://localhost:10000"
     depends_on:
       db:
+        condition: service_healthy
+      azurite:
         condition: service_healthy
 
   frontend:
@@ -73,6 +94,7 @@ services:
 volumes:
   postgres_data:
   cosmos_data:
+  azurite_data:
   backend_obj:
   frontend_node_modules:
   frontend_next:

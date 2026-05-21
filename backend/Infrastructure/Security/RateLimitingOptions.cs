@@ -7,6 +7,7 @@ public sealed class RateLimitingOptions
     public WindowPolicyOptions Auth { get; init; } = new();
     public WindowPolicyOptions Conversations { get; init; } = new();
     public WindowPolicyOptions Reviews { get; init; } = new();
+    public WindowPolicyOptions PhotoUpload { get; init; } = new() { PermitLimit = 10, WindowSeconds = 600 };
 }
 
 public sealed class WindowPolicyOptions
