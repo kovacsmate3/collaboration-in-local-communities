@@ -26,9 +26,9 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         [FromQuery] double? latitude,
         [FromQuery] double? longitude,
         [FromQuery] double? radiusMeters,
-        CancellationToken cancellationToken,
         [FromQuery] int? page = null,
-        [FromQuery] int? pageSize = null)
+        [FromQuery] int? pageSize = null,
+        CancellationToken cancellationToken = default)
     {
         Point? proximityOrigin = null;
         var shouldPage = page.HasValue || pageSize.HasValue;
@@ -93,40 +93,30 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             query = query.Where(task => task.CategoryId == categoryId.Value);
         }
 
-        List<CommunityTask> tasks;
+        IQueryable<CommunityTask> orderedQuery;
         if (proximityOrigin is not null)
         {
             var radius = radiusMeters.GetValueOrDefault();
 
-            IQueryable<CommunityTask> orderedQuery = query
+            orderedQuery = query
                 .Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius))
                 .OrderBy(task => task.Location!.Distance(proximityOrigin))
                 .ThenByDescending(task => task.CreatedAt);
-
-            if (shouldPage)
-            {
-                orderedQuery = orderedQuery
-                    .Skip(skip)
-                    .Take(effectivePageSize);
-            }
-
-            tasks = await orderedQuery
-                .ToListAsync(cancellationToken);
         }
         else
         {
-            IQueryable<CommunityTask> orderedQuery = query.OrderByDescending(task => task.CreatedAt);
-
-            if (shouldPage)
-            {
-                orderedQuery = orderedQuery
-                    .Skip(skip)
-                    .Take(effectivePageSize);
-            }
-
-            tasks = await orderedQuery
-                .ToListAsync(cancellationToken);
+            orderedQuery = query.OrderByDescending(task => task.CreatedAt);
         }
+
+        if (shouldPage)
+        {
+            orderedQuery = orderedQuery
+                .Skip(skip)
+                .Take(effectivePageSize);
+        }
+
+        var tasks = await orderedQuery
+            .ToListAsync(cancellationToken);
 
         return Ok(tasks.Select(TaskResponse.FromTask));
     }

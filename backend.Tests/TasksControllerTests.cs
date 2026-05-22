@@ -79,7 +79,7 @@ public sealed class TasksControllerTests
             latitude: 47.4979,
             longitude: null,
             radiusMeters: 1000,
-            cancellationToken);
+            cancellationToken: cancellationToken);
 
         var badRequest = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(badRequest.Value);
