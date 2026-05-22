@@ -23,7 +23,7 @@ import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
 import { resendVerificationEmail } from "@/lib/auth/functions"
 import { useCategories } from "@/lib/api/categories"
-import { useCreateTask } from "@/lib/api/tasks"
+import { useCreateTask, useUpdateTask } from "@/lib/api/tasks"
 import { COMPENSATION_LABELS } from "@/lib/constants"
 import type { LocationValue } from "@/lib/location"
 import type { CompensationType } from "@/lib/types"
@@ -46,13 +46,29 @@ const INITIAL: PostTaskFormState = {
   compensationAmount: "",
 }
 
-export function PostTaskForm() {
+interface PostTaskFormProps {
+  taskId?: string
+  initialValues?: Partial<PostTaskFormState>
+}
+
+export function PostTaskForm({
+  taskId,
+  initialValues,
+}: PostTaskFormProps = {}) {
+  const isEditing = Boolean(taskId)
   const { user } = useAuth()
   const router = useRouter()
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories()
-  const { mutate: createTask, isPending } = useCreateTask()
-  const [form, setForm] = React.useState<PostTaskFormState>(INITIAL)
+  const { mutate: createTask, isPending: isCreating } = useCreateTask()
+  const { mutate: updateTask, isPending: isUpdating } = useUpdateTask(
+    taskId ?? ""
+  )
+  const isPending = isCreating || isUpdating
+  const [form, setForm] = React.useState<PostTaskFormState>({
+    ...INITIAL,
+    ...initialValues,
+  })
   const [isResending, setIsResending] = React.useState(false)
 
   const update = <K extends keyof PostTaskFormState>(
@@ -73,7 +89,7 @@ export function PostTaskForm() {
     }
   }
 
-  if (user && !user.emailVerified) {
+  if (!isEditing && user && !user.emailVerified) {
     return (
       <div className="rounded-md border border-amber-200 bg-amber-50 px-5 py-4 dark:border-amber-900 dark:bg-amber-950">
         <p className="font-medium text-amber-800 dark:text-amber-200">
@@ -118,6 +134,31 @@ export function PostTaskForm() {
       form.compensationType === "paid" && form.compensationAmount
         ? Number(form.compensationAmount)
         : undefined
+
+    if (isEditing) {
+      updateTask(
+        {
+          title: form.title,
+          description: form.description,
+          categoryId: form.categoryId,
+          compensationType: form.compensationType,
+          compensationAmount: amount,
+          locationText: form.location.locationText || undefined,
+        },
+        {
+          onSuccess: () => {
+            toast.success("Task updated!")
+            router.push(`/tasks/${taskId}`)
+          },
+          onError: (err) => {
+            const message =
+              err instanceof Error ? err.message : "Could not update the task."
+            toast.error(message)
+          },
+        }
+      )
+      return
+    }
 
     createTask(
       {
@@ -246,10 +287,16 @@ export function PostTaskForm() {
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" asChild>
-          <Link href="/feed">Cancel</Link>
+          <Link href={isEditing ? `/tasks/${taskId}` : "/feed"}>Cancel</Link>
         </Button>
         <Button type="submit" disabled={isPending || !form.categoryId}>
-          {isPending ? "Posting…" : "Post task"}
+          {isEditing
+            ? isPending
+              ? "Saving…"
+              : "Save changes"
+            : isPending
+              ? "Posting…"
+              : "Post task"}
         </Button>
       </div>
     </form>

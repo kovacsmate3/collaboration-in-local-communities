@@ -250,15 +250,15 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         if (request.CategoryId.HasValue)
         {
-            var categoryExists = await db.Categories
-                .AnyAsync(c => c.Id == request.CategoryId.Value && c.IsActive, cancellationToken);
-            if (!categoryExists)
+            var category = await db.Categories
+                .FirstOrDefaultAsync(c => c.Id == request.CategoryId.Value && c.IsActive, cancellationToken);
+            if (category is null)
             {
                 ModelState.AddModelError(nameof(request.CategoryId), "Category not found or inactive.");
                 return ValidationProblem(ModelState);
             }
 
-            task.CategoryId = request.CategoryId.Value;
+            task.Category = category;
             anyChange = true;
         }
 
