@@ -26,6 +26,12 @@ export function RegisterAccountStep() {
         description="Use at least 8 characters with uppercase, lowercase, number, and symbol."
       />
 
+      <PasswordField<RegisterFormValues>
+        name="confirmPassword"
+        label="Confirm password"
+        autoComplete="new-password"
+      />
+
       <CheckboxField<RegisterFormValues>
         name="acceptTerms"
         label={
