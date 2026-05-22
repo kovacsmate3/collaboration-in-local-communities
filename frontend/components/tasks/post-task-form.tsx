@@ -104,6 +104,12 @@ export function PostTaskForm() {
   function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
 
+    const title = form.title.trim()
+    if (title.length < 3) {
+      toast.error("Title must be at least 3 characters.")
+      return
+    }
+
     const plainText = form.description.replace(/<[^>]*>/g, "").trim()
     if (plainText.length < 10) {
       toast.error("Description must be at least 10 characters.")
@@ -114,14 +120,27 @@ export function PostTaskForm() {
       return
     }
 
+    if (!form.categoryId) {
+      toast.error("Pick a category.")
+      return
+    }
+
     const amount =
       form.compensationType === "paid" && form.compensationAmount
         ? Number(form.compensationAmount)
         : undefined
 
+    if (
+      form.compensationType === "paid" &&
+      (amount === undefined || !Number.isFinite(amount) || amount < 0)
+    ) {
+      toast.error("Enter a valid paid amount.")
+      return
+    }
+
     createTask(
       {
-        title: form.title,
+        title,
         description: form.description,
         categoryId: form.categoryId,
         compensationType: form.compensationType,
@@ -151,6 +170,7 @@ export function PostTaskForm() {
         <Input
           id="title"
           required
+          minLength={3}
           maxLength={160}
           placeholder="e.g. Help carrying boxes to my new apartment"
           value={form.title}
@@ -235,6 +255,8 @@ export function PostTaskForm() {
               id="amount"
               type="number"
               min={0}
+              max={9_999_999_999.99}
+              step="0.01"
               required
               placeholder="e.g. 5000"
               value={form.compensationAmount}

@@ -16,6 +16,9 @@ namespace Backend.Features.Tasks;
 [Authorize]
 public sealed partial class TasksController(AppDbContext db) : ControllerBase
 {
+    private const int DefaultPageSize = 20;
+    private const int MaxPageSize = 100;
+
     [HttpGet]
     public async Task<IActionResult> ListAsync(
         [FromQuery] string? status,
@@ -23,9 +26,41 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         [FromQuery] double? latitude,
         [FromQuery] double? longitude,
         [FromQuery] double? radiusMeters,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null)
     {
         Point? proximityOrigin = null;
+        var shouldPage = page.HasValue || pageSize.HasValue;
+        var effectivePage = page.GetValueOrDefault(1);
+        var effectivePageSize = pageSize.GetValueOrDefault(DefaultPageSize);
+        var skip = 0;
+
+        if (shouldPage)
+        {
+            if (effectivePage < 1)
+            {
+                ModelState.AddModelError(nameof(page), "Page must be greater than or equal to 1.");
+            }
+
+            if (effectivePageSize is < 1 or > MaxPageSize)
+            {
+                ModelState.AddModelError(nameof(pageSize), $"PageSize must be between 1 and {MaxPageSize}.");
+            }
+
+            var offset = ((long)effectivePage - 1) * effectivePageSize;
+            if (offset > int.MaxValue)
+            {
+                ModelState.AddModelError(nameof(page), "Page is too large for the requested page size.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            skip = (int)offset;
+        }
 
         if (latitude.HasValue || longitude.HasValue || radiusMeters.HasValue)
         {
@@ -63,16 +98,33 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         {
             var radius = radiusMeters.GetValueOrDefault();
 
-            tasks = await query
+            IQueryable<CommunityTask> orderedQuery = query
                 .Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius))
                 .OrderBy(task => task.Location!.Distance(proximityOrigin))
-                .ThenByDescending(task => task.CreatedAt)
+                .ThenByDescending(task => task.CreatedAt);
+
+            if (shouldPage)
+            {
+                orderedQuery = orderedQuery
+                    .Skip(skip)
+                    .Take(effectivePageSize);
+            }
+
+            tasks = await orderedQuery
                 .ToListAsync(cancellationToken);
         }
         else
         {
-            tasks = await query
-                .OrderByDescending(task => task.CreatedAt)
+            IQueryable<CommunityTask> orderedQuery = query.OrderByDescending(task => task.CreatedAt);
+
+            if (shouldPage)
+            {
+                orderedQuery = orderedQuery
+                    .Skip(skip)
+                    .Take(effectivePageSize);
+            }
+
+            tasks = await orderedQuery
                 .ToListAsync(cancellationToken);
         }
 

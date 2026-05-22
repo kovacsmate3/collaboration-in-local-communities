@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import { apiClient } from "@/lib/api/client"
 
@@ -48,6 +53,11 @@ export interface UpdateTaskInput {
   cancellationReason?: string
 }
 
+export interface TaskListFilters {
+  status?: string
+  categoryId?: string
+}
+
 // ── Query keys ────────────────────────────────────────────────────────────────
 
 export const taskKeys = {
@@ -55,22 +65,38 @@ export const taskKeys = {
   lists: () => [...taskKeys.all, "list"] as const,
   list: (filters: Record<string, string | undefined>) =>
     [...taskKeys.lists(), filters] as const,
+  infiniteList: (
+    filters: Record<string, string | undefined>,
+    pageSize: number
+  ) => [...taskKeys.list(filters), "infinite", pageSize] as const,
   detail: (id: string) => [...taskKeys.all, "detail", id] as const,
 }
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
-export function useTaskList(
-  filters: { status?: string; categoryId?: string } = {}
-) {
-  const params = new URLSearchParams()
-  if (filters.status) params.set("status", filters.status)
-  if (filters.categoryId) params.set("categoryId", filters.categoryId)
-  const qs = params.size > 0 ? `?${params.toString()}` : ""
-
+export function useTaskList(filters: TaskListFilters = {}) {
   return useQuery({
     queryKey: taskKeys.list(filters as Record<string, string | undefined>),
-    queryFn: () => apiClient.get<ApiTask[]>(`/tasks${qs}`),
+    queryFn: () => apiClient.get<ApiTask[]>(buildTaskListPath(filters)),
+  })
+}
+
+export function useInfiniteTaskList(
+  filters: TaskListFilters = {},
+  pageSize = 20
+) {
+  return useInfiniteQuery({
+    queryKey: taskKeys.infiniteList(
+      filters as Record<string, string | undefined>,
+      pageSize
+    ),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      apiClient.get<ApiTask[]>(
+        buildTaskListPath(filters, { page: pageParam, pageSize })
+      ),
+    getNextPageParam: (lastPage, _pages, lastPageParam) =>
+      lastPage.length < pageSize ? undefined : lastPageParam + 1,
   })
 }
 
@@ -103,4 +129,20 @@ export function useUpdateTask(id: string) {
       void qc.invalidateQueries({ queryKey: taskKeys.lists() })
     },
   })
+}
+
+function buildTaskListPath(
+  filters: TaskListFilters,
+  pagination?: { page: number; pageSize: number }
+) {
+  const params = new URLSearchParams()
+  if (filters.status) params.set("status", filters.status)
+  if (filters.categoryId) params.set("categoryId", filters.categoryId)
+  if (pagination) {
+    params.set("page", String(pagination.page))
+    params.set("pageSize", String(pagination.pageSize))
+  }
+
+  const qs = params.size > 0 ? `?${params.toString()}` : ""
+  return `/tasks${qs}`
 }
