@@ -53,12 +53,31 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
 
         var application = new TaskApplication
         {
+            Id = Guid.NewGuid(),
             TaskId = taskId,
             HelperProfileId = profile.Id,
             Message = StringUtilities.Normalize(request.Message)
         };
 
         db.TaskApplications.Add(application);
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.TaskApplicationSubmitted,
+            nameof(TaskApplication),
+            application.Id,
+            new { application.TaskId, MessageLength = application.Message?.Length ?? 0 });
+        db.AddAuditEvent(
+            profile.UserId,
+            "task_application.submitted",
+            nameof(TaskApplication),
+            application.Id,
+            new
+            {
+                application.TaskId,
+                application.HelperProfileId,
+                MessageLength = application.Message?.Length ?? 0
+            });
 
         try
         {
@@ -75,6 +94,32 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
         return Created(
             $"/api/tasks/{taskId}/applications/{application.Id}",
             TaskApplicationResponse.FromApplication(application, profile.DisplayName));
+    }
+
+    [HttpGet("~/api/task-applications/me")]
+    public async Task<IActionResult> ListMineAsync(CancellationToken cancellationToken)
+    {
+        var profile = await GetCurrentProfileAsync(cancellationToken);
+        if (profile is null)
+        {
+            return Unauthorized();
+        }
+
+        var applications = await db.TaskApplications
+            .AsNoTracking()
+            .Where(a => a.HelperProfileId == profile.Id)
+            .Include(a => a.HelperProfile)
+            .Include(a => a.Task)
+                .ThenInclude(t => t.SeekerProfile)
+            .Include(a => a.Task)
+                .ThenInclude(t => t.AcceptedHelperProfile)
+            .Include(a => a.Task)
+                .ThenInclude(t => t.Category)
+            .OrderByDescending(a => a.UpdatedAt)
+            .ThenByDescending(a => a.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return Ok(applications.Select(MyTaskApplicationResponse.FromApplication));
     }
 
     [HttpGet]
@@ -209,7 +254,7 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
                     statusCode: StatusCodes.Status409Conflict);
             }
 
-            await db.TaskApplications
+            var rejectedCount = await db.TaskApplications
                 .Where(a => a.TaskId == taskId && a.Id != appId && a.Status == TaskApplicationStatus.Pending)
                 .ExecuteUpdateAsync(
                     s => s
@@ -240,6 +285,33 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
                 nameof(CommunityTask),
                 taskId,
                 new { application.HelperProfileId, ApplicationId = application.Id });
+            db.AddAuditEvent(
+                profile.UserId,
+                "task_application.accepted",
+                nameof(TaskApplication),
+                application.Id,
+                new
+                {
+                    application.TaskId,
+                    application.HelperProfileId,
+                    task.SeekerProfileId,
+                    RejectedPendingApplicationCount = rejectedCount
+                });
+
+            if (rejectedCount > 0)
+            {
+                db.AddAuditEvent(
+                    profile.UserId,
+                    "task_application.auto_rejected",
+                    nameof(CommunityTask),
+                    taskId,
+                    new
+                    {
+                        AcceptedApplicationId = application.Id,
+                        application.HelperProfileId,
+                        RejectedPendingApplicationCount = rejectedCount
+                    });
+            }
 
             try
             {
@@ -276,6 +348,20 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
 
             application.Status = TaskApplicationStatus.Rejected;
             application.UpdatedAt = DateTimeOffset.UtcNow;
+
+            db.AddActivityEvent(
+                profile.UserId,
+                profile.Id,
+                ActivityEventType.TaskApplicationRejected,
+                nameof(TaskApplication),
+                application.Id,
+                new { application.TaskId, application.HelperProfileId });
+            db.AddAuditEvent(
+                profile.UserId,
+                "task_application.rejected",
+                nameof(TaskApplication),
+                application.Id,
+                new { application.TaskId, application.HelperProfileId });
 
             await db.SaveChangesAsync(cancellationToken);
         }
@@ -333,6 +419,20 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
 
         application.Status = TaskApplicationStatus.Withdrawn;
         application.UpdatedAt = DateTimeOffset.UtcNow;
+
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.TaskApplicationWithdrawn,
+            nameof(TaskApplication),
+            application.Id,
+            new { application.TaskId, application.HelperProfileId });
+        db.AddAuditEvent(
+            profile.UserId,
+            "task_application.withdrawn",
+            nameof(TaskApplication),
+            application.Id,
+            new { application.TaskId, application.HelperProfileId });
 
         await db.SaveChangesAsync(cancellationToken);
 

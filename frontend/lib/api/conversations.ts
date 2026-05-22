@@ -57,10 +57,11 @@ export const conversationKeys = {
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
-export function useConversations() {
+export function useConversations(enabled = true) {
   return useQuery({
     queryKey: conversationKeys.list,
     queryFn: () => apiClient.get<ApiConversationPreview[]>("/conversations"),
+    enabled,
     staleTime: 60_000,
   })
 }

@@ -7,16 +7,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/shared/page-header"
 import { TaskList } from "@/components/tasks/task-list"
 import { useAuth } from "@/lib/auth-context"
-import { useTaskList } from "@/lib/api/tasks"
+import { useMyTaskApplications, useTaskList } from "@/lib/api/tasks"
 
 export function TasksPageClient() {
   const { user } = useAuth()
   const { data: tasks = [], isLoading, isError } = useTaskList()
+  const {
+    data: applications = [],
+    isLoading: isLoadingApplications,
+    isError: isApplicationsError,
+  } = useMyTaskApplications()
 
   const posted = tasks.filter((t) => t.seekerProfileId === user?.profileId)
   const accepted = tasks.filter(
     (t) => t.acceptedHelperProfileId === user?.profileId
   )
+  const applied = applications.map((a) => a.task)
 
   return (
     <div className="flex flex-col gap-6">
@@ -38,9 +44,12 @@ export function TasksPageClient() {
           <TabsTrigger value="accepted">
             Accepted ({isLoading ? "…" : accepted.length})
           </TabsTrigger>
+          <TabsTrigger value="applied">
+            Applied ({isLoadingApplications ? "…" : applied.length})
+          </TabsTrigger>
         </TabsList>
 
-        {isError ? (
+        {isError || isApplicationsError ? (
           <p className="mt-4 text-sm text-destructive">
             Could not load tasks. Please try again.
           </p>
@@ -65,6 +74,17 @@ export function TasksPageClient() {
                   tasks={accepted}
                   emptyTitle="No accepted tasks"
                   emptyDescription="Browse the feed and accept a task to see it here."
+                />
+              )}
+            </TabsContent>
+            <TabsContent value="applied">
+              {isLoadingApplications ? (
+                <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+              ) : (
+                <TaskList
+                  tasks={applied}
+                  emptyTitle="No applications yet"
+                  emptyDescription="Apply to open tasks from the helper feed to track them here."
                 />
               )}
             </TabsContent>

@@ -39,3 +39,30 @@ public sealed record TaskApplicationResponse(
             application.UpdatedAt);
     }
 }
+
+[PublicAPI]
+public sealed record MyTaskApplicationResponse(
+    Guid Id,
+    Guid TaskId,
+    Guid HelperProfileId,
+    string HelperDisplayName,
+    string? Message,
+    string Status,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
+    TaskResponse Task)
+{
+    public static MyTaskApplicationResponse FromApplication(TaskApplication application)
+    {
+        return new MyTaskApplicationResponse(
+            application.Id,
+            application.TaskId,
+            application.HelperProfileId,
+            application.HelperProfile.DisplayName,
+            application.Message,
+            application.Status.ToString(),
+            application.CreatedAt,
+            application.UpdatedAt,
+            TaskResponse.FromTask(application.Task));
+    }
+}
