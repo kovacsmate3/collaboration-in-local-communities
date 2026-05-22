@@ -95,6 +95,8 @@ export function useInfiniteTaskList(
       apiClient.get<ApiTask[]>(
         buildTaskListPath(filters, { page: pageParam, pageSize })
       ),
+    // The API returns a plain array, so a full final page intentionally causes
+    // one extra empty-page fetch before pagination stops.
     getNextPageParam: (lastPage, _pages, lastPageParam) =>
       lastPage.length < pageSize ? undefined : lastPageParam + 1,
   })
