@@ -111,7 +111,8 @@ function TaskActions({ task }: { task: ApiTask }) {
   const { user } = useAuth()
   const router = useRouter()
   const { mutate: updateTask, isPending: isCancelling } = useUpdateTask(task.id)
-  const { data: myApplications = [] } = useMyTaskApplications()
+  const { data: myApplications = [], isLoading: isLoadingMyApplications } =
+    useMyTaskApplications()
   const { data: applications = [], isLoading: isLoadingApplications } =
     useTaskApplications(task.id, task.seekerProfileId === user?.profileId)
   const { mutate: startConversation, isPending: isStarting } =
@@ -121,7 +122,8 @@ function TaskActions({ task }: { task: ApiTask }) {
   const canOpenInProgressChat =
     status === "in_progress" &&
     (isSeeker || task.acceptedHelperProfileId === user?.profileId)
-  const { data: conversations = [] } = useConversations(canOpenInProgressChat)
+  const { data: conversations = [], isLoading: isLoadingConversations } =
+    useConversations(canOpenInProgressChat)
   const currentApplication = myApplications.find((a) => a.taskId === task.id)
 
   function handleCancel() {
@@ -163,6 +165,7 @@ function TaskActions({ task }: { task: ApiTask }) {
             <ApplicationControls
               taskId={task.id}
               application={currentApplication}
+              isLoadingApplication={isLoadingMyApplications}
             />
           ) : (
             <>
@@ -194,7 +197,10 @@ function TaskActions({ task }: { task: ApiTask }) {
     return (
       <div className="flex flex-wrap gap-2">
         {canOpenInProgressChat ? (
-          <Button disabled={isStarting} onClick={handleMessage}>
+          <Button
+            disabled={isStarting || isLoadingConversations}
+            onClick={handleMessage}
+          >
             {isStarting ? "Opening…" : "Open chat"}
           </Button>
         ) : null}
@@ -225,9 +231,11 @@ function TaskActions({ task }: { task: ApiTask }) {
 function ApplicationControls({
   taskId,
   application,
+  isLoadingApplication = false,
 }: {
   taskId: string
   application?: ApiTaskApplication
+  isLoadingApplication?: boolean
 }) {
   const [open, setOpen] = React.useState(false)
   const [message, setMessage] = React.useState("")
@@ -258,6 +266,10 @@ function ApplicationControls({
       onSuccess: () => toast.success("Application withdrawn."),
       onError: () => toast.error("Could not withdraw the application."),
     })
+  }
+
+  if (!application && isLoadingApplication) {
+    return <Button disabled>Apply to help</Button>
   }
 
   if (application?.status === "Pending") {

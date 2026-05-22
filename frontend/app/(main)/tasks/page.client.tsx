@@ -22,7 +22,14 @@ export function TasksPageClient() {
   const accepted = tasks.filter(
     (t) => t.acceptedHelperProfileId === user?.profileId
   )
-  const applied = applications.map((a) => a.task)
+  const appliedSeen = new Set<string>()
+  const applied = applications
+    .map((a) => a.task)
+    .filter((t) => {
+      if (appliedSeen.has(t.id)) return false
+      appliedSeen.add(t.id)
+      return true
+    })
 
   return (
     <div className="flex flex-col gap-6">

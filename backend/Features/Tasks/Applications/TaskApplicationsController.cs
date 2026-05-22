@@ -108,7 +108,6 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
         var applications = await db.TaskApplications
             .AsNoTracking()
             .Where(a => a.HelperProfileId == profile.Id)
-            .Include(a => a.HelperProfile)
             .Include(a => a.Task)
                 .ThenInclude(t => t.SeekerProfile)
             .Include(a => a.Task)
@@ -119,7 +118,7 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
             .ThenByDescending(a => a.CreatedAt)
             .ToListAsync(cancellationToken);
 
-        return Ok(applications.Select(MyTaskApplicationResponse.FromApplication));
+        return Ok(applications.Select(a => MyTaskApplicationResponse.FromApplication(a, profile.DisplayName)));
     }
 
     [HttpGet]

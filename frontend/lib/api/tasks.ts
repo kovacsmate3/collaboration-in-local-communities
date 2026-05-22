@@ -21,7 +21,7 @@ export interface ApiTask {
   longitude: number | null
   compensationType: string
   compensationAmount: number | null
-  status: string
+  status: "Open" | "InProgress" | "Completed" | "Cancelled"
   createdAt: string
   updatedAt: string
 }
@@ -32,7 +32,7 @@ export interface ApiTaskApplication {
   helperProfileId: string
   helperDisplayName: string
   message: string | null
-  status: string
+  status: "Pending" | "Accepted" | "Rejected" | "Withdrawn"
   createdAt: string
   updatedAt: string
 }
@@ -133,6 +133,7 @@ export function useTaskApplications(taskId: string, enabled = true) {
     queryFn: () =>
       apiClient.get<ApiTaskApplication[]>(`/tasks/${taskId}/applications`),
     enabled: Boolean(taskId) && enabled,
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -141,6 +142,7 @@ export function useMyTaskApplications() {
     queryKey: taskKeys.myApplications(),
     queryFn: () =>
       apiClient.get<ApiMyTaskApplication[]>("/task-applications/me"),
+    staleTime: 5 * 60 * 1000,
   })
 }
 

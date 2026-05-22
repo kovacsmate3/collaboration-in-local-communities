@@ -52,13 +52,13 @@ public sealed record MyTaskApplicationResponse(
     DateTimeOffset UpdatedAt,
     TaskResponse Task)
 {
-    public static MyTaskApplicationResponse FromApplication(TaskApplication application)
+    public static MyTaskApplicationResponse FromApplication(TaskApplication application, string helperDisplayName)
     {
         return new MyTaskApplicationResponse(
             application.Id,
             application.TaskId,
             application.HelperProfileId,
-            application.HelperProfile.DisplayName,
+            helperDisplayName,
             application.Message,
             application.Status.ToString(),
             application.CreatedAt,
