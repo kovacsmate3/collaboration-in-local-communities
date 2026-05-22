@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 export interface TextFieldProps<TFieldValues extends FieldValues> extends Omit<
   React.ComponentProps<typeof Input>,
@@ -26,6 +27,7 @@ export interface TextFieldProps<TFieldValues extends FieldValues> extends Omit<
   description?: React.ReactNode
   labelAction?: React.ReactNode
   optional?: boolean
+  rightElement?: React.ReactNode
 }
 
 export function TextField<TFieldValues extends FieldValues>({
@@ -34,6 +36,8 @@ export function TextField<TFieldValues extends FieldValues>({
   description,
   labelAction,
   optional = false,
+  rightElement,
+  className,
   ...inputProps
 }: TextFieldProps<TFieldValues>) {
   const { control } = useFormContext<TFieldValues>()
@@ -52,9 +56,24 @@ export function TextField<TFieldValues extends FieldValues>({
           ) : (
             <FieldLabel label={label} optional={optional} />
           )}
-          <FormControl>
-            <Input {...inputProps} {...field} />
-          </FormControl>
+          {rightElement ? (
+            <div className="relative">
+              <FormControl>
+                <Input
+                  className={cn("pr-10", className)}
+                  {...inputProps}
+                  {...field}
+                />
+              </FormControl>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                {rightElement}
+              </div>
+            </div>
+          ) : (
+            <FormControl>
+              <Input className={className} {...inputProps} {...field} />
+            </FormControl>
+          )}
           {description ? (
             <FormDescription>{description}</FormDescription>
           ) : null}
