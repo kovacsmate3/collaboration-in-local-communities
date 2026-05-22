@@ -48,14 +48,7 @@ export function TextField<TFieldValues extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem className="gap-3">
-          {labelAction ? (
-            <div className="flex items-center justify-between">
-              <FieldLabel label={label} optional={optional} />
-              {labelAction}
-            </div>
-          ) : (
-            <FieldLabel label={label} optional={optional} />
-          )}
+          <FieldLabel label={label} optional={optional} />
           {rightElement ? (
             <div className="relative">
               <FormControl>
@@ -74,6 +67,9 @@ export function TextField<TFieldValues extends FieldValues>({
               <Input className={className} {...inputProps} {...field} />
             </FormControl>
           )}
+          {labelAction ? (
+            <div className="flex justify-end">{labelAction}</div>
+          ) : null}
           {description ? (
             <FormDescription>{description}</FormDescription>
           ) : null}
