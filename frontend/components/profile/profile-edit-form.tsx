@@ -2,7 +2,11 @@
 
 import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Add01Icon, Cancel01Icon } from "@hugeicons/core-free-icons"
+import {
+  Add01Icon,
+  Cancel01Icon,
+  Clock01Icon,
+} from "@hugeicons/core-free-icons"
 import { useRouter } from "next/navigation"
 import type { ComponentProps, SubmitEvent } from "react"
 import { toast } from "sonner"
@@ -11,13 +15,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { AvatarUpload } from "@/components/profile/avatar-upload"
 import { LocationInput } from "@/components/shared/location-input"
@@ -26,10 +23,12 @@ import { toOptionalString } from "@/lib/auth/functions"
 import {
   type OwnProfileResponse,
   type SkillResponse,
+  useCreateSkill,
   useSkills,
   useUpdateOwnProfile,
 } from "@/lib/api/profile"
 import type { LocationValue } from "@/lib/location"
+import { cn } from "@/lib/utils"
 
 interface ProfileEditFormProps {
   profile: OwnProfileResponse
@@ -57,8 +56,7 @@ export function ProfileEditForm({
   const router = useRouter()
   const { refreshSession } = useAuth()
   const updateProfile = useUpdateOwnProfile()
-  const [skillPrefix, setSkillPrefix] = React.useState("")
-  const skillsQuery = useSkills(skillPrefix)
+  const [localSkills, setLocalSkills] = React.useState<SkillResponse[]>([])
   const [form, setForm] = React.useState<ProfileFormState>(() => ({
     displayName: profile.displayName,
     position: profile.position ?? "",
@@ -74,12 +72,10 @@ export function ProfileEditForm({
   }))
 
   const skillById = React.useMemo(() => {
-    const next = new Map(selectedSkills.map((skill) => [skill.id, skill]))
-    for (const skill of skillsQuery.data ?? []) {
-      next.set(skill.id, skill)
-    }
-    return next
-  }, [selectedSkills, skillsQuery.data])
+    const map = new Map(selectedSkills.map((s) => [s.id, s]))
+    for (const s of localSkills) map.set(s.id, s)
+    return map
+  }, [selectedSkills, localSkills])
 
   function updateField(field: ProfileTextField, value: string) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -89,11 +85,14 @@ export function ProfileEditForm({
     setForm((current) => ({ ...current, location }))
   }
 
-  function addSkill(id: string) {
+  function addSkill(skill: SkillResponse) {
+    setLocalSkills((prev) =>
+      prev.some((s) => s.id === skill.id) ? prev : [...prev, skill]
+    )
     setForm((current) =>
-      current.skillIds.includes(id)
+      current.skillIds.includes(skill.id)
         ? current
-        : { ...current, skillIds: [...current.skillIds, id] }
+        : { ...current, skillIds: [...current.skillIds, skill.id] }
     )
   }
 
@@ -142,9 +141,9 @@ export function ProfileEditForm({
     }
   }
 
-  const selectedSkillSet = new Set(form.skillIds)
-  const availableSkills =
-    skillsQuery.data?.filter((skill) => !selectedSkillSet.has(skill.id)) ?? []
+  const hasPendingSkills = form.skillIds.some(
+    (id) => skillById.get(id)?.status === "Pending"
+  )
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -202,53 +201,26 @@ export function ProfileEditForm({
       </div>
 
       <div className="flex flex-col gap-3">
-        <Label htmlFor="skill-search">Skills</Label>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input
-            id="skill-search"
-            value={skillPrefix}
-            onChange={(e) => setSkillPrefix(e.target.value)}
-          />
-          <Select onValueChange={addSkill}>
-            <SelectTrigger className="w-full sm:w-56">
-              <SelectValue placeholder="Add skill" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableSkills.length > 0 ? (
-                availableSkills.map((skill) => (
-                  <SelectItem key={skill.id} value={skill.id}>
-                    {skill.name}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="empty" disabled>
-                  No matches
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              const first = availableSkills[0]
-              if (first) {
-                addSkill(first.id)
-              }
-            }}
-            disabled={availableSkills.length === 0}
-            aria-label="Add first matching skill"
-          >
-            <HugeiconsIcon icon={Add01Icon} className="size-4" />
-          </Button>
-        </div>
-        {form.skillIds.length > 0 ? (
+        <Label>Skills</Label>
+        <SkillCombobox selectedIds={new Set(form.skillIds)} onAdd={addSkill} />
+        {form.skillIds.length > 0 && (
           <ul className="flex flex-wrap gap-1.5">
             {form.skillIds.map((id) => {
               const skill = skillById.get(id)
+              const isPending = skill?.status === "Pending"
               return (
                 <li key={id}>
-                  <Badge variant="muted" className="h-7 gap-1 pr-1">
+                  <Badge
+                    variant="muted"
+                    className={cn("h-7 gap-1 pr-1", isPending && "opacity-70")}
+                  >
+                    {isPending && (
+                      <HugeiconsIcon
+                        icon={Clock01Icon}
+                        className="size-3"
+                        strokeWidth={2}
+                      />
+                    )}
                     {skill?.name ?? id}
                     <button
                       type="button"
@@ -263,7 +235,13 @@ export function ProfileEditForm({
               )
             })}
           </ul>
-        ) : null}
+        )}
+        {hasPendingSkills && (
+          <p className="text-xs text-muted-foreground">
+            Skills marked with a clock icon are awaiting admin approval. They
+            will appear on your profile once approved.
+          </p>
+        )}
       </div>
 
       <div className="flex justify-end gap-2">
@@ -282,6 +260,185 @@ export function ProfileEditForm({
     </form>
   )
 }
+
+// ── SkillCombobox ─────────────────────────────────────────────────────────────
+
+interface SkillComboboxProps {
+  selectedIds: Set<string>
+  onAdd: (skill: SkillResponse) => void
+}
+
+function SkillCombobox({ selectedIds, onAdd }: SkillComboboxProps) {
+  const [query, setQuery] = React.useState("")
+  const [open, setOpen] = React.useState(false)
+  const [activeIndex, setActiveIndex] = React.useState(-1)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const createSkill = useCreateSkill()
+
+  const trimmedQuery = query.trim()
+  const skillsQuery = useSkills(trimmedQuery)
+
+  const available = React.useMemo(
+    () => (skillsQuery.data ?? []).filter((s) => !selectedIds.has(s.id)),
+    [skillsQuery.data, selectedIds]
+  )
+
+  const exactMatch = (skillsQuery.data ?? []).some(
+    (s) => s.name.toLowerCase() === trimmedQuery.toLowerCase()
+  )
+  const canCreate = trimmedQuery.length >= 2 && !exactMatch
+  const showDropdown = open && trimmedQuery.length > 0
+  const totalItems = available.length + (canCreate ? 1 : 0)
+
+  function select(skill: SkillResponse) {
+    onAdd(skill)
+    setQuery("")
+    setOpen(false)
+    setActiveIndex(-1)
+    inputRef.current?.focus()
+  }
+
+  async function create() {
+    if (!canCreate || createSkill.isPending) return
+    try {
+      const skill = await createSkill.mutateAsync({ name: trimmedQuery })
+      onAdd(skill)
+      setQuery("")
+      setOpen(false)
+      setActiveIndex(-1)
+      inputRef.current?.focus()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not add skill.")
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showDropdown) {
+      if (e.key === "ArrowDown" && trimmedQuery.length > 0) {
+        setOpen(true)
+      }
+      return
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      setActiveIndex((i) => (i < totalItems - 1 ? i + 1 : i))
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      setActiveIndex((i) => (i > 0 ? i - 1 : 0))
+    } else if (e.key === "Enter") {
+      e.preventDefault()
+      if (activeIndex >= 0 && activeIndex < available.length) {
+        select(available[activeIndex])
+      } else if (canCreate && activeIndex === available.length) {
+        void create()
+      } else if (available.length === 1 && activeIndex < 0) {
+        select(available[0])
+      } else if (available.length === 0 && canCreate) {
+        void create()
+      }
+    } else if (e.key === "Escape") {
+      setOpen(false)
+      setActiveIndex(-1)
+    }
+  }
+
+  return (
+    <div className="relative">
+      <Input
+        ref={inputRef}
+        value={query}
+        placeholder="Search skills, or type a name to add a new one…"
+        autoComplete="off"
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setOpen(true)
+          setActiveIndex(-1)
+        }}
+        onFocus={() => {
+          if (trimmedQuery.length > 0) setOpen(true)
+        }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={handleKeyDown}
+      />
+
+      {showDropdown && (
+        <div
+          role="listbox"
+          aria-label="Skill suggestions"
+          className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
+        >
+          {skillsQuery.isFetching && (
+            <p className="px-3 py-2.5 text-sm text-muted-foreground">
+              Searching…
+            </p>
+          )}
+
+          {!skillsQuery.isFetching && available.length === 0 && !canCreate && (
+            <p className="px-3 py-2.5 text-sm text-muted-foreground">
+              No skills found.
+            </p>
+          )}
+
+          {!skillsQuery.isFetching &&
+            available.map((skill, i) => (
+              <button
+                key={skill.id}
+                type="button"
+                role="option"
+                aria-selected={activeIndex === i}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  select(skill)
+                }}
+                onMouseEnter={() => setActiveIndex(i)}
+                className={cn(
+                  "flex w-full items-center px-3 py-2.5 text-left text-sm transition-colors",
+                  activeIndex === i
+                    ? "bg-accent text-accent-foreground"
+                    : "hover:bg-accent hover:text-accent-foreground"
+                )}
+              >
+                {skill.name}
+              </button>
+            ))}
+
+          {canCreate && (
+            <button
+              type="button"
+              role="option"
+              aria-selected={activeIndex === available.length}
+              disabled={createSkill.isPending}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                void create()
+              }}
+              onMouseEnter={() => setActiveIndex(available.length)}
+              className={cn(
+                "flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium transition-colors disabled:opacity-50",
+                available.length > 0 && "border-t",
+                activeIndex === available.length
+                  ? "bg-accent text-accent-foreground"
+                  : "hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <HugeiconsIcon
+                icon={Add01Icon}
+                className="size-4 shrink-0"
+                strokeWidth={2}
+              />
+              {createSkill.isPending
+                ? "Adding…"
+                : `Add "${trimmedQuery}" as a new skill`}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Field ─────────────────────────────────────────────────────────────────────
 
 interface FieldProps extends ComponentProps<typeof Input> {
   id: string

@@ -220,6 +220,23 @@ export function useSkills(prefix: string) {
       apiClient.get<SkillResponse[]>(
         `/skills?prefix=${encodeURIComponent(prefix)}`
       ),
+    enabled: prefix.length > 0,
+  })
+}
+
+export interface CreateSkillRequest {
+  name: string
+  description?: string
+}
+
+export function useCreateSkill() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateSkillRequest) =>
+      apiClient.post<SkillResponse>("/skills", data),
+    onSuccess: (skill) => {
+      qc.setQueryData(profileKeys.skill(skill.id), skill)
+    },
   })
 }
 
