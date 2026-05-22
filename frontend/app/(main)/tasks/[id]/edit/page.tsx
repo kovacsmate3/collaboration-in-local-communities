@@ -10,10 +10,10 @@ import type { CompensationType } from "@/lib/types"
 
 export default function EditTaskPage() {
   const { id } = useParams<{ id: string }>()
-  const { user } = useAuth()
-  const { data: task, isLoading, isError } = useTask(id)
+  const { user, isLoading: isAuthLoading } = useAuth()
+  const { data: task, isLoading: isTaskLoading, isError } = useTask(id)
 
-  if (isLoading) {
+  if (isTaskLoading || isAuthLoading) {
     return <p className="text-sm text-muted-foreground">Loading…</p>
   }
 

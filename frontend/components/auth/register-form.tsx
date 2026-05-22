@@ -53,9 +53,13 @@ export function RegisterForm() {
     stepRef.current = step
   })
 
+  const didSucceedRef = useRef(false)
+
   useEffect(() => {
     return () => {
-      saveDraft(form.getValues(), stepRef.current)
+      if (didSucceedRef.current) return
+      const { password: _p, confirmPassword: _c, ...rest } = form.getValues()
+      saveDraft({ ...rest, password: "", confirmPassword: "" }, stepRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -88,6 +92,7 @@ export function RegisterForm() {
 
     try {
       const message = await register(toRegisterInput(values))
+      didSucceedRef.current = true
       clearDraft()
       setRegistrationMessage(message)
     } catch (error) {
