@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { notFound } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -128,13 +129,18 @@ function TaskActions({ task }: { task: ApiTask }) {
           </Button>
         ) : null}
         {isSeeker ? (
-          <Button
-            variant="ghost"
-            disabled={isCancelling}
-            onClick={handleCancel}
-          >
-            {isCancelling ? "Cancelling…" : "Cancel task"}
-          </Button>
+          <>
+            <Button variant="outline" asChild>
+              <Link href={`/tasks/${task.id}/edit`}>Edit task</Link>
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={isCancelling}
+              onClick={handleCancel}
+            >
+              {isCancelling ? "Cancelling…" : "Cancel task"}
+            </Button>
+          </>
         ) : null}
       </div>
     )
