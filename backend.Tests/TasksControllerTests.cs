@@ -79,12 +79,123 @@ public sealed class TasksControllerTests
             latitude: 47.4979,
             longitude: null,
             radiusMeters: 1000,
-            cancellationToken);
+            cancellationToken: cancellationToken);
 
         var badRequest = Assert.IsType<ObjectResult>(result);
         var problem = Assert.IsType<ValidationProblemDetails>(badRequest.Value);
 
         Assert.Contains("Proximity", problem.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task ListAsync_PaginatesOrderedTasks_WhenPageIsProvided()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var categoryId = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        db.Profiles.Add(new UserProfile
+        {
+            Id = profileId,
+            UserId = Guid.NewGuid(),
+            DisplayName = "Task seeker",
+            CreatedAt = now,
+            UpdatedAt = now
+        });
+        db.Categories.Add(new Category
+        {
+            Id = categoryId,
+            Code = "help",
+            Name = "Help",
+            Icon = Category.DefaultIcon,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        });
+
+        for (var i = 0; i < 5; i++)
+        {
+            db.Tasks.Add(new CommunityTask
+            {
+                Id = Guid.NewGuid(),
+                SeekerProfileId = profileId,
+                CategoryId = categoryId,
+                Title = $"Task {i}",
+                Description = "Need help with a task.",
+                CompensationType = CompensationType.Voluntary,
+                Status = Backend.Domain.Enums.TaskStatus.Open,
+                CreatedAt = now.AddMinutes(i),
+                UpdatedAt = now.AddMinutes(i)
+            });
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new TasksController(db);
+
+        var result = await controller.ListAsync(
+            status: "Open",
+            categoryId: null,
+            latitude: null,
+            longitude: null,
+            radiusMeters: null,
+            cancellationToken: cancellationToken,
+            page: 2,
+            pageSize: 2);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var tasks = Assert.IsAssignableFrom<IEnumerable<TaskResponse>>(ok.Value).ToArray();
+
+        Assert.Equal(["Task 2", "Task 1"], tasks.Select(task => task.Title));
+    }
+
+    [Fact]
+    public async Task ListAsync_RejectsInvalidPagination()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var controller = new TasksController(db);
+
+        var result = await controller.ListAsync(
+            status: null,
+            categoryId: null,
+            latitude: null,
+            longitude: null,
+            radiusMeters: null,
+            cancellationToken: cancellationToken,
+            page: 0,
+            pageSize: 101);
+
+        var badRequest = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ValidationProblemDetails>(badRequest.Value);
+
+        Assert.Contains("page", problem.Errors.Keys);
+        Assert.Contains("pageSize", problem.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task ListAsync_RejectsPaginationOffsetOverflow()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var controller = new TasksController(db);
+
+        var result = await controller.ListAsync(
+            status: null,
+            categoryId: null,
+            latitude: null,
+            longitude: null,
+            radiusMeters: null,
+            cancellationToken: cancellationToken,
+            page: int.MaxValue,
+            pageSize: 100);
+
+        var badRequest = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ValidationProblemDetails>(badRequest.Value);
+
+        Assert.Contains("page", problem.Errors.Keys);
     }
 
     [Fact]
