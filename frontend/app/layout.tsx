@@ -5,6 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { QueryProvider } from "@/components/providers/query-provider"
 import { AuthProvider } from "@/lib/auth-context"
+import { RegisterDraftProvider } from "@/lib/register-draft"
 import { Toaster } from "@/components/ui/sonner"
 import { APP_NAME, APP_TAGLINE } from "@/lib/constants"
 
@@ -27,8 +28,10 @@ export default function RootLayout({
         <ThemeProvider>
           <QueryProvider>
             <AuthProvider>
-              {children}
-              <Toaster />
+              <RegisterDraftProvider>
+                {children}
+                <Toaster />
+              </RegisterDraftProvider>
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>

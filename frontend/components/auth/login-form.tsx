@@ -165,8 +165,6 @@ export function LoginForm() {
         By continuing, you agree to our{" "}
         <Link
           href={APP_LEGAL_ROUTES.terms}
-          target="_blank"
-          rel="noopener noreferrer"
           className="underline underline-offset-4"
         >
           Terms

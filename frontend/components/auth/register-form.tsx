@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { useState, type SubmitEvent } from "react"
+import { useEffect, useRef, useState, type SubmitEvent } from "react"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -20,6 +20,7 @@ import {
 import { Form } from "@/components/ui/form"
 import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
+import { useRegisterDraft } from "@/lib/register-draft"
 import {
   getAuthErrorMessage,
   getRegisterSubmitLabel,
@@ -35,16 +36,29 @@ import {
 
 export function RegisterForm() {
   const { register } = useAuth()
-  const [step, setStep] = useState<RegistrationStep>("account")
+  const { draft, saveDraft, clearDraft } = useRegisterDraft()
+  const [step, setStep] = useState<RegistrationStep>(draft?.step ?? "account")
   const [registrationMessage, setRegistrationMessage] = useState<string | null>(
     null
   )
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: REGISTER_FORM_DEFAULT_VALUES,
+    defaultValues: draft?.values ?? REGISTER_FORM_DEFAULT_VALUES,
     mode: "onTouched",
   })
+
+  const stepRef = useRef(step)
+  useEffect(() => {
+    stepRef.current = step
+  })
+
+  useEffect(() => {
+    return () => {
+      saveDraft(form.getValues(), stepRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const isSubmitting = form.formState.isSubmitting
   const serverError = form.formState.errors.root?.message
@@ -74,6 +88,7 @@ export function RegisterForm() {
 
     try {
       const message = await register(toRegisterInput(values))
+      clearDraft()
       setRegistrationMessage(message)
     } catch (error) {
       const message = getAuthErrorMessage(error, "Unable to create account.")

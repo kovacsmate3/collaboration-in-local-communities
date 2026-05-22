@@ -39,8 +39,6 @@ export function RegisterAccountStep() {
             I agree to the{" "}
             <Link
               href={APP_LEGAL_ROUTES.terms}
-              target="_blank"
-              rel="noopener noreferrer"
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
               Terms
