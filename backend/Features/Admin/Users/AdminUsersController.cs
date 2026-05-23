@@ -121,7 +121,15 @@ public sealed class AdminUsersController(
             return Ok(await BuildResponseAsync(user, currentRoles, ct));
         }
 
-        await userManager.AddToRoleAsync(user, ApplicationRoleNames.Admin);
+        var addResult = await userManager.AddToRoleAsync(user, ApplicationRoleNames.Admin);
+        if (!addResult.Succeeded)
+        {
+            foreach (var error in addResult.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+            return ValidationProblem(ModelState);
+        }
 
         db.AuditEvents.Add(new AuditEvent
         {
@@ -158,7 +166,15 @@ public sealed class AdminUsersController(
             return Ok(await BuildResponseAsync(user, currentRoles, ct));
         }
 
-        await userManager.RemoveFromRoleAsync(user, ApplicationRoleNames.Admin);
+        var removeResult = await userManager.RemoveFromRoleAsync(user, ApplicationRoleNames.Admin);
+        if (!removeResult.Succeeded)
+        {
+            foreach (var error in removeResult.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+            return ValidationProblem(ModelState);
+        }
 
         db.AuditEvents.Add(new AuditEvent
         {

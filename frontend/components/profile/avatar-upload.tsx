@@ -125,12 +125,19 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
   const isPending = uploadPhoto.isPending || deletePhoto.isPending || isCropping
   const displaySrc = preview ?? currentPhotoUrl ?? undefined
 
+  const previewRef = React.useRef(preview)
+  const cropSrcRef = React.useRef(cropSrc)
+  React.useEffect(() => {
+    previewRef.current = preview
+  }, [preview])
+  React.useEffect(() => {
+    cropSrcRef.current = cropSrc
+  }, [cropSrc])
   React.useEffect(() => {
     return () => {
-      if (preview) URL.revokeObjectURL(preview)
-      if (cropSrc) URL.revokeObjectURL(cropSrc)
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current)
+      if (cropSrcRef.current) URL.revokeObjectURL(cropSrcRef.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function processFile(file: File) {
@@ -138,6 +145,7 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
       toast.error("Only JPEG, PNG, and WebP images are accepted.")
       return
     }
+    if (cropSrc) URL.revokeObjectURL(cropSrc)
     const objectUrl = URL.createObjectURL(file)
     setCrop({ x: 0, y: 0 })
     setZoom(1)

@@ -120,12 +120,19 @@ export function ResetPasswordForm() {
         typeof body === "object" && body !== null
           ? (body as { errors?: Record<string, string[]> }).errors
           : undefined
-      const firstError = errors
-        ? Object.values(errors).find((msgs) => msgs.length > 0)?.[0]
-        : undefined
-      form.setError("newPassword", {
-        message: firstError ?? "The password does not meet the requirements.",
-      })
+      if (errors) {
+        const firstError = Object.values(errors).find(
+          (msgs) => msgs.length > 0
+        )?.[0]
+        form.setError("newPassword", {
+          message: firstError ?? "The password does not meet the requirements.",
+        })
+      } else {
+        form.setError("root", {
+          message:
+            "This link is invalid or has expired. Please request a new one.",
+        })
+      }
       return
     }
 

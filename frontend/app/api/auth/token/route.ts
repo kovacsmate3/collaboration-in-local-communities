@@ -5,7 +5,7 @@ import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/cookies"
 import { isJwtFresh } from "@/lib/auth/jwt"
 
 // Returns the current access token for SignalR's accessTokenFactory.
-// No refresh logic — the caller (fetchToken in chat-hub) is responsible for
+// No refresh logic — the caller (fetchSignalRToken in chat-hub) is responsible for
 // triggering a refresh on 401 and retrying.
 export function GET(request: NextRequest) {
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value
