@@ -128,10 +128,14 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
   React.useEffect(() => {
     return () => {
       if (preview) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
+
+  React.useEffect(() => {
+    return () => {
       if (cropSrc) URL.revokeObjectURL(cropSrc)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [cropSrc])
 
   function processFile(file: File) {
     if (!ACCEPTED_MIME_TYPES.has(file.type)) {
@@ -182,11 +186,9 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
       const blob = await getCroppedBlob(cropSrc, croppedAreaPixels)
       const file = new File([blob], "photo.jpg", { type: "image/jpeg" })
 
-      URL.revokeObjectURL(cropSrc)
       setCropSrc(null)
 
       const newPreviewUrl = URL.createObjectURL(blob)
-      if (preview) URL.revokeObjectURL(preview)
       setPreview(newPreviewUrl)
 
       uploadPhoto.mutate(file, {
@@ -194,7 +196,6 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
           void refreshSession()
         },
         onError: (err) => {
-          URL.revokeObjectURL(newPreviewUrl)
           setPreview(null)
           toast.error(
             err instanceof Error ? err.message : "Failed to upload photo."
@@ -209,14 +210,12 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
   }
 
   function handleCancelCrop() {
-    if (cropSrc) URL.revokeObjectURL(cropSrc)
     setCropSrc(null)
   }
 
   function handleDelete() {
     deletePhoto.mutate(undefined, {
       onSuccess: () => {
-        if (preview) URL.revokeObjectURL(preview)
         setPreview(null)
         void refreshSession()
       },

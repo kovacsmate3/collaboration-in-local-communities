@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
 
@@ -317,6 +318,48 @@ public sealed class AdminUsersControllerTests
         Assert.DoesNotContain("Admin", response.Roles);
     }
 
+    // ── Role-op failure path tests ────────────────────────────────────────────
+
+    [Fact]
+    public async Task MakeAdminAsync_ReturnsValidationProblem_AndSkipsAuditEvent_WhenAddToRoleFails()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+
+        var userId = Guid.NewGuid();
+        db.Users.Add(new ApplicationUser { Id = userId, UserName = "promote-fail@test.com", Email = "promote-fail@test.com" });
+        await db.SaveChangesAsync(ct);
+
+        var userManager = new FakeUserManager(addToRoleFails: true, removeFromRoleFails: false, userRoles: []);
+        var controller = CreateControllerWithFakeManager(db, userManager, actorId: Guid.NewGuid());
+
+        var result = await controller.MakeAdminAsync(userId, ct);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.IsType<ValidationProblemDetails>(badRequest.Value);
+        Assert.Empty(await db.AuditEvents.ToListAsync(ct));
+    }
+
+    [Fact]
+    public async Task RevokeAdminAsync_ReturnsValidationProblem_AndSkipsAuditEvent_WhenRemoveFromRoleFails()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+
+        var userId = Guid.NewGuid();
+        db.Users.Add(new ApplicationUser { Id = userId, UserName = "demote-fail@test.com", Email = "demote-fail@test.com" });
+        await db.SaveChangesAsync(ct);
+
+        var userManager = new FakeUserManager(addToRoleFails: false, removeFromRoleFails: true, userRoles: [ApplicationRoleNames.Admin]);
+        var controller = CreateControllerWithFakeManager(db, userManager, actorId: Guid.NewGuid());
+
+        var result = await controller.RevokeAdminAsync(userId, ct);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.IsType<ValidationProblemDetails>(badRequest.Value);
+        Assert.Empty(await db.AuditEvents.ToListAsync(ct));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static AppDbContext CreateDbContext()
@@ -400,6 +443,97 @@ public sealed class AdminUsersControllerTests
         {
             await roleManager.CreateAsync(new ApplicationRole { Name = ApplicationRoleNames.User });
         }
+    }
+
+    private static AdminUsersController CreateControllerWithFakeManager(
+        AppDbContext db,
+        UserManager<ApplicationUser> userManager,
+        Guid actorId)
+    {
+        var controller = new AdminUsersController(db, userManager)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [
+                        new Claim(ClaimTypes.NameIdentifier, actorId.ToString()),
+                        new Claim(ClaimTypes.Role, "Admin"),
+                    ], "TestAuth")),
+                },
+            },
+        };
+
+        controller.ProblemDetailsFactory = new DefaultProblemDetailsFactory(
+            Options.Create(new ApiBehaviorOptions()),
+            Options.Create(new ProblemDetailsOptions()));
+
+        return controller;
+    }
+
+    private sealed class FakeUserManager(
+        bool addToRoleFails,
+        bool removeFromRoleFails,
+        IList<string> userRoles)
+        : UserManager<ApplicationUser>(
+            new FakeUserStore(),
+            Microsoft.Extensions.Options.Options.Create(new IdentityOptions()),
+            new PasswordHasher<ApplicationUser>(),
+            [],
+            [],
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            new ServiceCollection().BuildServiceProvider(),
+            NullLogger<UserManager<ApplicationUser>>.Instance)
+    {
+        public override Task<IList<string>> GetRolesAsync(ApplicationUser user) =>
+            Task.FromResult(userRoles);
+
+        public override Task<IdentityResult> AddToRoleAsync(ApplicationUser user, string role) =>
+            Task.FromResult(addToRoleFails
+                ? IdentityResult.Failed(new IdentityError { Description = "Role does not exist." })
+                : IdentityResult.Success);
+
+        public override Task<IdentityResult> RemoveFromRoleAsync(ApplicationUser user, string role) =>
+            Task.FromResult(removeFromRoleFails
+                ? IdentityResult.Failed(new IdentityError { Description = "Role does not exist." })
+                : IdentityResult.Success);
+    }
+
+    private sealed class FakeUserStore : IUserStore<ApplicationUser>
+    {
+        public Task<string> GetUserIdAsync(ApplicationUser user, CancellationToken ct) =>
+            Task.FromResult(user.Id.ToString());
+
+        public Task<string?> GetUserNameAsync(ApplicationUser user, CancellationToken ct) =>
+            Task.FromResult(user.UserName);
+
+        public Task SetUserNameAsync(ApplicationUser user, string? userName, CancellationToken ct) =>
+            Task.CompletedTask;
+
+        public Task<string?> GetNormalizedUserNameAsync(ApplicationUser user, CancellationToken ct) =>
+            Task.FromResult(user.NormalizedUserName);
+
+        public Task SetNormalizedUserNameAsync(ApplicationUser user, string? normalizedName, CancellationToken ct) =>
+            Task.CompletedTask;
+
+        public Task<IdentityResult> CreateAsync(ApplicationUser user, CancellationToken ct) =>
+            Task.FromResult(IdentityResult.Success);
+
+        public Task<IdentityResult> UpdateAsync(ApplicationUser user, CancellationToken ct) =>
+            Task.FromResult(IdentityResult.Success);
+
+        public Task<IdentityResult> DeleteAsync(ApplicationUser user, CancellationToken ct) =>
+            Task.FromResult(IdentityResult.Success);
+
+        public Task<ApplicationUser?> FindByIdAsync(string userId, CancellationToken ct) =>
+            Task.FromResult<ApplicationUser?>(null);
+
+        public Task<ApplicationUser?> FindByNameAsync(string normalizedUserName, CancellationToken ct) =>
+            Task.FromResult<ApplicationUser?>(null);
+
+        public void Dispose() { }
     }
 
 }

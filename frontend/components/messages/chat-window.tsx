@@ -77,6 +77,7 @@ export function ChatWindow({
 
   function handleSend(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (isPending) return
     const content = draft.trim()
     if (!content) return
     setDraft("")
