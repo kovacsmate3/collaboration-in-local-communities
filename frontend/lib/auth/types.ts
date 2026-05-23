@@ -10,6 +10,15 @@ export interface AuthUser {
   avatarUrl?: string
   profileId?: string
   isProfileCompleted: boolean
+  terms: AuthTermsState
+}
+
+export interface AuthTermsState {
+  hasAccepted: boolean
+  activeVersionId: string | null
+  activeVersion: string | null
+  activeTitle: string | null
+  acceptedAt: string | null
 }
 
 export interface LoginInput {

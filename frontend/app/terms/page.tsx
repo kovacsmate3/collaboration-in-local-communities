@@ -1,6 +1,10 @@
 import type { Metadata } from "next"
-import Link from "next/link"
+import { Suspense } from "react"
 
+import {
+  TermsAcceptancePanel,
+  TermsBackLink,
+} from "@/components/legal/terms-acceptance-panel"
 import { APP_NAME } from "@/lib/constants"
 
 export const metadata: Metadata = {
@@ -10,12 +14,10 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">
-      <Link
-        href="/register"
-        className="mb-8 inline-block text-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Back to registration
-      </Link>
+      <Suspense fallback={null}>
+        <TermsBackLink />
+        <TermsAcceptancePanel />
+      </Suspense>
 
       <h1 className="mb-2 text-3xl font-semibold tracking-tight">
         Terms &amp; Conditions

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 
+import { TermsGate } from "@/components/legal/terms-gate"
 import { AppHeader } from "@/components/layout/app-header"
 import { MobileNav } from "@/components/layout/mobile-nav"
 import { NotificationHubMount } from "@/components/layout/notification-hub-mount"
@@ -21,6 +22,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
+      <TermsGate />
       <MobileNav />
     </div>
   )

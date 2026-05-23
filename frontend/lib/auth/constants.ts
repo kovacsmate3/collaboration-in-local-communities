@@ -26,6 +26,11 @@ export const BACKEND_PROFILE_PATHS = {
   me: ["profiles", "me"],
 } as const
 
+export const BACKEND_TERMS_PATHS = {
+  active: ["terms", "active"],
+  acceptance: ["terms", "acceptance"],
+} as const
+
 export const APP_AUTH_ROUTES = {
   login: "/login",
   forgotPassword: "/login/forgot",
