@@ -41,7 +41,7 @@ export function RichTextEditor({
       return
     }
 
-    editor.commands.setContent(value || "<p></p>", false)
+    editor.commands.setContent(value || "<p></p>")
   }, [editor, value])
 
   const isNearLimit = maxLength !== undefined && charCount >= maxLength * 0.9
