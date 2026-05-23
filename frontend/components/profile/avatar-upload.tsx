@@ -125,27 +125,23 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
   const isPending = uploadPhoto.isPending || deletePhoto.isPending || isCropping
   const displaySrc = preview ?? currentPhotoUrl ?? undefined
 
-  const previewRef = React.useRef(preview)
-  const cropSrcRef = React.useRef(cropSrc)
-  React.useEffect(() => {
-    previewRef.current = preview
-  }, [preview])
-  React.useEffect(() => {
-    cropSrcRef.current = cropSrc
-  }, [cropSrc])
   React.useEffect(() => {
     return () => {
-      if (previewRef.current) URL.revokeObjectURL(previewRef.current)
-      if (cropSrcRef.current) URL.revokeObjectURL(cropSrcRef.current)
+      if (preview) URL.revokeObjectURL(preview)
     }
-  }, [])
+  }, [preview])
+
+  React.useEffect(() => {
+    return () => {
+      if (cropSrc) URL.revokeObjectURL(cropSrc)
+    }
+  }, [cropSrc])
 
   function processFile(file: File) {
     if (!ACCEPTED_MIME_TYPES.has(file.type)) {
       toast.error("Only JPEG, PNG, and WebP images are accepted.")
       return
     }
-    if (cropSrc) URL.revokeObjectURL(cropSrc)
     const objectUrl = URL.createObjectURL(file)
     setCrop({ x: 0, y: 0 })
     setZoom(1)
@@ -190,11 +186,9 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
       const blob = await getCroppedBlob(cropSrc, croppedAreaPixels)
       const file = new File([blob], "photo.jpg", { type: "image/jpeg" })
 
-      URL.revokeObjectURL(cropSrc)
       setCropSrc(null)
 
       const newPreviewUrl = URL.createObjectURL(blob)
-      if (preview) URL.revokeObjectURL(preview)
       setPreview(newPreviewUrl)
 
       uploadPhoto.mutate(file, {
@@ -202,7 +196,6 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
           void refreshSession()
         },
         onError: (err) => {
-          URL.revokeObjectURL(newPreviewUrl)
           setPreview(null)
           toast.error(
             err instanceof Error ? err.message : "Failed to upload photo."
@@ -217,14 +210,12 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
   }
 
   function handleCancelCrop() {
-    if (cropSrc) URL.revokeObjectURL(cropSrc)
     setCropSrc(null)
   }
 
   function handleDelete() {
     deletePhoto.mutate(undefined, {
       onSuccess: () => {
-        if (preview) URL.revokeObjectURL(preview)
         setPreview(null)
         void refreshSession()
       },
