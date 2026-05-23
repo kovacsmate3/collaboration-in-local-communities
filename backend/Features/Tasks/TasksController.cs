@@ -354,9 +354,40 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
                 return ValidationProblem(ModelState);
             }
 
+            var oldStatus = task.Status;
+            var cancelledAt = DateTimeOffset.UtcNow;
+            var cancellationReason = StringUtilities.Normalize(request.CancellationReason);
+
             task.Status = DomainTaskStatus.Cancelled;
-            task.CancelledAt = DateTimeOffset.UtcNow;
-            task.CancellationReason = StringUtilities.Normalize(request.CancellationReason);
+            task.CancelledAt = cancelledAt;
+            task.CancellationReason = cancellationReason;
+            db.TaskStatusHistory.Add(new TaskStatusHistoryEntry
+            {
+                TaskId = task.Id,
+                OldStatus = oldStatus,
+                NewStatus = DomainTaskStatus.Cancelled,
+                ChangedByProfileId = profile.Id,
+                Reason = cancellationReason
+            });
+            db.AddActivityEvent(
+                profile.UserId,
+                profile.Id,
+                ActivityEventType.TaskCancelled,
+                nameof(CommunityTask),
+                task.Id,
+                new { OldStatus = oldStatus.ToString(), Reason = cancellationReason });
+            db.AddAuditEvent(
+                profile.UserId,
+                "task.cancelled",
+                nameof(CommunityTask),
+                task.Id,
+                new
+                {
+                    OldStatus = oldStatus.ToString(),
+                    Reason = cancellationReason,
+                    task.AcceptedHelperProfileId,
+                    CancelledAt = cancelledAt
+                });
             anyChange = true;
         }
 

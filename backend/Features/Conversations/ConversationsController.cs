@@ -68,8 +68,21 @@ public sealed partial class ConversationsController(
             CosmosConversationId = Guid.NewGuid().ToString(),
         };
 
-        db.TaskConversations.Add(conversation);
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            db.TaskConversations.Add(conversation);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (PostgresExceptionHelpers.IsDuplicateTaskConversation(ex))
+        {
+            var raced = await db.TaskConversations
+                .Include(c => c.SeekerProfile)
+                .Include(c => c.HelperProfile)
+                .FirstAsync(
+                    c => c.TaskId == request.TaskId && c.HelperProfileId == profile.Id,
+                    cancellationToken);
+            return Ok(ToConversationResponse(raced, task.Title, profile.Id));
+        }
 
         conversation.SeekerProfile = task.SeekerProfile;
         conversation.HelperProfile = profile;
@@ -93,6 +106,7 @@ public sealed partial class ConversationsController(
                 c.Id,
                 c.TaskId,
                 TaskTitle = c.Task.Title,
+                TaskStatus = c.Task.Status,
                 c.SeekerProfileId,
                 SeekerDisplayName = c.SeekerProfile.DisplayName,
                 SeekerPhotoUrl = c.SeekerProfile.PhotoUrl,
@@ -104,6 +118,10 @@ public sealed partial class ConversationsController(
                 c.SeekerLastReadAt,
                 c.HelperLastReadAt,
                 c.CreatedAt,
+                PendingApplicationId = c.Task.Applications
+                    .Where(a => a.HelperProfileId == c.HelperProfileId && a.Status == TaskApplicationStatus.Pending)
+                    .Select(a => (Guid?)a.Id)
+                    .FirstOrDefault(),
             })
             .OrderByDescending(x => x.LastMessageAt.HasValue ? x.LastMessageAt.Value : x.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -126,7 +144,9 @@ public sealed partial class ConversationsController(
                 other,
                 r.LastMessageContent,
                 r.LastMessageAt,
-                hasUnread);
+                hasUnread,
+                r.TaskStatus.ToString(),
+                isSeeker ? r.PendingApplicationId : null);
         });
 
         return Ok(result);

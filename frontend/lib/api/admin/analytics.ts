@@ -37,6 +37,8 @@ export const adminAnalyticsKeys = {
       [...adminAnalyticsKeys.charts.all(), "category-demand"] as const,
     compensationMix: () =>
       [...adminAnalyticsKeys.charts.all(), "compensation-mix"] as const,
+    taskApplicationStatus: () =>
+      [...adminAnalyticsKeys.charts.all(), "task-application-status"] as const,
   },
 }
 
@@ -74,6 +76,17 @@ export function useCompensationMixChart() {
     queryFn: () =>
       apiClient.get<ChartDataResponse>(
         "/admin/analytics/charts/compensation-mix"
+      ),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useTaskApplicationStatusChart() {
+  return useQuery({
+    queryKey: adminAnalyticsKeys.charts.taskApplicationStatus(),
+    queryFn: () =>
+      apiClient.get<ChartDataResponse>(
+        "/admin/analytics/charts/task-application-status"
       ),
     staleTime: 5 * 60 * 1000,
   })

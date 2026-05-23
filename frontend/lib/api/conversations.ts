@@ -32,6 +32,8 @@ export interface ApiConversationPreview {
   lastMessageContent: string | null
   lastMessageAt: string | null
   hasUnread: boolean
+  taskStatus: string
+  pendingApplicationId: string | null
 }
 
 export interface ApiMessage {
@@ -57,10 +59,11 @@ export const conversationKeys = {
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
-export function useConversations() {
+export function useConversations(enabled = true) {
   return useQuery({
     queryKey: conversationKeys.list,
     queryFn: () => apiClient.get<ApiConversationPreview[]>("/conversations"),
+    enabled,
     staleTime: 60_000,
   })
 }
