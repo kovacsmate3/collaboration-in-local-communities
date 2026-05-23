@@ -1,6 +1,7 @@
 import {
   APP_AUTH_ROUTES,
   APP_HOME_ROUTES,
+  APP_LEGAL_ROUTES,
   AUTH_API_PATHS,
   PROTECTED_ROUTE_PREFIXES,
 } from "@/lib/auth/constants"
@@ -87,6 +88,16 @@ export function getLoginRedirectUrl(
   const loginUrl = new URL(APP_AUTH_ROUTES.login, requestUrl)
   loginUrl.searchParams.set("next", `${pathname}${search}`)
   return loginUrl
+}
+
+export function getTermsRedirectUrl(
+  requestUrl: string,
+  pathname: string,
+  search: string
+): URL {
+  const termsUrl = new URL(APP_LEGAL_ROUTES.terms, requestUrl)
+  termsUrl.searchParams.set("next", `${pathname}${search}`)
+  return termsUrl
 }
 
 export async function resendVerificationEmail(email: string): Promise<void> {

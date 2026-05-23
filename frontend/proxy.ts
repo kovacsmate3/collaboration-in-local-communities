@@ -1,18 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server"
 
+import { clearAuthCookies, fetchTermsState } from "@/lib/auth/backend"
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/auth/cookies"
-import { clearAuthCookies } from "@/lib/auth/backend"
+import { APP_HOME_ROUTES } from "@/lib/auth/constants"
 import {
   getHomePathForToken,
   getLoginRedirectUrl,
+  getTermsRedirectUrl,
   isAdminPath,
   isAuthPath,
   isProtectedPath,
 } from "@/lib/auth/functions"
 import { getJwtRoles, isJwtFresh } from "@/lib/auth/jwt"
-import { APP_HOME_ROUTES } from "@/lib/auth/constants"
 
-export function proxy(request: NextRequest): NextResponse {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname
   const isAuthRoute = isAuthPath(pathname)
   const isProtectedRoute = isProtectedPath(pathname)
@@ -28,9 +29,9 @@ export function proxy(request: NextRequest): NextResponse {
   )
   const tokenIsFresh = accessToken ? isJwtFresh(accessToken, 0) : false
 
-  // Treated as logged in when the access token is still valid, OR when the refresh
-  // token cookie is present (meaning the API proxy will obtain a new access token
-  // on the first API call without needing the middleware to do it here).
+  // Treat a refresh cookie as an optimistic session marker. The client-side
+  // AuthProvider owns refresh rotation so concurrent page/API requests do not
+  // race the backend's single-use refresh token.
   const isLoggedIn = tokenIsFresh || hasRefreshToken
 
   if ((isAuthRoute || isRootPath) && isLoggedIn) {
@@ -46,16 +47,12 @@ export function proxy(request: NextRequest): NextResponse {
   }
 
   if (!isLoggedIn) {
-    const response = NextResponse.redirect(
-      getLoginRedirectUrl(request.url, pathname, request.nextUrl.search)
-    )
-    clearAuthCookies(response, request.url)
-    return response
+    return redirectToLogin(request, pathname)
   }
 
-  // Only enforce admin-role redirect when we have a fresh token to decode.
-  // If the token is stale but the refresh cookie is present, let the page
-  // load — the API proxy will refresh the token and the admin UI handles 403s.
+  // Only enforce admin-role redirects when we have a fresh token to decode.
+  // If the token is stale but the refresh cookie is present, let the page load;
+  // the AuthProvider refreshes the access token and API calls still enforce 403s.
   if (
     isAdminPath(pathname) &&
     tokenIsFresh &&
@@ -67,6 +64,21 @@ export function proxy(request: NextRequest): NextResponse {
     )
   }
 
+  if (!tokenIsFresh || !accessToken) {
+    return NextResponse.next()
+  }
+
+  const termsResult = await fetchTermsState(request, accessToken)
+  if (termsResult.status === "unauthorized") {
+    return redirectToLogin(request, pathname)
+  }
+
+  if (!termsResult.terms.hasAccepted) {
+    return NextResponse.redirect(
+      getTermsRedirectUrl(request.url, pathname, request.nextUrl.search)
+    )
+  }
+
   return NextResponse.next()
 }
 
@@ -74,4 +86,12 @@ export const config = {
   matcher: [
     "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
   ],
+}
+
+function redirectToLogin(request: NextRequest, pathname: string): NextResponse {
+  const response = NextResponse.redirect(
+    getLoginRedirectUrl(request.url, pathname, request.nextUrl.search)
+  )
+  clearAuthCookies(response, request.url)
+  return response
 }
