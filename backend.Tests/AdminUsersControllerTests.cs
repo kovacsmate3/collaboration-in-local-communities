@@ -507,13 +507,13 @@ public sealed class AdminUsersControllerTests
             Task.FromResult(user.Id.ToString());
 
         public Task<string?> GetUserNameAsync(ApplicationUser user, CancellationToken ct) =>
-            Task.FromResult<string?>(user.UserName);
+            Task.FromResult(user.UserName);
 
         public Task SetUserNameAsync(ApplicationUser user, string? userName, CancellationToken ct) =>
             Task.CompletedTask;
 
         public Task<string?> GetNormalizedUserNameAsync(ApplicationUser user, CancellationToken ct) =>
-            Task.FromResult<string?>(user.NormalizedUserName);
+            Task.FromResult(user.NormalizedUserName);
 
         public Task SetNormalizedUserNameAsync(ApplicationUser user, string? normalizedName, CancellationToken ct) =>
             Task.CompletedTask;
