@@ -24,7 +24,7 @@ import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
  * couple it to the full `User` shape.
  */
 export function UserMenu() {
-  const { user, logout, isAdmin } = useAuth()
+  const { user, logout } = useAuth()
   const router = useRouter()
 
   if (!user) {
@@ -53,10 +53,7 @@ export function UserMenu() {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <UserAccountMenuItems
-          onLogout={() => void handleLogout()}
-          showAdminLink={isAdmin}
-        />
+        <UserAccountMenuItems onLogout={() => void handleLogout()} />
       </DropdownMenuContent>
     </DropdownMenu>
   )
