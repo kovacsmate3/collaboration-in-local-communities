@@ -128,6 +128,7 @@ public sealed class AdminUsersController(
             {
                 ModelState.AddModelError(string.Empty, error.Description);
             }
+
             return ValidationProblem(ModelState);
         }
 
@@ -173,6 +174,7 @@ public sealed class AdminUsersController(
             {
                 ModelState.AddModelError(string.Empty, error.Description);
             }
+
             return ValidationProblem(ModelState);
         }
 
