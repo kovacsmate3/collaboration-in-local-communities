@@ -31,7 +31,9 @@ public sealed record ConversationPreviewResponse(
     ParticipantInfo OtherParticipant,
     string? LastMessageContent,
     DateTimeOffset? LastMessageAt,
-    bool HasUnread);
+    bool HasUnread,
+    string TaskStatus,
+    Guid? PendingApplicationId);
 
 // Sent over SignalR to the recipient's personal user group when they receive a new message.
 [PublicAPI]

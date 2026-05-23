@@ -1,11 +1,14 @@
 "use client"
 
 import Link from "next/link"
+import { InboxIcon } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/shared/page-header"
+import { TaskCard } from "@/components/tasks/task-card"
 import { TaskList } from "@/components/tasks/task-list"
+import { EmptyState } from "@/components/shared/empty-state"
 import { useAuth } from "@/lib/auth-context"
 import { useMyTaskApplications, useTaskList } from "@/lib/api/tasks"
 
@@ -22,14 +25,6 @@ export function TasksPageClient() {
   const accepted = tasks.filter(
     (t) => t.acceptedHelperProfileId === user?.profileId
   )
-  const appliedSeen = new Set<string>()
-  const applied = applications
-    .map((a) => a.task)
-    .filter((t) => {
-      if (appliedSeen.has(t.id)) return false
-      appliedSeen.add(t.id)
-      return true
-    })
 
   return (
     <div className="flex flex-col gap-6">
@@ -52,7 +47,7 @@ export function TasksPageClient() {
             Accepted ({isLoading ? "…" : accepted.length})
           </TabsTrigger>
           <TabsTrigger value="applied">
-            Applied ({isLoadingApplications ? "…" : applied.length})
+            Applied ({isLoadingApplications ? "…" : applications.length})
           </TabsTrigger>
         </TabsList>
 
@@ -87,12 +82,23 @@ export function TasksPageClient() {
             <TabsContent value="applied">
               {isLoadingApplications ? (
                 <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
-              ) : (
-                <TaskList
-                  tasks={applied}
-                  emptyTitle="No applications yet"
-                  emptyDescription="Apply to open tasks from the helper feed to track them here."
+              ) : applications.length === 0 ? (
+                <EmptyState
+                  icon={InboxIcon}
+                  title="No applications yet"
+                  description="Apply to open tasks from the helper feed to track them here."
                 />
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {applications.map((application) => (
+                    <li key={application.id}>
+                      <TaskCard
+                        task={application.task}
+                        applicationStatus={application.status}
+                      />
+                    </li>
+                  ))}
+                </ul>
               )}
             </TabsContent>
           </>

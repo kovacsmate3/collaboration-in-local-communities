@@ -32,6 +32,8 @@ export interface ApiConversationPreview {
   lastMessageContent: string | null
   lastMessageAt: string | null
   hasUnread: boolean
+  taskStatus: string
+  pendingApplicationId: string | null
 }
 
 export interface ApiMessage {

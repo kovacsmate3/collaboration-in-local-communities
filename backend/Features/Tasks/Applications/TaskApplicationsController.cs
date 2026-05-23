@@ -1,9 +1,11 @@
 using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
+using Backend.Features.Conversations;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
@@ -12,7 +14,10 @@ namespace Backend.Features.Tasks.Applications;
 [ApiController]
 [Route("api/tasks/{taskId:guid}/applications")]
 [Authorize]
-public sealed partial class TaskApplicationsController(AppDbContext db) : ControllerBase
+public sealed partial class TaskApplicationsController(
+    AppDbContext db,
+    CosmosMessageService cosmosMessages,
+    IHubContext<ChatHub> chatHub) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> ApplyAsync(
@@ -91,9 +96,66 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
                 statusCode: StatusCodes.Status409Conflict);
         }
 
+        // Create the conversation thread immediately on apply.
+        var conversation = new TaskConversation
+        {
+            Id = Guid.NewGuid(),
+            TaskId = taskId,
+            SeekerProfileId = task.SeekerProfileId,
+            HelperProfileId = profile.Id,
+            CosmosConversationId = Guid.NewGuid().ToString()
+        };
+        db.TaskConversations.Add(conversation);
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (PostgresExceptionHelpers.IsDuplicateTaskConversation(ex))
+        {
+            // A conversation already exists (e.g. from a prior StartConversation call).
+            db.Entry(conversation).State = EntityState.Detached;
+            conversation = await db.TaskConversations
+                .FirstAsync(c => c.TaskId == taskId && c.HelperProfileId == profile.Id, cancellationToken);
+        }
+
+        // Send the application message as the first real message in the thread.
+        if (!string.IsNullOrWhiteSpace(application.Message))
+        {
+            var document = new MessageDocument
+            {
+                Id = Guid.NewGuid().ToString(),
+                ConversationId = conversation.Id.ToString(),
+                SenderProfileId = profile.Id.ToString(),
+                SenderDisplayName = profile.DisplayName,
+                Content = application.Message,
+                SentAt = DateTimeOffset.UtcNow,
+            };
+
+            await cosmosMessages.AddAsync(document, cancellationToken);
+
+            conversation.LastMessageContent = document.Content.Length > 500
+                ? document.Content[..500]
+                : document.Content;
+            conversation.LastMessageAt = document.SentAt;
+            conversation.HelperLastReadAt = document.SentAt;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            await chatHub.Clients
+                .Group($"user-{task.SeekerProfileId}")
+                .SendAsync(
+                    "NewMessageNotification",
+                    new NewMessageNotification(
+                        conversation.Id,
+                        profile.DisplayName,
+                        document.Content.Length > 100 ? document.Content[..100] : document.Content),
+                    cancellationToken);
+        }
+
         return Created(
             $"/api/tasks/{taskId}/applications/{application.Id}",
-            TaskApplicationResponse.FromApplication(application, profile.DisplayName));
+            TaskApplicationResponse.FromApplication(application, profile.DisplayName, conversation.Id));
     }
 
     [HttpGet("~/api/task-applications/me")]
@@ -118,7 +180,18 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
             .ThenByDescending(a => a.CreatedAt)
             .ToListAsync(cancellationToken);
 
-        return Ok(applications.Select(a => MyTaskApplicationResponse.FromApplication(a, profile.DisplayName)));
+        var taskIds = applications.Select(a => a.TaskId).ToHashSet();
+        var convIdByTask = await db.TaskConversations
+            .AsNoTracking()
+            .Where(c => taskIds.Contains(c.TaskId) && c.HelperProfileId == profile.Id)
+            .Select(c => new { c.TaskId, c.Id })
+            .ToDictionaryAsync(c => c.TaskId, c => (Guid?)c.Id, cancellationToken);
+
+        return Ok(applications.Select(a =>
+            MyTaskApplicationResponse.FromApplication(
+                a,
+                profile.DisplayName,
+                convIdByTask.GetValueOrDefault(a.TaskId))));
     }
 
     [HttpGet]
@@ -153,7 +226,18 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
             .OrderBy(a => a.CreatedAt)
             .ToListAsync(cancellationToken);
 
-        return Ok(applications.Select(a => TaskApplicationResponse.FromApplication(a, a.HelperProfile.DisplayName)));
+        var helperIds = applications.Select(a => a.HelperProfileId).ToHashSet();
+        var convIdByHelper = await db.TaskConversations
+            .AsNoTracking()
+            .Where(c => c.TaskId == taskId && helperIds.Contains(c.HelperProfileId))
+            .Select(c => new { c.HelperProfileId, c.Id })
+            .ToDictionaryAsync(c => c.HelperProfileId, c => (Guid?)c.Id, cancellationToken);
+
+        return Ok(applications.Select(a =>
+            TaskApplicationResponse.FromApplication(
+                a,
+                a.HelperProfile.DisplayName,
+                convIdByHelper.GetValueOrDefault(a.HelperProfileId))));
     }
 
     [HttpPatch("{appId:guid}")]
@@ -196,6 +280,12 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
         {
             return NotFound();
         }
+
+        var helperName = await db.Profiles
+            .AsNoTracking()
+            .Where(p => p.Id == application.HelperProfileId)
+            .Select(p => p.DisplayName)
+            .FirstAsync(cancellationToken);
 
         if (isAccept)
         {
@@ -261,14 +351,6 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
                         .SetProperty(a => a.UpdatedAt, now),
                     cancellationToken);
 
-            db.TaskConversations.Add(new TaskConversation
-            {
-                TaskId = taskId,
-                SeekerProfileId = task.SeekerProfileId,
-                HelperProfileId = application.HelperProfileId,
-                CosmosConversationId = Guid.NewGuid().ToString()
-            });
-
             db.TaskStatusHistory.Add(new TaskStatusHistoryEntry
             {
                 TaskId = taskId,
@@ -317,13 +399,6 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
-            catch (DbUpdateException ex) when (PostgresExceptionHelpers.IsDuplicateTaskConversation(ex))
-            {
-                return Problem(
-                    title: "Task is not open",
-                    detail: "The task was already accepted or is no longer open.",
-                    statusCode: StatusCodes.Status409Conflict);
-            }
             catch (DbUpdateConcurrencyException)
             {
                 return Problem(
@@ -334,6 +409,42 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
 
             application.Status = TaskApplicationStatus.Accepted;
             application.UpdatedAt = now;
+
+            // Conversation was already created when the helper applied.
+            var conversation = await db.TaskConversations
+                .FirstOrDefaultAsync(
+                    c => c.TaskId == taskId && c.HelperProfileId == application.HelperProfileId,
+                    cancellationToken);
+
+            if (conversation is null)
+            {
+                // Backward compat: application pre-dates the apply→conversation flow.
+                var newConversation = new TaskConversation
+                {
+                    Id = Guid.NewGuid(),
+                    TaskId = taskId,
+                    SeekerProfileId = task.SeekerProfileId,
+                    HelperProfileId = application.HelperProfileId,
+                    CosmosConversationId = Guid.NewGuid().ToString()
+                };
+                db.TaskConversations.Add(newConversation);
+
+                try
+                {
+                    await db.SaveChangesAsync(cancellationToken);
+                    conversation = newConversation;
+                }
+                catch (DbUpdateException ex) when (PostgresExceptionHelpers.IsDuplicateTaskConversation(ex))
+                {
+                    db.Entry(newConversation).State = EntityState.Detached;
+                    conversation = await db.TaskConversations
+                        .FirstAsync(
+                            c => c.TaskId == taskId && c.HelperProfileId == application.HelperProfileId,
+                            cancellationToken);
+                }
+            }
+
+            return Ok(TaskApplicationResponse.FromApplication(application, helperName, conversation.Id));
         }
         else
         {
@@ -364,12 +475,6 @@ public sealed partial class TaskApplicationsController(AppDbContext db) : Contro
 
             await db.SaveChangesAsync(cancellationToken);
         }
-
-        var helperName = await db.Profiles
-            .AsNoTracking()
-            .Where(p => p.Id == application.HelperProfileId)
-            .Select(p => p.DisplayName)
-            .FirstAsync(cancellationToken);
 
         return Ok(TaskApplicationResponse.FromApplication(application, helperName));
     }

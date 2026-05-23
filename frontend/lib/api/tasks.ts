@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query"
 
 import { apiClient } from "@/lib/api/client"
+import { conversationKeys } from "@/lib/api/conversations"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ export interface ApiTask {
 export interface ApiTaskApplication {
   id: string
   taskId: string
+  conversationId: string | null
   helperProfileId: string
   helperDisplayName: string
   message: string | null
@@ -183,6 +185,7 @@ export function useApplyToTask(taskId: string) {
       void qc.invalidateQueries({ queryKey: taskKeys.myApplications() })
       void qc.invalidateQueries({ queryKey: taskKeys.applications(taskId) })
       void qc.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
+      void qc.invalidateQueries({ queryKey: conversationKeys.list })
     },
   })
 }
@@ -206,6 +209,7 @@ export function usePatchTaskApplication(taskId: string) {
       void qc.invalidateQueries({ queryKey: taskKeys.myApplications() })
       void qc.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
       void qc.invalidateQueries({ queryKey: taskKeys.lists() })
+      void qc.invalidateQueries({ queryKey: ["conversations"] })
     },
   })
 }

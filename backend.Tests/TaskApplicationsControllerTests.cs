@@ -23,7 +23,7 @@ public sealed class TaskApplicationsControllerTests
 
         var result = await controller.ApplyAsync(
             scenario.TaskId,
-            new ApplyToTaskRequest("I can help after work."),
+            new ApplyToTaskRequest(null),
             cancellationToken);
 
         Assert.IsType<CreatedResult>(result);
@@ -194,7 +194,7 @@ public sealed class TaskApplicationsControllerTests
 
     private static TaskApplicationsController CreateController(AppDbContext db, Guid userId)
     {
-        return new TaskApplicationsController(db)
+        return new TaskApplicationsController(db, null!, null!)
         {
             ControllerContext = new ControllerContext
             {

@@ -237,6 +237,7 @@ function ApplicationControls({
   application?: ApiTaskApplication
   isLoadingApplication?: boolean
 }) {
+  const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [message, setMessage] = React.useState("")
   const { mutate: applyToTask, isPending: isApplying } = useApplyToTask(taskId)
@@ -249,10 +250,14 @@ function ApplicationControls({
     applyToTask(
       { message: message.trim() || undefined },
       {
-        onSuccess: () => {
-          toast.success("Application sent.")
+        onSuccess: (app) => {
           setMessage("")
           setOpen(false)
+          if (app.conversationId) {
+            router.push(`/messages/${app.conversationId}`)
+          } else {
+            toast.success("Application sent.")
+          }
         },
         onError: () => toast.error("Could not apply to this task."),
       }
@@ -278,6 +283,13 @@ function ApplicationControls({
         <Button variant="outline" disabled>
           Application pending
         </Button>
+        {application.conversationId ? (
+          <Button variant="outline" asChild>
+            <Link href={`/messages/${application.conversationId}`}>
+              View conversation
+            </Link>
+          </Button>
+        ) : null}
         <Button
           variant="ghost"
           disabled={isWithdrawing}
@@ -291,9 +303,18 @@ function ApplicationControls({
 
   if (application) {
     return (
-      <Badge variant="outline" className="h-9 rounded-md px-3">
-        Application {application.status.toLowerCase()}
-      </Badge>
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline" className="h-9 rounded-md px-3">
+          Application {application.status.toLowerCase()}
+        </Badge>
+        {application.conversationId ? (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/messages/${application.conversationId}`}>
+              View conversation
+            </Link>
+          </Button>
+        ) : null}
+      </div>
     )
   }
 
@@ -397,25 +418,34 @@ function TaskApplicationsPanel({
                   {application.message}
                 </p>
               ) : null}
-              {application.status === "Pending" ? (
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() => handleAction(application.id, "accept")}
-                  >
-                    Accept
+              <div className="flex flex-wrap gap-2">
+                {application.conversationId ? (
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href={`/messages/${application.conversationId}`}>
+                      View chat
+                    </Link>
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={isPending}
-                    onClick={() => handleAction(application.id, "reject")}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              ) : null}
+                ) : null}
+                {application.status === "Pending" ? (
+                  <>
+                    <Button
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => handleAction(application.id, "accept")}
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={isPending}
+                      onClick={() => handleAction(application.id, "reject")}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                ) : null}
+              </div>
             </div>
           ))}
         </div>
