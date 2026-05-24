@@ -50,9 +50,9 @@ public sealed partial class ProfilesController
                 && (task.SeekerProfileId == profileId || task.AcceptedHelperProfileId == profileId))
             .Select(task => new
             {
-                Year = (task.CompletedAt ?? task.UpdatedAt).Year,
-                Month = (task.CompletedAt ?? task.UpdatedAt).Month,
-                Day = (task.CompletedAt ?? task.UpdatedAt).Day
+                (task.CompletedAt ?? task.UpdatedAt).Year,
+                (task.CompletedAt ?? task.UpdatedAt).Month,
+                (task.CompletedAt ?? task.UpdatedAt).Day
             });
 
         var trendDaysDescending = await reviewEventDaysQuery
@@ -134,9 +134,9 @@ public sealed partial class ProfilesController
                 && (task.CompletedAt ?? task.UpdatedAt) >= earliestTrendStartUtc)
             .GroupBy(task => new
             {
-                Year = (task.CompletedAt ?? task.UpdatedAt).Year,
-                Month = (task.CompletedAt ?? task.UpdatedAt).Month,
-                Day = (task.CompletedAt ?? task.UpdatedAt).Day
+                (task.CompletedAt ?? task.UpdatedAt).Year,
+                (task.CompletedAt ?? task.UpdatedAt).Month,
+                (task.CompletedAt ?? task.UpdatedAt).Day
             })
             .Select(group => new
             {
