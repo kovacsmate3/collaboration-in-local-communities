@@ -32,6 +32,12 @@ export interface OwnProfileResponse {
   averageRating: number
   reviewCount: number
   completedTaskCount: number
+  /**
+   * Aggregate reputation score computed by the backend. Optional on the
+   * client so older payloads or offline fixtures can fall back to
+   * {@link computeReputationScore}.
+   */
+  reputationScore?: number
   createdAt: string
   updatedAt: string
   skillIds: string[]
@@ -50,6 +56,7 @@ export interface PublicProfileResponse {
   averageRating: number
   reviewCount: number
   completedTaskCount: number
+  reputationScore?: number
 }
 
 export interface UpdateOwnProfileRequest {
@@ -99,6 +106,14 @@ export interface ProfileTaskHistoryResponse {
   createdAt: string
 }
 
+export interface ProfileReputationTrendPointResponse {
+  date: string
+  score: number
+  averageRating: number
+  reviewCount: number
+  completedTaskCount: number
+}
+
 export interface ProfileTaskHistoryItem {
   id: string
   title: string
@@ -115,6 +130,8 @@ export const profileKeys = {
   reviews: (id: string) => [...profileKeys.public(id), "reviews"] as const,
   taskHistory: (id: string) =>
     [...profileKeys.public(id), "task-history"] as const,
+  reputationTrend: (id: string) =>
+    [...profileKeys.public(id), "reputation-trend"] as const,
   skill: (id: string) => ["skills", "detail", id] as const,
   skills: (prefix: string) => ["skills", "search", prefix] as const,
 }
@@ -209,6 +226,17 @@ export function useProfileTaskHistory(id: string) {
 
       return tasks.map(toProfileTaskHistoryItem)
     },
+    enabled: id.length > 0,
+  })
+}
+
+export function useProfileReputationTrend(id: string) {
+  return useQuery({
+    queryKey: profileKeys.reputationTrend(id),
+    queryFn: () =>
+      apiClient.get<ProfileReputationTrendPointResponse[]>(
+        `/profiles/${id}/reputation-trend`
+      ),
     enabled: id.length > 0,
   })
 }
@@ -326,13 +354,53 @@ function toTaskStatus(status: string): TaskStatus {
 function toReputation(
   profile: Pick<
     OwnProfileResponse | PublicProfileResponse,
-    "averageRating" | "reviewCount" | "completedTaskCount"
+    "averageRating" | "reviewCount" | "completedTaskCount" | "reputationScore"
   >
 ): Reputation {
+  const averageRating = Number(profile.averageRating)
+  const fallbackScore = computeReputationScore({
+    averageRating,
+    reviewCount: profile.reviewCount,
+    completedTaskCount: profile.completedTaskCount,
+  })
   return {
-    points: profile.completedTaskCount,
-    averageRating: Number(profile.averageRating),
+    // Prefer the backend value when present so the client mirrors the
+    // canonical formula; fall back to the local computation otherwise.
+    points:
+      typeof profile.reputationScore === "number" &&
+      Number.isFinite(profile.reputationScore)
+        ? Math.max(0, Math.round(profile.reputationScore))
+        : fallbackScore,
+    averageRating,
     reviewCount: profile.reviewCount,
     completedTasks: profile.completedTaskCount,
   }
+}
+
+/** Weight applied to each completed task in {@link computeReputationScore}. */
+export const COMPLETED_TASK_WEIGHT = 10
+/** Weight applied to (averageRating x reviewCount) in {@link computeReputationScore}. */
+export const REVIEW_QUALITY_WEIGHT = 2
+
+/**
+ * Aggregate reputation score derived from completed tasks weighted by review
+ * quality. Mirrors `Backend.Domain.Reputation.ReputationScoreCalculator` so
+ * the client can render a score offline or when an older API payload omits it.
+ *
+ * Formula: round(completedTasks x COMPLETED_TASK_WEIGHT
+ *               + averageRating x reviewCount x REVIEW_QUALITY_WEIGHT)
+ */
+export function computeReputationScore(input: {
+  averageRating: number
+  reviewCount: number
+  completedTaskCount: number
+}): number {
+  const rating = Number.isFinite(input.averageRating)
+    ? Math.max(0, Math.min(5, input.averageRating))
+    : 0
+  const reviews = Math.max(0, input.reviewCount)
+  const completed = Math.max(0, input.completedTaskCount)
+  return Math.round(
+    completed * COMPLETED_TASK_WEIGHT + rating * reviews * REVIEW_QUALITY_WEIGHT
+  )
 }
