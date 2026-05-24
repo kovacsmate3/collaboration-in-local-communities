@@ -66,14 +66,17 @@ export function reputationScoreBreakdown(input: {
     : 0
   const reviews = Math.max(0, input.reviewCount)
   const completed = Math.max(0, input.completedTaskCount)
+  const completedComponent = completed * COMPLETED_TASK_WEIGHT
+  const rawReviewComponent = rating * reviews * REVIEW_QUALITY_WEIGHT
+  const total = Math.max(0, Math.round(completedComponent + rawReviewComponent))
 
   return {
     averageRating: rating,
     reviewCount: reviews,
     completedTaskCount: completed,
-    completedComponent: completed * COMPLETED_TASK_WEIGHT,
-    reviewComponent: Math.round(rating * reviews * REVIEW_QUALITY_WEIGHT),
-    total: Math.max(0, Math.round(input.score)),
+    completedComponent,
+    reviewComponent: total - completedComponent,
+    total,
   }
 }
 
