@@ -1,11 +1,14 @@
-import { COMPLETED_TASK_WEIGHT, REVIEW_QUALITY_WEIGHT } from "@/lib/api/profile"
-
 /**
  * Tier identifiers shown next to the reputation score. Order matters —
  * `tierForScore` walks the list and returns the highest tier the score
  * qualifies for.
  */
 export type ReputationTier = "newcomer" | "bronze" | "silver" | "gold"
+
+/** Weight applied to each completed task in the reputation score formula. */
+export const COMPLETED_TASK_WEIGHT = 10
+/** Weight applied to (averageRating × reviewCount) in the reputation score formula. */
+export const REVIEW_QUALITY_WEIGHT = 2
 
 interface TierDefinition {
   id: ReputationTier
@@ -79,5 +82,3 @@ export function reputationScoreBreakdown(input: {
     total,
   }
 }
-
-export { COMPLETED_TASK_WEIGHT, REVIEW_QUALITY_WEIGHT }

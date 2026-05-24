@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { apiClient } from "@/lib/api/client"
+import { COMPLETED_TASK_WEIGHT, REVIEW_QUALITY_WEIGHT } from "@/lib/reputation"
 import type {
   Reputation,
   Review,
@@ -376,11 +377,6 @@ function toReputation(
     completedTasks: profile.completedTaskCount,
   }
 }
-
-/** Weight applied to each completed task in {@link computeReputationScore}. */
-export const COMPLETED_TASK_WEIGHT = 10
-/** Weight applied to (averageRating x reviewCount) in {@link computeReputationScore}. */
-export const REVIEW_QUALITY_WEIGHT = 2
 
 /**
  * Aggregate reputation score derived from completed tasks weighted by review
