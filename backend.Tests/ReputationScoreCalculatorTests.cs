@@ -31,7 +31,7 @@ public sealed class ReputationScoreCalculatorTests
     [Fact]
     public void Compute_CombinesCompletedAndReviewComponents()
     {
-        // 9 × 10 + 4.8 × 12 × 2 = 90 + 115.2 → 205 (banker's-away rounding)
+        // 9 × 10 + 4.8 × 12 × 2 = 90 + 115.2 → 205 (rounded to the nearest integer)
         var score = ReputationScoreCalculator.Compute(4.8m, 12, 9);
         Assert.Equal(205, score);
     }
