@@ -18,6 +18,7 @@ import {
   profileKeys,
   toProfileUser,
   useOwnProfile,
+  useProfileReputationTrend,
   useProfileReviews,
   useProfileTaskHistory,
   usePublicProfile,
@@ -62,6 +63,7 @@ export function ProfilePageContent({
       canEdit={isOwnRoute || isOwner}
       editHref={editHref}
       showMessage={!isOwnRoute && !isOwner}
+      showOwnerCtas={isOwnRoute || isOwner}
     />
   )
 }
@@ -71,11 +73,13 @@ function ProfileLoaded({
   canEdit,
   editHref,
   showMessage,
+  showOwnerCtas,
 }: {
   profile: OwnProfileResponse | PublicProfileResponse
   canEdit: boolean
   editHref: string
   showMessage: boolean
+  showOwnerCtas: boolean
 }) {
   const skillIds = "skillIds" in profile ? profile.skillIds : []
   const skillQueries = useQueries({
@@ -91,6 +95,7 @@ function ProfileLoaded({
   const profileUser = toProfileUser(profile, skillNames)
   const reviewsQuery = useProfileReviews(profile.id)
   const taskHistoryQuery = useProfileTaskHistory(profile.id)
+  const reputationTrendQuery = useProfileReputationTrend(profile.id)
   const reviews = reviewsQuery.data ?? []
   const taskHistory = taskHistoryQuery.data ?? []
   const reviewsCount = reviewsQuery.data?.length ?? profile.reviewCount
@@ -114,9 +119,12 @@ function ProfileLoaded({
         }
       />
       <ReputationCard
+        score={profileUser.reputation.points}
         averageRating={profileUser.reputation.averageRating}
         reviewCount={profileUser.reputation.reviewCount}
         completedTaskCount={profileUser.reputation.completedTasks}
+        trend={reputationTrendQuery.data ?? []}
+        showOwnerCtas={showOwnerCtas}
       />
 
       <Tabs defaultValue="reviews">
