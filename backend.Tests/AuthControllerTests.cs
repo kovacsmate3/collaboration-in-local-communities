@@ -1,10 +1,11 @@
-using System.Net;
 using System.Security.Claims;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Features.Auth;
+using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
@@ -119,7 +121,7 @@ public sealed class AuthControllerTests
     }
 
     [Fact]
-    public async Task RegisterAsync_HappyPath_PersistsUserAndRefreshTokenAndAuditEvent()
+    public async Task RegisterAsync_HappyPath_PersistsUserProfileAndSendsVerificationEmail()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var services = CreateServices();
@@ -128,36 +130,36 @@ public sealed class AuthControllerTests
 
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var controller = CreateController(scope, clientIp: DefaultClientIp);
+        var emailSender = new RecordingEmailSender();
+        var controller = CreateController(scope, clientIp: DefaultClientIp, emailSender: emailSender);
         var request = BuildRegisterRequest();
 
         var result = await controller.RegisterAsync(request, cancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var response = Assert.IsType<AuthResponse>(ok.Value);
-        Assert.Equal("Bearer", response.TokenType);
-        Assert.Equal(request.Email, response.Email);
-        Assert.False(string.IsNullOrEmpty(response.AccessToken));
+        var response = Assert.IsType<RegisterResponse>(ok.Value);
+        Assert.Contains("Registration successful", response.Message, StringComparison.Ordinal);
 
         var persistedUser = await userManager.FindByEmailAsync(request.Email);
         Assert.NotNull(persistedUser);
         Assert.True(await userManager.IsInRoleAsync(persistedUser, ApplicationRoleNames.User));
 
-        var profile = await db.Profiles.FirstAsync(p => p.UserId == persistedUser.Id, cancellationToken);
+        // Reload from a clean change tracker so EF relationship fixup on the still-tracked
+        // UserProfile instance can't mask a PrivacySettings row that was never persisted.
+        db.ChangeTracker.Clear();
+        var profile = await db.Profiles
+            .Include(p => p.PrivacySettings)
+            .FirstAsync(p => p.UserId == persistedUser.Id, cancellationToken);
         Assert.Equal(request.DisplayName, profile.DisplayName);
         Assert.True(profile.IsProfileCompleted);
         Assert.NotNull(profile.PrivacySettings);
 
-        var refreshToken = await db.RefreshTokens.FirstAsync(
-            t => t.UserId == persistedUser.Id,
-            cancellationToken);
-        Assert.Equal(DefaultClientIp, refreshToken.CreatedByIp);
-        Assert.Null(refreshToken.RevokedAt);
+        // #159: registration no longer issues tokens/cookies — it sends a verification email.
+        Assert.False(await db.RefreshTokens.AnyAsync(t => t.UserId == persistedUser.Id, cancellationToken));
+        Assert.Equal([request.Email], emailSender.SentTo);
 
         Assert.True(await db.AuditEvents
             .AnyAsync(e => e.EventType == "auth.registered" && e.ActorUserId == persistedUser.Id, cancellationToken));
-
-        AssertRefreshCookieSet(controller);
     }
 
     [Fact]
@@ -294,6 +296,28 @@ public sealed class AuthControllerTests
     }
 
     [Fact]
+    public async Task LoginAsync_EmailNotConfirmed_ReturnsForbidden_AndAudits()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var services = CreateServices();
+        using var scope = services.CreateScope();
+        await SeedRolesAsync(scope, cancellationToken);
+
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var user = await SeedUserAsync(scope, cancellationToken, emailConfirmed: false);
+
+        var controller = CreateController(scope);
+        var result = await controller.LoginAsync(
+            new LoginRequest(user.Email!, DefaultPassword),
+            cancellationToken);
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status403Forbidden, objectResult.StatusCode);
+        Assert.True(await db.AuditEvents
+            .AnyAsync(e => e.EventType == "auth.login_email_not_confirmed" && e.ActorUserId == user.Id, cancellationToken));
+    }
+
+    [Fact]
     public async Task LoginAsync_CorrectCredentials_ReturnsOk_AndResetsFailedCount()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
@@ -353,7 +377,6 @@ public sealed class AuthControllerTests
         await SeedRolesAsync(scope, cancellationToken);
 
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var tokenService = scope.ServiceProvider.GetRequiredService<IAuthTokenService>();
         var user = await SeedUserAsync(scope, cancellationToken);
         var (rawToken, hash) = await IssueAndPersistRefreshTokenAsync(scope, user.Id, cancellationToken);
 
@@ -374,7 +397,6 @@ public sealed class AuthControllerTests
         Assert.True(await db.AuditEvents
             .AnyAsync(e => e.EventType == "auth.logout" && e.ActorUserId == user.Id, cancellationToken));
         AssertRefreshCookieCleared(controller);
-        Assert.NotNull(tokenService); // resolved at least once for the issuance helper
     }
 
     [Fact]
@@ -542,7 +564,6 @@ public sealed class AuthControllerTests
         await SeedRolesAsync(scope, cancellationToken);
 
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var tokenService = scope.ServiceProvider.GetRequiredService<IAuthTokenService>();
         var user = await SeedUserAsync(scope, cancellationToken);
         var (rawToken, originalHash) = await IssueAndPersistRefreshTokenAsync(scope, user.Id, cancellationToken);
 
@@ -571,7 +592,6 @@ public sealed class AuthControllerTests
         Assert.True(await db.AuditEvents
             .AnyAsync(e => e.EventType == "auth.refresh_succeeded" && e.ActorUserId == user.Id, cancellationToken));
         AssertRefreshCookieSet(controller);
-        Assert.NotNull(tokenService);
     }
 
     // ----------------------------------------------------------------------
@@ -582,6 +602,7 @@ public sealed class AuthControllerTests
     {
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.SetMinimumLevel(LogLevel.None));
+        services.AddDataProtection();
         services.AddDbContext<AppDbContext>(options =>
             options
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -608,17 +629,14 @@ public sealed class AuthControllerTests
         IServiceScope scope,
         Guid? currentUserId = null,
         string? refreshTokenCookie = null,
-        string? clientIp = null)
+        string? clientIp = null,
+        IEmailSender? emailSender = null)
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var tokenService = scope.ServiceProvider.GetRequiredService<IAuthTokenService>();
 
         var httpContext = new DefaultHttpContext();
-        if (clientIp is not null)
-        {
-            httpContext.Connection.RemoteIpAddress = IPAddress.Parse(clientIp);
-        }
 
         if (refreshTokenCookie is not null)
         {
@@ -632,7 +650,21 @@ public sealed class AuthControllerTests
                 "TestAuth"));
         }
 
-        return new AuthController(db, userManager, tokenService)
+        var emailOptions = Options.Create(new EmailOptions
+        {
+            FromEmail = "noreply@test.local",
+            FromName = "Test",
+            FrontendBaseUrl = "http://localhost:3000"
+        });
+
+        return new AuthController(
+            db,
+            userManager,
+            tokenService,
+            new StubClientIpAccessor(clientIp),
+            emailSender ?? new RecordingEmailSender(),
+            emailOptions,
+            NullLogger<AuthController>.Instance)
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext }
         };
@@ -651,14 +683,16 @@ public sealed class AuthControllerTests
         CancellationToken cancellationToken,
         string email = DefaultEmail,
         string password = DefaultPassword,
-        string role = ApplicationRoleNames.User)
+        string role = ApplicationRoleNames.User,
+        bool emailConfirmed = true)
     {
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid(),
             UserName = email,
-            Email = email
+            Email = email,
+            EmailConfirmed = emailConfirmed
         };
         Assert.True((await userManager.CreateAsync(user, password)).Succeeded);
         Assert.True((await userManager.AddToRoleAsync(user, role)).Succeeded);
@@ -753,5 +787,28 @@ public sealed class AuthControllerTests
         // ASP.NET Core marks a cleared cookie with an expires header in the past.
         Assert.Contains(RefreshTokenCookieName, setCookie, StringComparison.Ordinal);
         Assert.Contains("expires=Thu, 01 Jan 1970", setCookie, StringComparison.Ordinal);
+    }
+
+    private sealed class StubClientIpAccessor(string? clientIp) : IClientIpAccessor
+    {
+        public string? GetClientIp()
+        {
+            return clientIp;
+        }
+    }
+
+    private sealed class RecordingEmailSender : IEmailSender
+    {
+        public List<string> SentTo { get; } = [];
+
+        public Task SendEmailAsync(
+            string toEmail,
+            string subject,
+            string htmlContent,
+            CancellationToken cancellationToken = default)
+        {
+            SentTo.Add(toEmail);
+            return Task.CompletedTask;
+        }
     }
 }

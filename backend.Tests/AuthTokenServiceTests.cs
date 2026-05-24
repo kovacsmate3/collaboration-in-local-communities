@@ -135,9 +135,9 @@ public sealed class AuthTokenServiceTests
     }
 
     [Fact]
-    public async Task HashRefreshToken_IsDeterministicForSameInput()
+    public void HashRefreshToken_IsDeterministicForSameInput()
     {
-        await using var services = CreateServices();
+        using var services = CreateServices();
         using var scope = services.CreateScope();
         var tokenService = scope.ServiceProvider.GetRequiredService<IAuthTokenService>();
 
@@ -149,18 +149,16 @@ public sealed class AuthTokenServiceTests
 
         Assert.Equal(first, second);
         Assert.Equal(64, first.Length); // SHA-256 hex
-        await Task.CompletedTask;
     }
 
     [Fact]
-    public async Task HashRefreshToken_ThrowsFormatException_WhenNotBase64()
+    public void HashRefreshToken_ThrowsFormatException_WhenNotBase64()
     {
-        await using var services = CreateServices();
+        using var services = CreateServices();
         using var scope = services.CreateScope();
         var tokenService = scope.ServiceProvider.GetRequiredService<IAuthTokenService>();
 
         Assert.Throws<FormatException>(() => tokenService.HashRefreshToken("not-base64-***"));
-        await Task.CompletedTask;
     }
 
     private static ServiceProvider CreateServices()
