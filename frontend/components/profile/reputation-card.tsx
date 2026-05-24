@@ -321,7 +321,7 @@ function TrendPanel({ trend }: { trend: readonly ReputationTrendPoint[] }) {
 
   const first = points[0]
   const last = points[points.length - 1]
-  const comparisonScore = points.length > 1 ? first.score : 0
+  const comparisonScore = points.length > 1 ? first.score : first.score
   const delta = last.score - comparisonScore
   const deltaLabel =
     delta > 0
