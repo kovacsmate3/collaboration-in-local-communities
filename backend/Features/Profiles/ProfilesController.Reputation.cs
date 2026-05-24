@@ -33,76 +33,158 @@ public sealed partial class ProfilesController
         Guid profileId,
         CancellationToken cancellationToken)
     {
-        var reviewEvents = await db.Reviews
+        var reviewEventDaysQuery = db.Reviews
             .AsNoTracking()
             .Where(review => review.RevieweeProfileId == profileId)
             .Select(review => new
             {
-                OccurredAt = review.CreatedAt,
-                Rating = (int?)review.Rating,
-                CountsCompletedTask = false
-            })
-            .ToListAsync(cancellationToken);
+                review.CreatedAt.Year,
+                review.CreatedAt.Month,
+                review.CreatedAt.Day
+            });
 
-        var completedTaskEvents = await db.Tasks
+        var completedTaskEventDaysQuery = db.Tasks
             .AsNoTracking()
             .Where(task =>
                 task.Status == DomainTaskStatus.Completed
                 && (task.SeekerProfileId == profileId || task.AcceptedHelperProfileId == profileId))
             .Select(task => new
             {
-                OccurredAt = task.CompletedAt ?? task.UpdatedAt,
-                Rating = (int?)null,
-                CountsCompletedTask = true
+                Year = (task.CompletedAt ?? task.UpdatedAt).Year,
+                Month = (task.CompletedAt ?? task.UpdatedAt).Month,
+                Day = (task.CompletedAt ?? task.UpdatedAt).Day
+            });
+
+        var trendDaysDescending = await reviewEventDaysQuery
+            .Concat(completedTaskEventDaysQuery)
+            .Distinct()
+            .OrderByDescending(day => day.Year)
+            .ThenByDescending(day => day.Month)
+            .ThenByDescending(day => day.Day)
+            .Take(ReputationTrendPointLimit)
+            .ToListAsync(cancellationToken);
+
+        if (trendDaysDescending.Count == 0)
+        {
+            return Array.Empty<ProfileReputationTrendPointResponse>();
+        }
+
+        var trendDays = trendDaysDescending
+            .Select(day => new DateOnly(day.Year, day.Month, day.Day))
+            .OrderBy(day => day)
+            .ToList();
+
+        var earliestTrendDay = trendDays[0];
+        var earliestTrendStartUtc = new DateTimeOffset(
+            earliestTrendDay.Year,
+            earliestTrendDay.Month,
+            earliestTrendDay.Day,
+            0,
+            0,
+            0,
+            TimeSpan.Zero);
+
+        var reviewBaseline = await db.Reviews
+            .AsNoTracking()
+            .Where(review =>
+                review.RevieweeProfileId == profileId
+                && review.CreatedAt < earliestTrendStartUtc)
+            .GroupBy(_ => 1)
+            .Select(group => new
+            {
+                RatingSum = group.Sum(review => (decimal?)review.Rating) ?? 0m,
+                ReviewCount = group.Count()
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var completedTaskBaseline = await db.Tasks
+            .AsNoTracking()
+            .Where(task =>
+                task.Status == DomainTaskStatus.Completed
+                && (task.SeekerProfileId == profileId || task.AcceptedHelperProfileId == profileId)
+                && (task.CompletedAt ?? task.UpdatedAt) < earliestTrendStartUtc)
+            .CountAsync(cancellationToken);
+
+        var reviewDailyAggregates = await db.Reviews
+            .AsNoTracking()
+            .Where(review =>
+                review.RevieweeProfileId == profileId
+                && review.CreatedAt >= earliestTrendStartUtc)
+            .GroupBy(review => new
+            {
+                review.CreatedAt.Year,
+                review.CreatedAt.Month,
+                review.CreatedAt.Day
+            })
+            .Select(group => new
+            {
+                group.Key.Year,
+                group.Key.Month,
+                group.Key.Day,
+                RatingSum = group.Sum(review => (decimal)review.Rating),
+                ReviewCount = group.Count()
             })
             .ToListAsync(cancellationToken);
 
-        var events = reviewEvents
-            .Concat(completedTaskEvents)
-            .OrderBy(reputationEvent => reputationEvent.OccurredAt)
-            .ThenBy(reputationEvent => reputationEvent.CountsCompletedTask)
-            .ToList();
-
-        var dailySnapshots = new List<ProfileReputationTrendPointResponse>();
-        decimal ratingSum = 0;
-        var reviewCount = 0;
-        var completedTaskCount = 0;
-
-        foreach (var reputationEvent in events)
-        {
-            if (reputationEvent.CountsCompletedTask)
+        var completedTaskDailyAggregates = await db.Tasks
+            .AsNoTracking()
+            .Where(task =>
+                task.Status == DomainTaskStatus.Completed
+                && (task.SeekerProfileId == profileId || task.AcceptedHelperProfileId == profileId)
+                && (task.CompletedAt ?? task.UpdatedAt) >= earliestTrendStartUtc)
+            .GroupBy(task => new
             {
-                completedTaskCount++;
+                Year = (task.CompletedAt ?? task.UpdatedAt).Year,
+                Month = (task.CompletedAt ?? task.UpdatedAt).Month,
+                Day = (task.CompletedAt ?? task.UpdatedAt).Day
+            })
+            .Select(group => new
+            {
+                group.Key.Year,
+                group.Key.Month,
+                group.Key.Day,
+                CompletedTaskCount = group.Count()
+            })
+            .ToListAsync(cancellationToken);
+
+        var reviewDailyAggregateMap = reviewDailyAggregates.ToDictionary(
+            aggregate => new DateOnly(aggregate.Year, aggregate.Month, aggregate.Day),
+            aggregate => new { aggregate.RatingSum, aggregate.ReviewCount });
+
+        var completedTaskDailyAggregateMap = completedTaskDailyAggregates.ToDictionary(
+            aggregate => new DateOnly(aggregate.Year, aggregate.Month, aggregate.Day),
+            aggregate => aggregate.CompletedTaskCount);
+
+        var dailySnapshots = new List<ProfileReputationTrendPointResponse>(trendDays.Count);
+        decimal ratingSum = reviewBaseline?.RatingSum ?? 0m;
+        var reviewCount = reviewBaseline?.ReviewCount ?? 0;
+        var completedTaskCount = completedTaskBaseline;
+
+        foreach (var trendDay in trendDays)
+        {
+            if (reviewDailyAggregateMap.TryGetValue(trendDay, out var reviewAggregate))
+            {
+                ratingSum += reviewAggregate.RatingSum;
+                reviewCount += reviewAggregate.ReviewCount;
             }
 
-            if (reputationEvent.Rating is { } rating)
+            if (completedTaskDailyAggregateMap.TryGetValue(trendDay, out var completedTasksOnDay))
             {
-                ratingSum += rating;
-                reviewCount++;
+                completedTaskCount += completedTasksOnDay;
             }
 
             var averageRating = reviewCount > 0
                 ? decimal.Round(ratingSum / reviewCount, 2, MidpointRounding.AwayFromZero)
                 : 0m;
-            var snapshot = new ProfileReputationTrendPointResponse(
-                DateOnly.FromDateTime(reputationEvent.OccurredAt.UtcDateTime),
+
+            dailySnapshots.Add(new ProfileReputationTrendPointResponse(
+                trendDay,
                 ReputationScoreCalculator.Compute(averageRating, reviewCount, completedTaskCount),
                 averageRating,
                 reviewCount,
-                completedTaskCount);
-
-            if (dailySnapshots.Count > 0 && dailySnapshots[^1].Date == snapshot.Date)
-            {
-                dailySnapshots[^1] = snapshot;
-            }
-            else
-            {
-                dailySnapshots.Add(snapshot);
-            }
+                completedTaskCount));
         }
 
-        return dailySnapshots
-            .TakeLast(ReputationTrendPointLimit)
-            .ToList();
+        return dailySnapshots;
     }
 }
