@@ -1,24 +1,60 @@
+using System.Net;
 using Azure.Core;
 using Azure.Identity;
 using Backend.Application.Categories;
 using Backend.Features.Auth;
+using Backend.Features.Conversations;
 using Backend.Infrastructure.Azure;
+using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.OpenApi;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
 using Backend.Infrastructure.Persistence.Seeding;
-using Microsoft.AspNetCore.OpenApi;
+using Backend.Infrastructure.Security;
+using Backend.Infrastructure.Storage;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
-using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Bind application-owned Azure settings from the "Azure" configuration section.
 // Values flow through any ASP.NET Core configuration provider (appsettings,
 // environment variables like Azure__CosmosEndpoint / Azure__Postgres__Host, etc.).
+//
+// Back-compat: the deployed Azure Container App still injects the legacy AZURE_*
+// Service Connector variables. Alias them onto the structured Azure:* keys (only when
+// the structured key isn't already supplied) so both forms work until the Container App
+// settings are migrated. This reads through builder.Configuration, so no direct
+// Environment.GetEnvironmentVariable calls are needed.
+var legacyAzureAliases = new (string LegacyKey, string StructuredKey)[]
+{
+    ("AZURE_COSMOS_ENDPOINT", "Azure:CosmosEndpoint"),
+    ("AZURE_POSTGRESQL_HOST", "Azure:Postgres:Host"),
+    ("AZURE_POSTGRESQL_PORT", "Azure:Postgres:Port"),
+    ("AZURE_POSTGRESQL_DATABASE", "Azure:Postgres:Database"),
+    ("AZURE_POSTGRESQL_USERNAME", "Azure:Postgres:Username"),
+};
+
+var aliasedAzureSettings = new Dictionary<string, string?>();
+foreach (var (legacyKey, structuredKey) in legacyAzureAliases)
+{
+    var legacyValue = builder.Configuration[legacyKey];
+    if (!string.IsNullOrEmpty(legacyValue)
+        && string.IsNullOrEmpty(builder.Configuration[structuredKey]))
+    {
+        aliasedAzureSettings[structuredKey] = legacyValue;
+    }
+}
+
+if (aliasedAzureSettings.Count > 0)
+{
+    builder.Configuration.AddInMemoryCollection(aliasedAzureSettings);
+}
+
 var azureOptions = builder.Configuration
     .GetSection(AzureOptions.SectionName)
     .Get<AzureOptions>() ?? new AzureOptions();
@@ -140,15 +176,57 @@ builder.Services.AddOptions<RefreshTokenPruningOptions>()
 builder.Services.AddHostedService<RefreshTokenPruningBackgroundService>();
 
 builder.Services.AddApplicationIdentity();
+builder.Services.AddEmailSender(builder.Configuration);
+builder.Services.AddBlobStorage(builder.Configuration);
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        var frontendUrl = builder.Configuration["FRONTEND_URL"] ?? "http://localhost:3000";
+        policy
+            .WithOrigins(frontendUrl)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<CosmosMessageService>();
 builder.Services.AddControllers();
 builder.Services.AddOutputCache();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    // Only trust X-Forwarded-Proto from upstream proxies so Request.IsHttps reflects the
+    // original scheme (used for Secure cookies). X-Forwarded-For is intentionally not
+    // processed: the real client IP comes from the signed proxy token (FrontendProxyAuth).
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+
+    // ACA's Envoy ingress reaches the app pod from a private RFC1918 address; trusting these
+    // ranges lets the framework accept the X-Forwarded-Proto header it sets.
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("10.0.0.0"), 8));
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("172.16.0.0"), 12));
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("192.168.0.0"), 16));
+});
+builder.Services.AddFrontendProxyAuth(builder.Configuration);
+builder.Services.AddAppRateLimiting(builder.Configuration);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
 builder.Services.AddDevelopmentDataSeeders(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
+
+var proxyAuth = app.Services.GetRequiredService<IOptions<FrontendProxyAuthOptions>>().Value;
+if (proxyAuth.Enabled
+    && !app.Environment.IsDevelopment()
+    && string.IsNullOrWhiteSpace(proxyAuth.SigningKey))
+{
+    throw new InvalidOperationException(
+        "FrontendProxyAuth:SigningKey is required when FrontendProxyAuth is enabled outside Development. "
+        + "Set FrontendProxyAuth__SigningKey or disable it via FrontendProxyAuth__Enabled=false.");
+}
 
 using (var scope = app.Services.CreateScope())
 {
@@ -193,6 +271,49 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+{
+    var cosmosMessages = app.Services.GetRequiredService<CosmosMessageService>();
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await cosmosMessages.InitializeAsync();
+        logger.LogInformation("CosmosDB messages container ready.");
+    }
+    catch (Exception ex)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "CosmosDB messages container initialization failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
+    }
+}
+
+{
+    using var blobScope = app.Services.CreateScope();
+    var blobStorage = blobScope.ServiceProvider.GetRequiredService<IBlobStorageService>();
+    var logger = blobScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await blobStorage.EnsureContainerExistsAsync(CancellationToken.None);
+        logger.LogInformation("Blob storage container ready.");
+    }
+    catch (Exception ex)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "Blob storage container initialization failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -204,16 +325,24 @@ if (app.Environment.IsDevelopment())
     await seedScope.ServiceProvider.RunDataSeedersAsync();
 }
 
+app.UseForwardedHeaders();
+app.UseFrontendProxyAuth();
+
 // Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080).
-// The DOTNET_RUNNING_IN_CONTAINER variable is set by the official .NET base images;
-// reading it via configuration keeps the lookup consistent with the rest of the
-// composition root.
-if (!builder.Configuration.GetValue<bool>("DOTNET_RUNNING_IN_CONTAINER"))
+// DOTNET_RUNNING_IN_CONTAINER is set by the official .NET base images; read it through
+// configuration (consistent with the rest of the composition root) with a tolerant
+// parse so a non-boolean value can't crash startup — unknown/missing means "not in a
+// container", keeping HTTPS redirection on.
+var runningInContainer =
+    bool.TryParse(builder.Configuration["DOTNET_RUNNING_IN_CONTAINER"], out var inContainer) && inContainer;
+if (!runningInContainer)
 {
     app.UseHttpsRedirection();
 }
 
 app.UseRouting();
+app.UseCors();
+app.UseRateLimiter();
 app.UseOutputCache();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -222,5 +351,6 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("Health");
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();

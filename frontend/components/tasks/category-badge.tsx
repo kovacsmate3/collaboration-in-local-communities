@@ -1,20 +1,14 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { Badge } from "@/components/ui/badge"
-import { TASK_CATEGORIES } from "@/lib/constants"
 import { getIconForKey } from "@/lib/icon-registry"
-import type { TaskCategory } from "@/lib/types"
 
 interface CategoryBadgeProps {
-  category: TaskCategory
+  label: string
   icon?: string
 }
 
-/**
- * Visible label for a task's category.
- *
- */
-export function CategoryBadge({ category, icon }: CategoryBadgeProps) {
+export function CategoryBadge({ label, icon }: CategoryBadgeProps) {
   const Icon = icon ? getIconForKey(icon) : null
 
   return (
@@ -26,7 +20,7 @@ export function CategoryBadge({ category, icon }: CategoryBadgeProps) {
           aria-hidden="true"
         />
       ) : null}
-      {TASK_CATEGORIES[category].label}
+      {label}
     </Badge>
   )
 }

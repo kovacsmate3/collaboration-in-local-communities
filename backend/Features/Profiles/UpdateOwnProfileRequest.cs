@@ -13,7 +13,6 @@ public sealed record UpdateOwnProfileRequest
     public string? Workplace { get; init; }
     public string? Position { get; init; }
     public string? Availability { get; init; }
-    public string? PhotoUrl { get; init; }
     public string? LocationText { get; init; }
     public double? Latitude { get; init; }
     public double? Longitude { get; init; }

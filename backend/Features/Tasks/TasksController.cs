@@ -16,6 +16,9 @@ namespace Backend.Features.Tasks;
 [Authorize]
 public sealed partial class TasksController(AppDbContext db) : ControllerBase
 {
+    private const int DefaultPageSize = 20;
+    private const int MaxPageSize = 100;
+
     [HttpGet]
     public async Task<IActionResult> ListAsync(
         [FromQuery] string? status,
@@ -23,9 +26,41 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         [FromQuery] double? latitude,
         [FromQuery] double? longitude,
         [FromQuery] double? radiusMeters,
-        CancellationToken cancellationToken)
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null,
+        CancellationToken cancellationToken = default)
     {
         Point? proximityOrigin = null;
+        var shouldPage = page.HasValue || pageSize.HasValue;
+        var effectivePage = page.GetValueOrDefault(1);
+        var effectivePageSize = pageSize.GetValueOrDefault(DefaultPageSize);
+        var skip = 0;
+
+        if (shouldPage)
+        {
+            if (effectivePage < 1)
+            {
+                ModelState.AddModelError(nameof(page), "Page must be greater than or equal to 1.");
+            }
+
+            if (effectivePageSize is < 1 or > MaxPageSize)
+            {
+                ModelState.AddModelError(nameof(pageSize), $"PageSize must be between 1 and {MaxPageSize}.");
+            }
+
+            var offset = ((long)effectivePage - 1) * effectivePageSize;
+            if (offset > int.MaxValue)
+            {
+                ModelState.AddModelError(nameof(page), "Page is too large for the requested page size.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            skip = (int)offset;
+        }
 
         if (latitude.HasValue || longitude.HasValue || radiusMeters.HasValue)
         {
@@ -58,23 +93,30 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             query = query.Where(task => task.CategoryId == categoryId.Value);
         }
 
-        List<CommunityTask> tasks;
+        IQueryable<CommunityTask> orderedQuery;
         if (proximityOrigin is not null)
         {
             var radius = radiusMeters.GetValueOrDefault();
 
-            tasks = await query
+            orderedQuery = query
                 .Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius))
                 .OrderBy(task => task.Location!.Distance(proximityOrigin))
-                .ThenByDescending(task => task.CreatedAt)
-                .ToListAsync(cancellationToken);
+                .ThenByDescending(task => task.CreatedAt);
         }
         else
         {
-            tasks = await query
-                .OrderByDescending(task => task.CreatedAt)
-                .ToListAsync(cancellationToken);
+            orderedQuery = query.OrderByDescending(task => task.CreatedAt);
         }
+
+        if (shouldPage)
+        {
+            orderedQuery = orderedQuery
+                .Skip(skip)
+                .Take(effectivePageSize);
+        }
+
+        var tasks = await orderedQuery
+            .ToListAsync(cancellationToken);
 
         return Ok(tasks.Select(TaskResponse.FromTask));
     }
@@ -102,14 +144,27 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         CreateTaskRequest request,
         CancellationToken cancellationToken)
     {
+        if (!User.HasClaim("email_verified", "true"))
+        {
+            return Problem(
+                title: "Email Not Verified",
+                detail: "Please verify your email address to post tasks.",
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
         var profile = await GetCurrentProfileAsync(cancellationToken);
         if (profile is null)
         {
             return Unauthorized();
         }
 
-        if (!FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Title), request.Title, 3, 160, out var title)
-            || !FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Description), request.Description, 10, 3000, out var description))
+        if (!FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Title), request.Title, 3, 160, out var title))
+        {
+            return ValidationProblem(ModelState);
+        }
+
+        var description = SanitizeDescription(request.Description);
+        if (!ValidateDescriptionPlainText(description, nameof(request.Description)))
         {
             return ValidationProblem(ModelState);
         }
@@ -155,6 +210,13 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         };
 
         db.Tasks.Add(task);
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.TaskPosted,
+            nameof(CommunityTask),
+            task.Id,
+            new { task.CategoryId, task.CompensationType });
         await db.SaveChangesAsync(cancellationToken);
 
         var created = await db.Tasks
@@ -218,7 +280,8 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         if (request.Description is not null)
         {
-            if (!FieldValidator.ValidateTrimmedString(ModelState, nameof(request.Description), request.Description, 10, 3000, out var description))
+            var description = SanitizeDescription(request.Description);
+            if (!ValidateDescriptionPlainText(description, nameof(request.Description)))
             {
                 return ValidationProblem(ModelState);
             }
@@ -229,15 +292,15 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         if (request.CategoryId.HasValue)
         {
-            var categoryExists = await db.Categories
-                .AnyAsync(c => c.Id == request.CategoryId.Value && c.IsActive, cancellationToken);
-            if (!categoryExists)
+            var category = await db.Categories
+                .FirstOrDefaultAsync(c => c.Id == request.CategoryId.Value && c.IsActive, cancellationToken);
+            if (category is null)
             {
                 ModelState.AddModelError(nameof(request.CategoryId), "Category not found or inactive.");
                 return ValidationProblem(ModelState);
             }
 
-            task.CategoryId = request.CategoryId.Value;
+            task.Category = category;
             anyChange = true;
         }
 
@@ -291,9 +354,40 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
                 return ValidationProblem(ModelState);
             }
 
+            var oldStatus = task.Status;
+            var cancelledAt = DateTimeOffset.UtcNow;
+            var cancellationReason = StringUtilities.Normalize(request.CancellationReason);
+
             task.Status = DomainTaskStatus.Cancelled;
-            task.CancelledAt = DateTimeOffset.UtcNow;
-            task.CancellationReason = StringUtilities.Normalize(request.CancellationReason);
+            task.CancelledAt = cancelledAt;
+            task.CancellationReason = cancellationReason;
+            db.TaskStatusHistory.Add(new TaskStatusHistoryEntry
+            {
+                TaskId = task.Id,
+                OldStatus = oldStatus,
+                NewStatus = DomainTaskStatus.Cancelled,
+                ChangedByProfileId = profile.Id,
+                Reason = cancellationReason
+            });
+            db.AddActivityEvent(
+                profile.UserId,
+                profile.Id,
+                ActivityEventType.TaskCancelled,
+                nameof(CommunityTask),
+                task.Id,
+                new { OldStatus = oldStatus.ToString(), Reason = cancellationReason });
+            db.AddAuditEvent(
+                profile.UserId,
+                "task.cancelled",
+                nameof(CommunityTask),
+                task.Id,
+                new
+                {
+                    OldStatus = oldStatus.ToString(),
+                    Reason = cancellationReason,
+                    task.AcceptedHelperProfileId,
+                    CancelledAt = cancelledAt
+                });
             anyChange = true;
         }
 

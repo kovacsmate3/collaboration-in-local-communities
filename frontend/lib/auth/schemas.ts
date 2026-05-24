@@ -84,25 +84,34 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Enter your password."),
 })
 
-export const registerSchema = z.object({
-  email: emailSchema,
-  password: registerPasswordSchema,
-  acceptTerms: z.boolean().refine((accepted) => accepted, {
-    message: "Accept the terms to create an account.",
-  }),
-  displayName: z
-    .string()
-    .trim()
-    .min(1, "Enter your full name.")
-    .max(120, "Full name must be 120 characters or fewer."),
-  workplace: z
-    .string()
-    .trim()
-    .max(200, "Workplace or school must be 200 characters or fewer."),
-  position: z.string().trim().max(200, "Role must be 200 characters or fewer."),
-  location: locationSchema,
-  bio: z.string().trim().max(1000, "Bio must be 1000 characters or fewer."),
-})
+export const registerSchema = z
+  .object({
+    email: emailSchema,
+    password: registerPasswordSchema,
+    confirmPassword: z.string().min(1, "Confirm your password."),
+    acceptTerms: z.boolean().refine((accepted) => accepted, {
+      message: "Accept the terms to create an account.",
+    }),
+    displayName: z
+      .string()
+      .trim()
+      .min(1, "Enter your full name.")
+      .max(120, "Full name must be 120 characters or fewer."),
+    workplace: z
+      .string()
+      .trim()
+      .max(200, "Workplace or school must be 200 characters or fewer."),
+    position: z
+      .string()
+      .trim()
+      .max(200, "Role must be 200 characters or fewer."),
+    location: locationSchema,
+    bio: z.string().trim().max(1000, "Bio must be 1000 characters or fewer."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  })
 
 export type LoginFormValues = z.infer<typeof loginSchema>
 export type RegisterFormValues = z.infer<typeof registerSchema>
@@ -115,6 +124,7 @@ export const LOGIN_FORM_DEFAULT_VALUES: LoginFormValues = {
 export const REGISTER_FORM_DEFAULT_VALUES: RegisterFormValues = {
   email: "",
   password: "",
+  confirmPassword: "",
   acceptTerms: false,
   displayName: "",
   workplace: "",
@@ -126,5 +136,32 @@ export const REGISTER_FORM_DEFAULT_VALUES: RegisterFormValues = {
 export const REGISTER_ACCOUNT_FIELDS = [
   "email",
   "password",
+  "confirmPassword",
   "acceptTerms",
 ] as const
+
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+})
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword: registerPasswordSchema,
+    confirmPassword: z.string().min(1, "Confirm your new password."),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  })
+
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
+
+export const FORGOT_PASSWORD_FORM_DEFAULT_VALUES: ForgotPasswordFormValues = {
+  email: "",
+}
+
+export const RESET_PASSWORD_FORM_DEFAULT_VALUES: ResetPasswordFormValues = {
+  newPassword: "",
+  confirmPassword: "",
+}

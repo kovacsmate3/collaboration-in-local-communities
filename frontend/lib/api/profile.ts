@@ -58,11 +58,14 @@ export interface UpdateOwnProfileRequest {
   workplace?: string
   position?: string
   availability?: string
-  photoUrl?: string
   locationText?: string
   latitude?: number
   longitude?: number
   skillIds?: string[]
+}
+
+export interface UploadProfilePhotoResponse {
+  photoUrl: string
 }
 
 export interface SkillResponse {
@@ -145,6 +148,43 @@ export function useUpdateOwnProfile() {
   })
 }
 
+export function useUploadProfilePhoto() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData()
+      formData.append("photo", file)
+      return apiClient.upload<UploadProfilePhotoResponse>(
+        "/profiles/me/photo",
+        formData
+      )
+    },
+    onSuccess: (data) => {
+      qc.setQueryData<OwnProfileResponse | undefined>(
+        profileKeys.me(),
+        (prev) => (prev ? { ...prev, photoUrl: data.photoUrl } : prev)
+      )
+      void qc.invalidateQueries({ queryKey: profileKeys.all })
+    },
+  })
+}
+
+export function useDeleteProfilePhoto() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => apiClient.delete("/profiles/me/photo"),
+    onSuccess: () => {
+      qc.setQueryData<OwnProfileResponse | undefined>(
+        profileKeys.me(),
+        (prev) => (prev ? { ...prev, photoUrl: null } : prev)
+      )
+      void qc.invalidateQueries({ queryKey: profileKeys.all })
+    },
+  })
+}
+
 export function useProfileReviews(id: string) {
   return useQuery({
     queryKey: profileKeys.reviews(id),
@@ -180,6 +220,23 @@ export function useSkills(prefix: string) {
       apiClient.get<SkillResponse[]>(
         `/skills?prefix=${encodeURIComponent(prefix)}`
       ),
+    enabled: prefix.length > 0,
+  })
+}
+
+export interface CreateSkillRequest {
+  name: string
+  description?: string
+}
+
+export function useCreateSkill() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateSkillRequest) =>
+      apiClient.post<SkillResponse>("/skills", data),
+    onSuccess: (skill) => {
+      qc.setQueryData(profileKeys.skill(skill.id), skill)
+    },
   })
 }
 

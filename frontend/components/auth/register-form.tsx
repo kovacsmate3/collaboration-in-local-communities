@@ -2,8 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState, type SubmitEvent } from "react"
+import { useEffect, useRef, useState, type SubmitEvent } from "react"
 import { useForm, type FieldErrors } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -21,9 +20,9 @@ import {
 import { Form } from "@/components/ui/form"
 import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
+import { useRegisterDraft } from "@/lib/register-draft"
 import {
   getAuthErrorMessage,
-  getHomePathForRole,
   getRegisterSubmitLabel,
   type RegistrationStep,
 } from "@/lib/auth/functions"
@@ -37,14 +36,33 @@ import {
 
 export function RegisterForm() {
   const { register } = useAuth()
-  const router = useRouter()
-  const [step, setStep] = useState<RegistrationStep>("account")
+  const { draft, saveDraft, clearDraft } = useRegisterDraft()
+  const [step, setStep] = useState<RegistrationStep>(draft?.step ?? "account")
+  const [registrationMessage, setRegistrationMessage] = useState<string | null>(
+    null
+  )
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: REGISTER_FORM_DEFAULT_VALUES,
+    defaultValues: draft?.values ?? REGISTER_FORM_DEFAULT_VALUES,
     mode: "onTouched",
   })
+
+  const stepRef = useRef(step)
+  useEffect(() => {
+    stepRef.current = step
+  })
+
+  const didSucceedRef = useRef(false)
+
+  useEffect(() => {
+    return () => {
+      if (didSucceedRef.current) return
+      const { password: _p, confirmPassword: _c, ...rest } = form.getValues()
+      saveDraft({ ...rest, password: "", confirmPassword: "" }, stepRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const isSubmitting = form.formState.isSubmitting
   const serverError = form.formState.errors.root?.message
@@ -73,10 +91,10 @@ export function RegisterForm() {
     form.clearErrors("root")
 
     try {
-      const user = await register(toRegisterInput(values))
-      toast.success("Account created successfully")
-      router.replace(getHomePathForRole(user.role))
-      router.refresh()
+      const message = await register(toRegisterInput(values))
+      didSucceedRef.current = true
+      clearDraft()
+      setRegistrationMessage(message)
     } catch (error) {
       const message = getAuthErrorMessage(error, "Unable to create account.")
       form.setError("root", { message })
@@ -86,6 +104,24 @@ export function RegisterForm() {
 
   function onInvalidSubmit(errors: FieldErrors<RegisterFormValues>) {
     setStep(hasAccountErrors(errors) ? "account" : "profile")
+  }
+
+  if (registrationMessage) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl">Check your email</CardTitle>
+            <CardDescription>{registrationMessage}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href={APP_AUTH_ROUTES.login}>Back to sign in</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import type { SubmitEvent } from "react"
+import { useState, type SubmitEvent } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -21,8 +21,10 @@ import { Form } from "@/components/ui/form"
 import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES, APP_LEGAL_ROUTES } from "@/lib/auth/constants"
 import {
+  EMAIL_NOT_VERIFIED_ERROR,
   getAuthErrorMessage,
   getPostAuthRedirectPath,
+  resendVerificationEmail,
 } from "@/lib/auth/functions"
 import {
   LOGIN_FORM_DEFAULT_VALUES,
@@ -43,9 +45,26 @@ export function LoginForm() {
 
   const isSubmitting = form.formState.isSubmitting
   const serverError = form.formState.errors.root?.message
+  const [isResending, setIsResending] = useState(false)
+  const [resentEmail, setResentEmail] = useState<string | null>(null)
+
+  async function handleResend() {
+    const email = form.getValues("email")
+    setIsResending(true)
+    try {
+      await resendVerificationEmail(email)
+      setResentEmail(email)
+      toast.success("Verification email sent — check your inbox.")
+    } catch {
+      toast.error("Could not send the email. Please try again.")
+    } finally {
+      setIsResending(false)
+    }
+  }
 
   async function onSubmit(values: LoginFormValues) {
     form.clearErrors("root")
+    setResentEmail(null)
     try {
       const user = await login(values)
       toast.success("Signed in successfully")
@@ -100,12 +119,29 @@ export function LoginForm() {
               />
 
               {serverError ? (
-                <p
-                  role="alert"
-                  className="text-sm font-medium text-destructive"
-                >
-                  {serverError}
-                </p>
+                <div role="alert" className="grid gap-2">
+                  <p className="text-sm font-medium text-destructive">
+                    {serverError === EMAIL_NOT_VERIFIED_ERROR
+                      ? "Your email address is not verified. Please check your inbox."
+                      : serverError}
+                  </p>
+                  {serverError === EMAIL_NOT_VERIFIED_ERROR && !resentEmail ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isResending}
+                      onClick={handleResend}
+                    >
+                      {isResending ? "Sending..." : "Resend verification email"}
+                    </Button>
+                  ) : null}
+                  {resentEmail ? (
+                    <p className="text-xs text-muted-foreground">
+                      A new link was sent to {resentEmail}.
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
 
               <Button type="submit" disabled={isSubmitting} className="w-full">

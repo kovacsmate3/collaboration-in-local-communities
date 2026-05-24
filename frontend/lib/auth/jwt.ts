@@ -4,6 +4,7 @@ interface JwtPayload {
   exp?: number
   sub?: string
   email?: string
+  email_verified?: string | boolean
   nameid?: string
   role?: string | string[]
   roles?: string | string[]
@@ -15,6 +16,7 @@ interface JwtPayload {
 export interface JwtUserClaims {
   userId: string
   email: string
+  emailVerified: boolean
   roles: string[]
 }
 
@@ -66,10 +68,14 @@ export function getJwtUserClaims(token: string): JwtUserClaims | null {
     ]
   )
 
+  const ev = payload.email_verified
+  const emailVerified = ev === true || ev === "true"
+
   return userId && email
     ? {
         userId,
         email,
+        emailVerified,
         roles: getRolesFromPayload(payload),
       }
     : null

@@ -121,6 +121,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             entity.HasNoKey();
             entity.ToView("kpi_current_v", SchemaNames.Analytics);
+            entity.Property(kpi => kpi.ActiveUsers7d)
+                .HasColumnName("active_users_7d");
+            entity.Property(kpi => kpi.TasksPosted7d)
+                .HasColumnName("tasks_posted_7d");
+            entity.Property(kpi => kpi.CompletedTasks7d)
+                .HasColumnName("completed_tasks_7d");
+            entity.Property(kpi => kpi.CompletionRate7d)
+                .HasColumnName("completion_rate_7d");
         });
     }
 }
