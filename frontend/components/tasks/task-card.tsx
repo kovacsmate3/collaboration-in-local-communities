@@ -3,27 +3,28 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Location01Icon } from "@hugeicons/core-free-icons"
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { CategoryBadge } from "@/components/tasks/category-badge"
 import { CompensationBadge } from "@/components/tasks/compensation-badge"
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
-import { RatingStars } from "@/components/shared/rating-stars"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { formatRelativeTime } from "@/lib/format"
+import type { ApiTask } from "@/lib/api/tasks"
 import { cn } from "@/lib/utils"
-import type { Task } from "@/lib/types"
 
 interface TaskCardProps {
-  task: Task
-  /** When true, hides the status badge (use it on feeds where status is implied). */
+  task: ApiTask
   hideStatus?: boolean
+  applicationStatus?: string
   className?: string
 }
 
-/**
- * Single task entry. Linked card pattern: the entire card is a link to the
- * detail page; nested actionable elements should `stopPropagation` if needed.
- */
-export function TaskCard({ task, hideStatus, className }: TaskCardProps) {
+export function TaskCard({
+  task,
+  hideStatus,
+  applicationStatus,
+  className,
+}: TaskCardProps) {
   return (
     <Card className={cn("transition-colors hover:border-ring/40", className)}>
       <Link
@@ -32,9 +33,21 @@ export function TaskCard({ task, hideStatus, className }: TaskCardProps) {
       >
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
-            <CategoryBadge category={task.category} icon={task.icon} />
-            <CompensationBadge compensation={task.compensation} />
+            <CategoryBadge label={task.categoryName} icon={task.categoryIcon} />
+            <CompensationBadge
+              compensationType={task.compensationType}
+              compensationAmount={task.compensationAmount}
+            />
             {!hideStatus ? <TaskStatusBadge status={task.status} /> : null}
+            {applicationStatus ? (
+              <Badge
+                variant={
+                  applicationStatus === "Rejected" ? "destructive" : "outline"
+                }
+              >
+                Application {applicationStatus.toLowerCase()}
+              </Badge>
+            ) : null}
             <span className="ml-auto text-xs text-muted-foreground">
               {formatRelativeTime(task.createdAt)}
             </span>
@@ -44,28 +57,25 @@ export function TaskCard({ task, hideStatus, className }: TaskCardProps) {
 
         <CardContent className="flex flex-col gap-3">
           <p className="line-clamp-2 text-sm text-muted-foreground">
-            {task.description}
+            {task.description
+              .replace(/<[^>]*>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()}
           </p>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <HugeiconsIcon icon={Location01Icon} className="size-3.5" />
-            <span>{task.location}</span>
-          </div>
+          {task.locationText ? (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <HugeiconsIcon icon={Location01Icon} className="size-3.5" />
+              <span>{task.locationText}</span>
+            </div>
+          ) : null}
         </CardContent>
 
-        <CardFooter className="justify-between">
+        <CardFooter>
           <div className="flex items-center gap-2">
-            <UserAvatar
-              size="sm"
-              name={task.seeker.name}
-              src={task.seeker.avatarUrl}
-            />
-            <div className="flex flex-col">
-              <span className="text-xs font-medium">{task.seeker.name}</span>
-              <RatingStars
-                value={task.seeker.reputation.averageRating}
-                reviewCount={task.seeker.reputation.reviewCount}
-              />
-            </div>
+            <UserAvatar size="sm" name={task.seekerDisplayName} />
+            <span className="text-xs font-medium">
+              {task.seekerDisplayName}
+            </span>
           </div>
         </CardFooter>
       </Link>

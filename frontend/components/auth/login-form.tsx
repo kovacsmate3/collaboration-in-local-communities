@@ -1,11 +1,15 @@
 "use client"
 
-import * as React from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useState, type SubmitEvent } from "react"
+import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { PasswordField } from "@/components/forms/password-field"
+import { TextField } from "@/components/forms/text-field"
 import {
   Card,
   CardContent,
@@ -13,41 +17,71 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Form } from "@/components/ui/form"
 import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES, APP_LEGAL_ROUTES } from "@/lib/auth/constants"
 import {
+  EMAIL_NOT_VERIFIED_ERROR,
   getAuthErrorMessage,
   getPostAuthRedirectPath,
+  resendVerificationEmail,
 } from "@/lib/auth/functions"
+import {
+  LOGIN_FORM_DEFAULT_VALUES,
+  loginSchema,
+  type LoginFormValues,
+} from "@/lib/auth/schemas"
 
 export function LoginForm() {
   const { login } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setIsSubmitting(true)
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: LOGIN_FORM_DEFAULT_VALUES,
+    mode: "onTouched",
+  })
 
-    const formData = new FormData(event.currentTarget)
-    const email = String(formData.get("email") ?? "")
-    const password = String(formData.get("password") ?? "")
+  const isSubmitting = form.formState.isSubmitting
+  const serverError = form.formState.errors.root?.message
+  const [isResending, setIsResending] = useState(false)
+  const [resentEmail, setResentEmail] = useState<string | null>(null)
 
+  async function handleResend() {
+    const email = form.getValues("email")
+    setIsResending(true)
     try {
-      const user = await login({ email, password })
+      await resendVerificationEmail(email)
+      setResentEmail(email)
+      toast.success("Verification email sent — check your inbox.")
+    } catch {
+      toast.error("Could not send the email. Please try again.")
+    } finally {
+      setIsResending(false)
+    }
+  }
+
+  async function onSubmit(values: LoginFormValues) {
+    form.clearErrors("root")
+    setResentEmail(null)
+    try {
+      const user = await login(values)
       toast.success("Signed in successfully")
       router.replace(
         getPostAuthRedirectPath(searchParams.get("next"), user.role)
       )
       router.refresh()
     } catch (error) {
-      toast.error(getAuthErrorMessage(error, "Unable to sign in."))
-    } finally {
-      setIsSubmitting(false)
+      const message = getAuthErrorMessage(error, "Unable to sign in.")
+      form.setError("root", { message })
+      toast.error(message)
     }
+  }
+
+  function handleFormSubmit(event: SubmitEvent<HTMLFormElement>) {
+    form.clearErrors("root")
+    void form.handleSubmit(onSubmit)(event)
   }
 
   return (
@@ -60,52 +94,71 @@ export function LoginForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-6">
-            <div className="grid gap-3">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
+          <Form {...form}>
+            <form noValidate onSubmit={handleFormSubmit} className="grid gap-6">
+              <TextField<LoginFormValues>
                 name="email"
+                label="Email"
                 type="email"
-                required
                 autoComplete="email"
                 placeholder="you@example.com"
               />
-            </div>
 
-            <div className="grid gap-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link
-                  href={APP_AUTH_ROUTES.forgotPassword}
-                  className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <Input
-                id="password"
+              <PasswordField<LoginFormValues>
                 name="password"
-                type="password"
-                required
+                label="Password"
                 autoComplete="current-password"
+                labelAction={
+                  <Link
+                    href={APP_AUTH_ROUTES.forgotPassword}
+                    className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                }
               />
-            </div>
 
-            <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? "Signing in..." : "Sign in"}
-            </Button>
+              {serverError ? (
+                <div role="alert" className="grid gap-2">
+                  <p className="text-sm font-medium text-destructive">
+                    {serverError === EMAIL_NOT_VERIFIED_ERROR
+                      ? "Your email address is not verified. Please check your inbox."
+                      : serverError}
+                  </p>
+                  {serverError === EMAIL_NOT_VERIFIED_ERROR && !resentEmail ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isResending}
+                      onClick={handleResend}
+                    >
+                      {isResending ? "Sending..." : "Resend verification email"}
+                    </Button>
+                  ) : null}
+                  {resentEmail ? (
+                    <p className="text-xs text-muted-foreground">
+                      A new link was sent to {resentEmail}.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
 
-            <p className="text-center text-sm text-muted-foreground">
-              New here?{" "}
-              <Link
-                href={APP_AUTH_ROUTES.register}
-                className="font-medium text-foreground underline-offset-4 hover:underline"
-              >
-                Create an account
-              </Link>
-            </p>
-          </form>
+              <Button type="submit" disabled={isSubmitting} className="w-full">
+                {isSubmitting ? "Signing in..." : "Sign in"}
+              </Button>
+
+              <p className="text-center text-sm text-muted-foreground">
+                New here?{" "}
+                <Link
+                  href={APP_AUTH_ROUTES.register}
+                  className="font-medium text-foreground underline-offset-4 hover:underline"
+                >
+                  Create an account
+                </Link>
+              </p>
+            </form>
+          </Form>
         </CardContent>
       </Card>
       <p className="px-6 text-center text-xs text-balance text-muted-foreground">

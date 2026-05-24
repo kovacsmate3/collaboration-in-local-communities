@@ -7,25 +7,38 @@ export const AUTH_COOKIES = {
 
 export const AUTH_API_PATHS = {
   session: "/api/auth/session",
+  refresh: "/api/auth/refresh",
   login: "/api/auth/login",
   register: "/api/auth/register",
   logout: "/api/auth/logout",
+  confirmEmail: "/api/auth/confirm-email",
+  resendVerification: "/api/auth/resend-verification",
+  forgotPassword: "/api/auth/forgot-password",
+  resetPassword: "/api/auth/reset-password",
 } as const
 
 export const BACKEND_AUTH_PATHS = {
   refresh: ["auth", "refresh"],
-  tokenIssuing: ["auth/login", "auth/register", "auth/refresh"],
+  tokenIssuing: ["auth/login", "auth/refresh"],
 } as const
 
 export const BACKEND_PROFILE_PATHS = {
   me: ["profiles", "me"],
 } as const
 
+export const BACKEND_TERMS_PATHS = {
+  active: ["terms", "active"],
+  acceptance: ["terms", "acceptance"],
+} as const
+
 export const APP_AUTH_ROUTES = {
   login: "/login",
   forgotPassword: "/login/forgot",
   register: "/register",
+  verifyEmail: "/verify-email",
 } as const
+
+export const APP_RESET_PASSWORD_ROUTE = "/reset-password" as const
 
 export const APP_HOME_ROUTES = {
   admin: "/admin",

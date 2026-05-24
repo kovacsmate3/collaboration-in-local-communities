@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
@@ -74,6 +76,9 @@ public sealed partial class TasksController
         return true;
     }
 
+    private static string SanitizeDescription(string html) =>
+        new HtmlSanitizer().Sanitize(html);
+
     private async Task<UserProfile?> GetCurrentProfileAsync(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
@@ -90,5 +95,17 @@ public sealed partial class TasksController
     {
         var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         return Guid.TryParse(claim, out var id) ? id : null;
+    }
+
+    private bool ValidateDescriptionPlainText(string sanitizedHtml, string fieldName)
+    {
+        var plain = Regex.Replace(sanitizedHtml, "<[^>]+>", string.Empty).Trim();
+        if (plain.Length < 10)
+        {
+            ModelState.AddModelError(fieldName, "Description must contain at least 10 characters of text.");
+            return false;
+        }
+
+        return true;
     }
 }

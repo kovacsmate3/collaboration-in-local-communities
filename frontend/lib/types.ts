@@ -16,6 +16,7 @@ export interface User {
   bio?: string
   workplace?: string
   position?: string
+  availability?: string
   location?: string
   skills: string[]
   /** Aggregate reputation score derived from reviews. */

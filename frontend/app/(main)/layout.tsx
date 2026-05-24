@@ -1,5 +1,9 @@
+import type { ReactNode } from "react"
+
+import { TermsGate } from "@/components/legal/terms-gate"
 import { AppHeader } from "@/components/layout/app-header"
 import { MobileNav } from "@/components/layout/mobile-nav"
+import { NotificationHubMount } from "@/components/layout/notification-hub-mount"
 
 /**
  * Layout for every authenticated route. Renders the persistent header
@@ -8,19 +12,17 @@ import { MobileNav } from "@/components/layout/mobile-nav"
  * The bottom nav adds 4rem of padding to the page bottom so content is
  * never hidden behind it on small screens.
  */
-export default function MainLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col">
+      <NotificationHubMount />
       <AppHeader />
       <main className="flex-1 pb-20 md:pb-10">
         <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
           {children}
         </div>
       </main>
+      <TermsGate />
       <MobileNav />
     </div>
   )

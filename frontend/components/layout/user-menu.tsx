@@ -2,23 +2,17 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Logout01Icon,
-  Settings02Icon,
-  UserCircleIcon,
-} from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { UserAccountMenuItems } from "@/components/layout/user-account-menu-items"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
@@ -49,7 +43,7 @@ export function UserMenu() {
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger
         aria-label="Open user menu"
         className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -59,29 +53,7 @@ export function UserMenu() {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/profile">
-            <HugeiconsIcon icon={UserCircleIcon} className="size-4" />
-            Profile
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/profile/edit">
-            <HugeiconsIcon icon={Settings02Icon} className="size-4" />
-            Settings
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          variant="destructive"
-          onSelect={(event) => {
-            event.preventDefault()
-            void handleLogout()
-          }}
-        >
-          <HugeiconsIcon icon={Logout01Icon} className="size-4" />
-          Log out
-        </DropdownMenuItem>
+        <UserAccountMenuItems onLogout={() => void handleLogout()} />
       </DropdownMenuContent>
     </DropdownMenu>
   )

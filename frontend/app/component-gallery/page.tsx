@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import type * as React from "react"
+import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -228,7 +228,7 @@ function GallerySection({
 }: Readonly<{
   title: string
   description: string
-  children: React.ReactNode
+  children: ReactNode
 }>) {
   return (
     <section className="flex flex-col gap-4">
@@ -337,7 +337,7 @@ function ShadowTokenCard({ token }: Readonly<{ token: ShadowToken }>) {
 function ComponentPanel({
   title,
   children,
-}: Readonly<{ title: string; children: React.ReactNode }>) {
+}: Readonly<{ title: string; children: ReactNode }>) {
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 shadow-card">
       <h3 className="font-heading text-section-title">{title}</h3>

@@ -1,5 +1,3 @@
-using System.Security.Claims;
-using System.Text;
 using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
@@ -14,7 +12,7 @@ namespace Backend.Features.Skills;
 [ApiController]
 [Route("api/skills")]
 [Authorize]
-public sealed class SkillsController(AppDbContext db) : ControllerBase
+public sealed partial class SkillsController(AppDbContext db) : ControllerBase
 {
     private const int MaxSearchResults = 20;
 
@@ -48,7 +46,7 @@ public sealed class SkillsController(AppDbContext db) : ControllerBase
     {
         var skill = await db.Skills
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == id && s.IsActive, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
         if (skill is null)
         {
@@ -130,40 +128,5 @@ public sealed class SkillsController(AppDbContext db) : ControllerBase
         }
 
         return CreatedAtAction("GetSkill", new { id = skill.Id }, SkillResponse.FromEntity(skill));
-    }
-
-    private static string GenerateCode(string name)
-    {
-        var builder = new StringBuilder();
-        var previousUnderscore = false;
-
-        foreach (var ch in name.ToLowerInvariant())
-        {
-            if (char.IsLetterOrDigit(ch))
-            {
-                builder.Append(ch);
-                previousUnderscore = false;
-            }
-            else if (!previousUnderscore && builder.Length > 0)
-            {
-                builder.Append('_');
-                previousUnderscore = true;
-            }
-        }
-
-        return builder.ToString().TrimEnd('_');
-    }
-
-    private async Task<UserProfile?> GetCurrentProfileAsync(CancellationToken cancellationToken)
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(claim, out var userId))
-        {
-            return null;
-        }
-
-        return await db.Profiles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
     }
 }

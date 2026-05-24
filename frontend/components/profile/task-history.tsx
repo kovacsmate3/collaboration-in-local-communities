@@ -1,12 +1,15 @@
+import Link from "next/link"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
 import { CategoryBadge } from "@/components/tasks/category-badge"
 import { EmptyState } from "@/components/shared/empty-state"
 import { formatRelativeTime } from "@/lib/format"
-import type { Task } from "@/lib/types"
+import { TASK_CATEGORIES } from "@/lib/constants"
+import type { ProfileTaskHistoryItem } from "@/lib/api/profile"
 
 interface TaskHistoryProps {
-  tasks: Task[]
+  tasks: ProfileTaskHistoryItem[]
 }
 
 /**
@@ -35,21 +38,25 @@ export function TaskHistory({ tasks }: TaskHistoryProps) {
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {tasks.map((task) => (
-          <div
+          <Link
             key={task.id}
-            className="flex items-center justify-between gap-3 border-t border-border pt-2 first:border-t-0 first:pt-0"
+            href={`/tasks/${task.id}`}
+            className="-mx-2 flex items-center justify-between gap-3 rounded-md border-t border-border px-2 pt-2 transition-colors first:border-t-0 first:pt-0 hover:bg-muted/50"
           >
             <div className="flex min-w-0 flex-col gap-1">
               <span className="truncate text-sm font-medium">{task.title}</span>
               <div className="flex items-center gap-2">
-                <CategoryBadge category={task.category} icon={task.icon} />
+                <CategoryBadge
+                  label={TASK_CATEGORIES[task.category]?.label ?? task.category}
+                  icon={task.icon}
+                />
                 <span className="text-xs text-muted-foreground">
                   {formatRelativeTime(task.createdAt)}
                 </span>
               </div>
             </div>
             <TaskStatusBadge status={task.status} />
-          </div>
+          </Link>
         ))}
       </CardContent>
     </Card>

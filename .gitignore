@@ -8,6 +8,8 @@ obj/
 TestResults/
 *.csproj.user
 
+.history/
+
 *.DotSettings.user
 
 node_modules/

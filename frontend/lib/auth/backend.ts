@@ -9,16 +9,24 @@ import {
 import {
   BACKEND_AUTH_PATHS,
   BACKEND_PROFILE_PATHS,
+  BACKEND_TERMS_PATHS,
   DEFAULT_BACKEND_API_URL,
 } from "@/lib/auth/constants"
+import { applyProxyAuth } from "@/lib/auth/frontend-proxy-jws"
 import type { JwtUserClaims } from "@/lib/auth/jwt"
 import type {
+  AuthTermsState,
   AuthUser,
   BackendAuthResponse,
   OwnProfileResponse,
   SafeAuthResponse,
   UserRole,
 } from "@/lib/auth/types"
+
+export type BackendRefreshResult = {
+  auth: BackendAuthResponse
+  setCookieHeaders: string[]
+}
 
 type HeadersWithSetCookie = Headers & {
   getSetCookie?: () => string[]
@@ -33,6 +41,36 @@ type OwnProfileFetchResult =
       status: "unauthorized"
     }
 
+type TermsStateFetchResult =
+  | {
+      status: "ok"
+      terms: AuthTermsState
+    }
+  | {
+      status: "unauthorized"
+    }
+
+interface ActiveTermsResponse {
+  id: string
+  version: string
+  title: string
+  contentUrl: string | null
+  effectiveFrom: string
+}
+
+interface TermsAcceptanceResponse {
+  hasAccepted: boolean
+  acceptedAt: string | null
+}
+
+const TERMS_NOT_REQUIRED: AuthTermsState = {
+  hasAccepted: true,
+  activeVersionId: null,
+  activeVersion: null,
+  activeTitle: null,
+  acceptedAt: null,
+}
+
 export function getBackendUrl(path: string[], requestUrl?: string): URL {
   const backendBaseUrl = process.env.API_URL ?? DEFAULT_BACKEND_API_URL
   const backendUrl = new URL(`/api/${path.join("/")}`, backendBaseUrl)
@@ -46,7 +84,8 @@ export function getBackendUrl(path: string[], requestUrl?: string): URL {
 
 export function toAuthUser(
   claims: JwtUserClaims,
-  profile: OwnProfileResponse | null
+  profile: OwnProfileResponse | null,
+  terms: AuthTermsState = TERMS_NOT_REQUIRED
 ): AuthUser {
   const roles = normalizeRoles(claims.roles)
   const isAdmin = roles.includes("Admin")
@@ -55,11 +94,13 @@ export function toAuthUser(
     id: claims.userId,
     name: profile?.displayName ?? claims.email,
     email: claims.email,
+    emailVerified: claims.emailVerified,
     role: isAdmin ? "Admin" : "User",
     roles,
     avatarUrl: profile?.photoUrl ?? undefined,
     profileId: profile?.id,
     isProfileCompleted: profile?.isProfileCompleted ?? false,
+    terms,
   }
 }
 
@@ -97,14 +138,35 @@ export function appendBackendSetCookie(
   backendResponse: Response,
   response: NextResponse
 ) {
-  for (const cookie of getSetCookieHeaders(backendResponse.headers)) {
+  appendSetCookieHeaders(getSetCookieHeaders(backendResponse.headers), response)
+}
+
+export function appendRefreshSetCookie(
+  refreshResult: BackendRefreshResult,
+  response: NextResponse
+) {
+  appendSetCookieHeaders(refreshResult.setCookieHeaders, response)
+}
+
+export function appendSetCookieHeaders(
+  cookies: string[],
+  response: NextResponse
+) {
+  for (const cookie of cookies) {
     response.headers.append("set-cookie", cookie)
   }
 }
 
 export function getRefreshCookieHeader(request: NextRequest): string | null {
+  // Next.js's request.cookies.get() runs decodeURIComponent on the value
+  // (see @edge-runtime/cookies). The backend (ASP.NET Core) URL-decodes again
+  // when reading Request.Cookies, so we have to re-encode here — otherwise the
+  // base64 refresh token's '+' characters get interpreted as spaces and the
+  // backend rejects every refresh with 401 (Convert.FromBase64String throws).
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value
-  return refreshToken ? `${REFRESH_TOKEN_COOKIE}=${refreshToken}` : null
+  return refreshToken
+    ? `${REFRESH_TOKEN_COOKIE}=${encodeURIComponent(refreshToken)}`
+    : null
 }
 
 export async function readJson<T>(response: Response): Promise<T | null> {
@@ -115,19 +177,24 @@ export async function readJson<T>(response: Response): Promise<T | null> {
   }
 }
 
+// Calls the backend's /api/auth/refresh endpoint. Used only by the
+// /api/auth/refresh route (no in-memory dedup needed — the AuthProvider's
+// singleton in-flight promise prevents concurrent client-side callers).
 export async function refreshBackendToken(
   request: NextRequest
-): Promise<{ auth: BackendAuthResponse; response: Response } | null> {
+): Promise<BackendRefreshResult | null> {
   const cookie = getRefreshCookieHeader(request)
   if (!cookie) {
     return null
   }
 
-  const response = await fetch(getBackendUrl([...BACKEND_AUTH_PATHS.refresh]), {
+  const backendUrl = getBackendUrl([...BACKEND_AUTH_PATHS.refresh])
+  const headers = new Headers({ cookie })
+  await applyProxyAuth(request, headers, backendUrl, "POST")
+
+  const response = await fetch(backendUrl, {
     method: "POST",
-    headers: {
-      cookie,
-    },
+    headers,
     cache: "no-store",
   })
 
@@ -135,22 +202,26 @@ export async function refreshBackendToken(
     return null
   }
 
+  const setCookieHeaders = getSetCookieHeaders(response.headers)
   const auth = await readJson<BackendAuthResponse>(response.clone())
   if (!isBackendAuthResponse(auth)) {
     return null
   }
 
-  return { auth, response }
+  return { auth, setCookieHeaders }
 }
 
 export async function fetchOwnProfile(
+  request: NextRequest,
   accessToken: string
 ): Promise<OwnProfileFetchResult> {
-  const response = await fetch(getBackendUrl([...BACKEND_PROFILE_PATHS.me]), {
+  const backendUrl = getBackendUrl([...BACKEND_PROFILE_PATHS.me])
+  const headers = new Headers({ authorization: `Bearer ${accessToken}` })
+  await applyProxyAuth(request, headers, backendUrl, "GET")
+
+  const response = await fetch(backendUrl, {
     method: "GET",
-    headers: {
-      authorization: `Bearer ${accessToken}`,
-    },
+    headers,
     cache: "no-store",
   })
 
@@ -169,6 +240,59 @@ export async function fetchOwnProfile(
   return {
     status: "ok",
     profile: await readJson<OwnProfileResponse>(response),
+  }
+}
+
+export async function fetchTermsState(
+  request: NextRequest,
+  accessToken: string
+): Promise<TermsStateFetchResult> {
+  const activeResponse = await fetchBackendForSession(
+    request,
+    [...BACKEND_TERMS_PATHS.active],
+    accessToken
+  )
+
+  if (activeResponse.status === 401 || activeResponse.status === 403) {
+    return { status: "unauthorized" }
+  }
+
+  if (activeResponse.status === 404) {
+    return { status: "ok", terms: TERMS_NOT_REQUIRED }
+  }
+
+  if (!activeResponse.ok) {
+    return { status: "ok", terms: TERMS_NOT_REQUIRED }
+  }
+
+  const activeTerms = await readJson<ActiveTermsResponse>(activeResponse)
+  if (!isActiveTermsResponse(activeTerms)) {
+    return { status: "ok", terms: TERMS_NOT_REQUIRED }
+  }
+
+  const acceptanceResponse = await fetchBackendForSession(
+    request,
+    [...BACKEND_TERMS_PATHS.acceptance],
+    accessToken
+  )
+
+  if (acceptanceResponse.status === 401 || acceptanceResponse.status === 403) {
+    return { status: "unauthorized" }
+  }
+
+  const acceptance = acceptanceResponse.ok
+    ? await readJson<TermsAcceptanceResponse>(acceptanceResponse)
+    : null
+
+  return {
+    status: "ok",
+    terms: {
+      hasAccepted: acceptance?.hasAccepted ?? false,
+      activeVersionId: activeTerms.id,
+      activeVersion: activeTerms.version,
+      activeTitle: activeTerms.title,
+      acceptedAt: acceptance?.acceptedAt ?? null,
+    },
   }
 }
 
@@ -215,4 +339,30 @@ function normalizeRoles(roles: string[]): UserRole[] {
   )
 
   return normalized.length > 0 ? normalized : ["User"]
+}
+
+async function fetchBackendForSession(
+  request: NextRequest,
+  path: string[],
+  accessToken: string
+): Promise<Response> {
+  const backendUrl = getBackendUrl(path)
+  const headers = new Headers({ authorization: `Bearer ${accessToken}` })
+  await applyProxyAuth(request, headers, backendUrl, "GET")
+
+  return fetch(backendUrl, {
+    method: "GET",
+    headers,
+    cache: "no-store",
+  })
+}
+
+function isActiveTermsResponse(
+  response: ActiveTermsResponse | null
+): response is ActiveTermsResponse {
+  return (
+    typeof response?.id === "string" &&
+    typeof response.version === "string" &&
+    typeof response.title === "string"
+  )
 }

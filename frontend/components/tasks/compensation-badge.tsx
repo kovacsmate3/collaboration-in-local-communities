@@ -1,37 +1,28 @@
 import { Badge } from "@/components/ui/badge"
-import { COMPENSATION_LABELS } from "@/lib/constants"
 import { formatCurrency } from "@/lib/format"
-import type { Compensation } from "@/lib/types"
 
 interface CompensationBadgeProps {
-  compensation: Compensation
+  compensationType: string
+  compensationAmount?: number | null
 }
 
-/**
- * Visual marker for the compensation type of a task.
- *
- */
-export function CompensationBadge({ compensation }: CompensationBadgeProps) {
+export function CompensationBadge({
+  compensationType,
+  compensationAmount,
+}: CompensationBadgeProps) {
+  const type = compensationType.toLowerCase()
+
   const variant =
-    compensation.type === "paid"
-      ? "success"
-      : compensation.type === "barter"
-        ? "warning"
-        : "secondary"
+    type === "paid" ? "success" : type === "barter" ? "warning" : "secondary"
 
   const label =
-    compensation.type === "paid" && typeof compensation.amount === "number"
-      ? formatCurrency(compensation.amount, compensation.currency)
-      : COMPENSATION_LABELS[compensation.type]
+    type === "paid" && typeof compensationAmount === "number"
+      ? formatCurrency(compensationAmount, "HUF")
+      : type === "paid"
+        ? "Paid"
+        : type === "barter"
+          ? "Barter"
+          : "Voluntary"
 
-  const ariaLabel =
-    compensation.type === "barter" && compensation.barterOffer
-      ? `Barter offered: ${compensation.barterOffer}`
-      : undefined
-
-  return (
-    <Badge variant={variant} aria-label={ariaLabel}>
-      {label}
-    </Badge>
-  )
+  return <Badge variant={variant}>{label}</Badge>
 }
