@@ -213,6 +213,14 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             return ValidationProblem(ModelState);
         }
 
+        if (compensationType != CompensationType.Paid && request.CompensationAmount is not null)
+        {
+            ModelState.AddModelError(
+                nameof(request.CompensationAmount),
+                "CompensationAmount only applies to Paid tasks.");
+            return ValidationProblem(ModelState);
+        }
+
         if (request.Latitude.HasValue != request.Longitude.HasValue)
         {
             ModelState.AddModelError("Location", "Both Latitude and Longitude must be provided together.");

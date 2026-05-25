@@ -67,6 +67,56 @@ public sealed class TasksControllerTests
     }
 
     [Fact]
+    public async Task CreateAsync_RejectsCompensationAmountForNonPaidTasks()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var userId = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+
+        db.Profiles.Add(new UserProfile
+        {
+            Id = profileId,
+            UserId = userId,
+            DisplayName = "Task seeker",
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
+        db.Categories.Add(new Category
+        {
+            Id = categoryId,
+            Code = "help",
+            Name = "Help",
+            Icon = Category.DefaultIcon,
+            IsActive = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateTasksController(db, userId);
+
+        var result = await controller.CreateAsync(
+            new CreateTaskRequest(
+                "Carry boxes",
+                "Need help carrying boxes up two flights.",
+                categoryId,
+                "Points",
+                5000m,
+                null,
+                null,
+                null),
+            cancellationToken);
+
+        var badRequest = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ValidationProblemDetails>(badRequest.Value);
+
+        Assert.Contains(nameof(CreateTaskRequest.CompensationAmount), problem.Errors.Keys);
+        Assert.Empty(db.Tasks);
+    }
+
+    [Fact]
     public async Task ListAsync_RejectsPartialProximityFilter()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
