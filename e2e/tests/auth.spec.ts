@@ -13,9 +13,7 @@ function uniqueEmail(prefix: string): string {
 
 async function expectOnFeed(page: Page): Promise<void> {
   await page.waitForURL(`**${FEED_PATH}`)
-  await expect(
-    page.getByRole("heading", { name: "What's happening locally" })
-  ).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Local tasks" })).toBeVisible()
 }
 
 test.describe("Authentication", () => {
