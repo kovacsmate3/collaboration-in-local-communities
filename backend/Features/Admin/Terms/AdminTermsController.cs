@@ -144,6 +144,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
         }
 
         var acceptanceCount = 0;
+
         // ReSharper disable once Mvc.ActionNotResolved
         return CreatedAtAction(nameof(GetByIdAsync), new { id = terms.Id }, new AdminTermsVersionDetail(
             terms.Id,
