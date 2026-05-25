@@ -41,6 +41,11 @@ test.describe("Authentication", () => {
     const email = uniqueEmail("e2e-register")
     const password = "E2eTest123!"
     const displayName = "E2E Tester"
+    const workplace = "Helpful Neighbours Co-op"
+    const role = "Community member"
+    const location = "Budapest, Hungary"
+    const bio =
+      "Automated end-to-end test account that loves helping neighbours."
 
     await page.goto("/register")
 
@@ -54,9 +59,15 @@ test.describe("Authentication", () => {
     await page.getByRole("checkbox", { name: /I agree to the Terms/i }).check()
     await page.getByRole("button", { name: "Continue" }).click()
 
-    // Profile step
+    // Profile step — fill the full profile, not just the required name.
     await expect(page.getByLabel("Full name")).toBeVisible()
     await page.getByLabel("Full name").fill(displayName)
+    await page.getByLabel("Workplace / school").fill(workplace)
+    await page.getByLabel("Role", { exact: true }).fill(role)
+    // Free-text location (no geocoding call) — both lat/long stay unset, which the
+    // form accepts.
+    await page.getByLabel("Location").fill(location)
+    await page.getByLabel("Short bio").fill(bio)
     await page.getByRole("button", { name: "Create account" }).click()
 
     await expectOnFeed(page)
