@@ -241,7 +241,7 @@ function readFiltersFromUrl(
   searchParams: ReadableSearchParams,
   categories: { id: string }[]
 ): TaskFiltersState {
-  const query = searchParams.get(SEARCH_PARAM_KEYS.query) ?? ""
+  const query = (searchParams.get(SEARCH_PARAM_KEYS.query) ?? "").trim()
 
   const rawCategory = searchParams.get(SEARCH_PARAM_KEYS.category) ?? "all"
   const category =
@@ -279,7 +279,8 @@ function readFiltersFromUrl(
 
 function serializeFilters(filters: TaskFiltersState): URLSearchParams {
   const params = new URLSearchParams()
-  if (filters.query) params.set(SEARCH_PARAM_KEYS.query, filters.query)
+  const query = filters.query.trim()
+  if (query) params.set(SEARCH_PARAM_KEYS.query, query)
   if (filters.category !== DEFAULT_FILTERS.category) {
     params.set(SEARCH_PARAM_KEYS.category, filters.category)
   }
