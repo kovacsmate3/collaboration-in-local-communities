@@ -77,4 +77,26 @@ public static class PostgresExceptionHelpers
     {
         return IsUniqueConstraintViolation(exception, "ux_task_conversations_task_helper");
     }
+
+    /// <summary>
+    /// Checks if a DbUpdateException is a duplicate task completion confirmation violation
+    /// (same task + same profile already confirmed completion).
+    /// </summary>
+    /// <param name="exception">The DbUpdateException to check.</param>
+    /// <returns>True if the exception is a duplicate completion confirmation violation, false otherwise.</returns>
+    public static bool IsDuplicateTaskCompletionConfirmation(DbUpdateException exception)
+    {
+        return IsUniqueConstraintViolation(exception, "ux_task_completion_confirmations_task_profile");
+    }
+
+    /// <summary>
+    /// Checks if a DbUpdateException is a duplicate task-completion points reward
+    /// (the partial unique index covering <c>EntryType = 'TaskCompletedReward'</c>).
+    /// </summary>
+    /// <param name="exception">The DbUpdateException to check.</param>
+    /// <returns>True if the exception is a duplicate completion reward violation, false otherwise.</returns>
+    public static bool IsDuplicateTaskCompletionReward(DbUpdateException exception)
+    {
+        return IsUniqueConstraintViolation(exception, "ux_points_ledger_task_reward_once");
+    }
 }

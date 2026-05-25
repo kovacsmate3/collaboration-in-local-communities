@@ -11,6 +11,7 @@ public enum ActivityEventType
     TaskApplicationWithdrawn,
     TaskAccepted,
     TaskCancelled,
+    TaskCompletionSubmitted,
     TaskCompleted,
     ReviewSubmitted,
     MessageSent

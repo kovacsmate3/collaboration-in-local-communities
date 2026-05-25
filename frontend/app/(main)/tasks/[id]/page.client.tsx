@@ -28,11 +28,14 @@ import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { RichTextContent } from "@/components/shared/rich-text-content"
 import { formatRelativeTime } from "@/lib/format"
+import { normalizeTaskStatus } from "@/lib/task-status"
 import { useAuth } from "@/lib/auth-context"
 import {
   useApplyToTask,
+  useApproveTaskCompletion,
   useMyTaskApplications,
   usePatchTaskApplication,
+  useSubmitTaskCompletion,
   useTask,
   useTaskApplications,
   useUpdateTask,
@@ -118,7 +121,7 @@ function TaskActions({ task }: { task: ApiTask }) {
   const { mutate: startConversation, isPending: isStarting } =
     useStartConversation()
   const isSeeker = task.seekerProfileId === user?.profileId
-  const status = task.status.toLowerCase().replace(/([a-z])([A-Z])/g, "$1_$2")
+  const status = normalizeTaskStatus(task.status)
   const canOpenInProgressChat =
     status === "in_progress" &&
     (isSeeker || task.acceptedHelperProfileId === user?.profileId)
@@ -204,6 +207,9 @@ function TaskActions({ task }: { task: ApiTask }) {
             {isStarting ? "Opening…" : "Open chat"}
           </Button>
         ) : null}
+        {task.acceptedHelperProfileId === user?.profileId ? (
+          <SubmitCompletionButton taskId={task.id} />
+        ) : null}
         {isSeeker ? (
           <Button
             variant="ghost"
@@ -217,6 +223,32 @@ function TaskActions({ task }: { task: ApiTask }) {
     )
   }
 
+  if (status === "pending_approval") {
+    const canOpenChat =
+      isSeeker || task.acceptedHelperProfileId === user?.profileId
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">
+          {isSeeker
+            ? `${task.acceptedHelperDisplayName ?? "The helper"} marked this task as done. Approve to complete it.`
+            : "Waiting for the seeker to approve completion."}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {isSeeker ? <ApproveCompletionButton taskId={task.id} /> : null}
+          {canOpenChat ? (
+            <Button
+              variant="outline"
+              disabled={isStarting || isLoadingConversations}
+              onClick={handleMessage}
+            >
+              {isStarting ? "Opening…" : "Open chat"}
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    )
+  }
+
   if (status === "completed") {
     return (
       <div className="flex flex-wrap gap-2">
@@ -226,6 +258,42 @@ function TaskActions({ task }: { task: ApiTask }) {
   }
 
   return null
+}
+
+function SubmitCompletionButton({ taskId }: { taskId: string }) {
+  const { mutate: submitCompletion, isPending } =
+    useSubmitTaskCompletion(taskId)
+
+  function handleSubmit() {
+    submitCompletion(undefined, {
+      onSuccess: () => toast.success("Marked as done. Awaiting approval."),
+      onError: () => toast.error("Could not mark this task as done."),
+    })
+  }
+
+  return (
+    <Button disabled={isPending} onClick={handleSubmit}>
+      {isPending ? "Submitting…" : "Mark as done"}
+    </Button>
+  )
+}
+
+function ApproveCompletionButton({ taskId }: { taskId: string }) {
+  const { mutate: approveCompletion, isPending } =
+    useApproveTaskCompletion(taskId)
+
+  function handleApprove() {
+    approveCompletion(undefined, {
+      onSuccess: () => toast.success("Task completed."),
+      onError: () => toast.error("Could not approve completion."),
+    })
+  }
+
+  return (
+    <Button disabled={isPending} onClick={handleApprove}>
+      {isPending ? "Approving…" : "Approve completion"}
+    </Button>
+  )
 }
 
 function ApplicationControls({

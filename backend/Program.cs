@@ -2,6 +2,7 @@ using System.Net;
 using Azure.Core;
 using Azure.Identity;
 using Backend.Application.Categories;
+using Backend.Application.TaskCompletion;
 using Backend.Features.Auth;
 using Backend.Features.Conversations;
 using Backend.Infrastructure.Email;
@@ -118,6 +119,8 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
     options.UseNpgsql(dataSource, npgsql => npgsql.UseNetTopologySuite());
 });
 builder.Services.AddScoped<IListCategoriesQuery, EfListCategoriesQuery>();
+builder.Services.AddSingleton<ITaskCompletionPointsCalculator, FlatTaskCompletionPointsCalculator>();
+builder.Services.AddScoped<ITaskCompletionRewardService, TaskCompletionRewardService>();
 builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
 builder.Services.AddScoped<RefreshTokenPruner>();
 builder.Services.AddMemoryCache();
