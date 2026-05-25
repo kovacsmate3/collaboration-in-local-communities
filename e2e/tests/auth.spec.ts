@@ -29,7 +29,11 @@ test.describe("Authentication", () => {
     await expect(page.getByText("Welcome back", { exact: true })).toBeVisible()
 
     await page.getByLabel("Email").fill(SEEDED_USER.email)
-    await page.getByLabel("Password").fill(SEEDED_USER.password)
+    // Exact match: the PasswordField's show/hide toggle exposes an
+    // aria-label ("Show password"), which a loose "Password" match would also hit.
+    await page
+      .getByLabel("Password", { exact: true })
+      .fill(SEEDED_USER.password)
     await page.getByRole("button", { name: "Sign in" }).click()
 
     await expectOnFeed(page)
