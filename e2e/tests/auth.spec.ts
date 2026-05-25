@@ -18,6 +18,25 @@ async function expectOnFeed(page: Page): Promise<void> {
   ).toBeVisible()
 }
 
+// A first-time sign-in is intercepted by the terms-acceptance gate
+// (/terms?next=/feed) until the account has an acceptance record for the current
+// terms. Accept and continue if the gate is shown; on a retry where the account
+// already accepted, the app goes straight to the feed.
+async function acceptTermsIfPrompted(page: Page): Promise<void> {
+  const acceptButton = page.getByRole("button", {
+    name: "Accept and continue",
+  })
+  const feedHeading = page.getByRole("heading", {
+    name: "What's happening locally",
+  })
+
+  await expect(acceptButton.or(feedHeading).first()).toBeVisible()
+
+  if (await acceptButton.isVisible()) {
+    await acceptButton.click()
+  }
+}
+
 test.describe("Authentication", () => {
   test("user can log in with seeded credentials and lands on the feed", async ({
     page,
@@ -36,6 +55,7 @@ test.describe("Authentication", () => {
       .fill(SEEDED_USER.password)
     await page.getByRole("button", { name: "Sign in" }).click()
 
+    await acceptTermsIfPrompted(page)
     await expectOnFeed(page)
   })
 
