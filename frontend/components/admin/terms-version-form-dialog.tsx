@@ -197,7 +197,7 @@ function TermsVersionFormBody({
     return Object.keys(errs).length === 0
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
 
     let finalContent = values.content

@@ -174,7 +174,7 @@ internal sealed class TermsVersionConfiguration : IEntityTypeConfiguration<Terms
         builder.Property(terms => terms.MinorVersion).IsRequired();
         builder.Property(terms => terms.PatchVersion).IsRequired();
         builder.Property(terms => terms.Title).HasMaxLength(200).IsRequired();
-        builder.Property(terms => terms.Content);
+        builder.Property(terms => terms.Content).HasColumnType("text");
         builder.Property(terms => terms.ContentUrl).HasMaxLength(2048);
         builder.Property(terms => terms.IsActive).HasDefaultValue(false);
         builder.Property(terms => terms.EffectiveFrom).IsRequired();
