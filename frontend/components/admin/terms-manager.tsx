@@ -10,6 +10,7 @@ import {
   useAdminTermsById,
   useDeleteTermsVersion,
 } from "@/lib/api/admin/terms"
+import { TermsContentViewDialog } from "@/components/admin/terms-content-view-dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -41,10 +42,12 @@ export function TermsManager() {
   const [publishTarget, setPublishTarget] =
     React.useState<AdminTermsVersionListItem | null>(null)
   const [editTargetId, setEditTargetId] = React.useState<string | null>(null)
+  const [viewTargetId, setViewTargetId] = React.useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] =
     React.useState<AdminTermsVersionListItem | null>(null)
 
   const { data: editDetail } = useAdminTermsById(editTargetId ?? "")
+  const { data: viewDetail } = useAdminTermsById(viewTargetId ?? "")
   const deleteVersion = useDeleteTermsVersion()
 
   function handleEdit(id: string) {
@@ -60,11 +63,25 @@ export function TermsManager() {
 
   const histogramData: AdminBarChartRow[] = React.useMemo(() => {
     if (!data || data.length === 0) return []
-    const max = Math.max(...data.map((v) => v.acceptanceCount), 1)
-    return data.map((v) => ({
-      label: v.version,
-      value: v.acceptanceCount,
-      pct: Math.round((v.acceptanceCount / max) * 100),
+    const groups = new Map<string, { label: string; value: number }>()
+    for (const v of data) {
+      const key = `${v.majorVersion}.${v.minorVersion}`
+      const existing = groups.get(key)
+      if (existing) {
+        existing.value += v.acceptanceCount
+      } else {
+        groups.set(key, {
+          label: `${v.majorVersion}.${v.minorVersion}.x`,
+          value: v.acceptanceCount,
+        })
+      }
+    }
+    const rows = Array.from(groups.values())
+    const max = Math.max(...rows.map((r) => r.value), 1)
+    return rows.map((r) => ({
+      label: r.label,
+      value: r.value,
+      pct: Math.round((r.value / max) * 100),
     }))
   }, [data])
 
@@ -126,7 +143,15 @@ export function TermsManager() {
         isLoading={isLoading}
         onPublish={setPublishTarget}
         onEdit={(id) => handleEdit(id)}
+        onView={(id) => setViewTargetId(id)}
         onDelete={setDeleteTarget}
+      />
+
+      <TermsContentViewDialog
+        version={viewDetail ?? null}
+        onOpenChange={(open) => {
+          if (!open) setViewTargetId(null)
+        }}
       />
 
       <CreateTermsVersionDialog

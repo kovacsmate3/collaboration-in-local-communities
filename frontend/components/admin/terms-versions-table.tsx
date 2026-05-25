@@ -3,6 +3,7 @@
 import {
   Delete02Icon,
   Edit01Icon,
+  EyeIcon,
   MoreVerticalIcon,
   Upload01Icon,
 } from "@hugeicons/core-free-icons"
@@ -32,6 +33,7 @@ interface TermsVersionsTableProps {
   isLoading: boolean
   onPublish: (version: AdminTermsVersionListItem) => void
   onEdit: (id: string) => void
+  onView: (id: string) => void
   onDelete: (version: AdminTermsVersionListItem) => void
 }
 
@@ -40,6 +42,7 @@ export function TermsVersionsTable({
   isLoading,
   onPublish,
   onEdit,
+  onView,
   onDelete,
 }: TermsVersionsTableProps) {
   if (isLoading) {
@@ -96,6 +99,7 @@ export function TermsVersionsTable({
               version={v}
               onPublish={onPublish}
               onEdit={onEdit}
+              onView={onView}
               onDelete={onDelete}
             />
           ))}
@@ -122,11 +126,13 @@ function TermsVersionRow({
   version,
   onPublish,
   onEdit,
+  onView,
   onDelete,
 }: {
   version: AdminTermsVersionListItem
   onPublish: (v: AdminTermsVersionListItem) => void
   onEdit: (id: string) => void
+  onView: (id: string) => void
   onDelete: (v: AdminTermsVersionListItem) => void
 }) {
   const isDraft = !version.isActive
@@ -191,8 +197,13 @@ function TermsVersionRow({
               </>
             )}
             {!isDraft && (
-              <DropdownMenuItem disabled>
-                Published — read-only
+              <DropdownMenuItem onClick={() => onView(version.id)}>
+                <HugeiconsIcon
+                  icon={EyeIcon}
+                  className="mr-2 size-4"
+                  strokeWidth={1.5}
+                />
+                View content
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

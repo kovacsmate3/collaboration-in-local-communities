@@ -17,11 +17,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> ListAsync(CancellationToken cancellationToken)
     {
-        var acceptanceCounts = await db.UserTermsAcceptances
-            .AsNoTracking()
-            .GroupBy(a => a.TermsVersionId)
-            .Select(g => new { TermsVersionId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.TermsVersionId, x => x.Count, cancellationToken);
+        var acceptanceCounts = await FetchLatestAcceptanceCountsAsync(cancellationToken);
 
         var versions = await db.TermsVersions
             .AsNoTracking()
@@ -56,9 +52,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             return NotFound();
         }
 
-        var acceptanceCount = await db.UserTermsAcceptances
-            .AsNoTracking()
-            .CountAsync(a => a.TermsVersionId == id, cancellationToken);
+        var counts = await FetchLatestAcceptanceCountsAsync(cancellationToken);
 
         return Ok(new AdminTermsVersionDetail(
             terms.Id,
@@ -73,7 +67,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             terms.EffectiveFrom,
             terms.CreatedAt,
             terms.UpdatedAt,
-            acceptanceCount));
+            counts.GetValueOrDefault(terms.Id, 0)));
     }
 
     [HttpPost]
@@ -236,9 +230,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
         AddAuditEvent("admin.terms_updated", terms.Id, new { terms.Version, terms.Title });
         await db.SaveChangesAsync(cancellationToken);
 
-        var acceptanceCount = await db.UserTermsAcceptances
-            .AsNoTracking()
-            .CountAsync(a => a.TermsVersionId == id, cancellationToken);
+        var counts = await FetchLatestAcceptanceCountsAsync(cancellationToken);
 
         return Ok(new AdminTermsVersionDetail(
             terms.Id,
@@ -253,7 +245,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             terms.EffectiveFrom,
             terms.CreatedAt,
             terms.UpdatedAt,
-            acceptanceCount));
+            counts.GetValueOrDefault(id, 0)));
     }
 
     [HttpPost("{id:guid}/publish")]
@@ -315,9 +307,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        var acceptanceCount = await db.UserTermsAcceptances
-            .AsNoTracking()
-            .CountAsync(a => a.TermsVersionId == id, cancellationToken);
+        var counts = await FetchLatestAcceptanceCountsAsync(cancellationToken);
 
         return Ok(new AdminTermsVersionDetail(
             terms.Id,
@@ -332,7 +322,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             terms.EffectiveFrom,
             terms.CreatedAt,
             terms.UpdatedAt,
-            acceptanceCount));
+            counts.GetValueOrDefault(id, 0)));
     }
 
     [HttpDelete("{id:guid}")]
@@ -394,4 +384,21 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             CreatedAt = DateTimeOffset.UtcNow,
         });
     }
+
+    // For each user count only their most recent acceptance, so publishing a new version
+    // "moves" users from the old version's count to the new one as they re-accept.
+    private Task<Dictionary<Guid, int>> FetchLatestAcceptanceCountsAsync(CancellationToken ct) =>
+        db.Database
+            .SqlQuery<VersionCount>($"""
+                SELECT terms_version_id AS "TermsVersionId", CAST(COUNT(*) AS INTEGER) AS "Count"
+                FROM (
+                    SELECT DISTINCT ON (user_id) terms_version_id
+                    FROM data.user_terms_acceptances
+                    ORDER BY user_id, accepted_at DESC
+                ) latest
+                GROUP BY terms_version_id
+                """)
+            .ToDictionaryAsync(x => x.TermsVersionId, x => x.Count, ct);
+
+    private sealed record VersionCount(Guid TermsVersionId, int Count);
 }
