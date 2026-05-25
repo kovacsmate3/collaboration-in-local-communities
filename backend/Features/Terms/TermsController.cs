@@ -38,6 +38,7 @@ public sealed class TermsController(AppDbContext db, IClientIpAccessor clientIpA
             terms.Id,
             terms.Version,
             terms.Title,
+            terms.Content,
             terms.ContentUrl,
             terms.EffectiveFrom));
     }
@@ -142,8 +143,11 @@ public sealed class TermsController(AppDbContext db, IClientIpAccessor clientIpA
 
         var acceptance = await db.UserTermsAcceptances
             .AsNoTracking()
-            .Where(a => a.UserId == userIdGuid && a.TermsVersionId == activeTerms.Id)
-            .FirstOrDefaultAsync(cancellationToken);
+            .GetMajorMinorAcceptanceAsync(
+                userIdGuid,
+                activeTerms.MajorVersion,
+                activeTerms.MinorVersion,
+                cancellationToken);
 
         return Ok(new TermsAcceptanceResponse(
             acceptance is not null,

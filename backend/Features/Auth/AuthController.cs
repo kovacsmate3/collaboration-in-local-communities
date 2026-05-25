@@ -108,17 +108,25 @@ public sealed partial class AuthController(
         var activeTerms = await db.TermsVersions
             .GetCurrentAsync(now, cancellationToken);
 
-        if (activeTerms is not null)
+        if (activeTerms is null)
         {
-            db.UserTermsAcceptances.Add(new UserTermsAcceptance
+            await transaction.RollbackAsync(cancellationToken);
+            return BadRequest(new ProblemDetails
             {
-                Id = Guid.NewGuid(),
-                UserId = user.Id,
-                TermsVersionId = activeTerms.Id,
-                AcceptedAt = now,
-                IpAddress = GetClientIp()
+                Title = "Registration unavailable",
+                Detail = "No active terms version exists. Registration is disabled until terms are published.",
+                Status = StatusCodes.Status400BadRequest
             });
         }
+
+        db.UserTermsAcceptances.Add(new UserTermsAcceptance
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            TermsVersionId = activeTerms.Id,
+            AcceptedAt = now,
+            IpAddress = GetClientIp()
+        });
 
         AddAuditEvent(user.Id, "auth.registered", "ApplicationUser", user.Id, new { user.Email });
         db.AddActivityEvent(

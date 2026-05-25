@@ -22,4 +22,20 @@ public static class TermsVersionQueries
             .ThenByDescending(terms => terms.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public static Task<UserTermsAcceptance?> GetMajorMinorAcceptanceAsync(
+        this IQueryable<UserTermsAcceptance> query,
+        Guid userId,
+        int majorVersion,
+        int minorVersion,
+        CancellationToken cancellationToken)
+    {
+        return query
+            .Include(a => a.TermsVersion)
+            .Where(a => a.UserId == userId
+                && a.TermsVersion.MajorVersion == majorVersion
+                && a.TermsVersion.MinorVersion == minorVersion)
+            .OrderByDescending(a => a.AcceptedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }

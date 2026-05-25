@@ -4,7 +4,11 @@ public sealed class TermsVersion
 {
     public Guid Id { get; set; }
     public string Version { get; set; } = string.Empty;
+    public int MajorVersion { get; set; }
+    public int MinorVersion { get; set; }
+    public int PatchVersion { get; set; }
     public string Title { get; set; } = string.Empty;
+    public string? Content { get; set; }
     public string? ContentUrl { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTimeOffset EffectiveFrom { get; set; }
