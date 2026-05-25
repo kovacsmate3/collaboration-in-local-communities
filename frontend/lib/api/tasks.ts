@@ -77,7 +77,7 @@ export interface ApplyToTaskInput {
 export interface TaskListFilters {
   status?: string
   categoryId?: string
-  /** Backend `CompensationType` enum name or value (case-insensitive). */
+  /** Backend `CompensationType` enum name only (case-insensitive; numeric values are not accepted). */
   compensationType?: string
   /** ISO 8601 timestamp; tasks with `createdAt >= createdAfter` are returned. */
   createdAfter?: string
