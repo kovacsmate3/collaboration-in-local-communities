@@ -4,11 +4,21 @@ export interface AuthUser {
   id: string
   name: string
   email: string
+  emailVerified: boolean
   role: UserRole
   roles: UserRole[]
   avatarUrl?: string
   profileId?: string
   isProfileCompleted: boolean
+  terms: AuthTermsState
+}
+
+export interface AuthTermsState {
+  hasAccepted: boolean
+  activeVersionId: string | null
+  activeVersion: string | null
+  activeTitle: string | null
+  acceptedAt: string | null
 }
 
 export interface LoginInput {
@@ -54,4 +64,9 @@ export interface OwnProfileResponse {
 
 export interface SessionResponse {
   user: AuthUser | null
+  expiresAt: string | null
+}
+
+export interface RefreshResponse {
+  expiresAt: string | null
 }

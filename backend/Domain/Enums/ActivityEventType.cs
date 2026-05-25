@@ -6,7 +6,12 @@ public enum ActivityEventType
     UserLoggedIn,
     ProfileUpdated,
     TaskPosted,
+    TaskApplicationSubmitted,
+    TaskApplicationRejected,
+    TaskApplicationWithdrawn,
     TaskAccepted,
+    TaskCancelled,
+    TaskCompletionSubmitted,
     TaskCompleted,
     ReviewSubmitted,
     MessageSent

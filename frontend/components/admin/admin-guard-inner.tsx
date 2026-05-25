@@ -2,13 +2,14 @@
 
 import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import type { ReactNode } from "react"
 
 import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES, APP_HOME_ROUTES } from "@/lib/auth/constants"
 
 import { AdminGuardSkeleton } from "./admin-guard-skeleton"
 
-export function AdminGuardInner({ children }: { children: React.ReactNode }) {
+export function AdminGuardInner({ children }: { children: ReactNode }) {
   const { isLoading, user, isAdmin } = useAuth()
   const router = useRouter()
   const pathname = usePathname()

@@ -1,15 +1,23 @@
+using System.Net;
 using Azure.Core;
 using Azure.Identity;
 using Backend.Application.Categories;
+using Backend.Application.TaskCompletion;
 using Backend.Features.Auth;
+using Backend.Features.Conversations;
+using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
+using Backend.Infrastructure.OpenApi;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Persistence.Queries;
 using Backend.Infrastructure.Persistence.Seeding;
+using Backend.Infrastructure.Security;
+using Backend.Infrastructure.Storage;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Azure.Cosmos;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Npgsql;
-using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +31,7 @@ if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
     });
 }
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApiWithJwt();
 
 builder.Services.AddSingleton(_ =>
 {
@@ -111,6 +119,8 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
     options.UseNpgsql(dataSource, npgsql => npgsql.UseNetTopologySuite());
 });
 builder.Services.AddScoped<IListCategoriesQuery, EfListCategoriesQuery>();
+builder.Services.AddSingleton<ITaskCompletionPointsCalculator, FlatTaskCompletionPointsCalculator>();
+builder.Services.AddScoped<ITaskCompletionRewardService, TaskCompletionRewardService>();
 builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
 builder.Services.AddScoped<RefreshTokenPruner>();
 builder.Services.AddMemoryCache();
@@ -131,15 +141,57 @@ builder.Services.AddOptions<RefreshTokenPruningOptions>()
 builder.Services.AddHostedService<RefreshTokenPruningBackgroundService>();
 
 builder.Services.AddApplicationIdentity();
+builder.Services.AddEmailSender(builder.Configuration);
+builder.Services.AddBlobStorage(builder.Configuration);
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        var frontendUrl = builder.Configuration["FRONTEND_URL"] ?? "http://localhost:3000";
+        policy
+            .WithOrigins(frontendUrl)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<CosmosMessageService>();
 builder.Services.AddControllers();
 builder.Services.AddOutputCache();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    // Only trust X-Forwarded-Proto from upstream proxies so Request.IsHttps reflects the
+    // original scheme (used for Secure cookies). X-Forwarded-For is intentionally not
+    // processed: the real client IP comes from the signed proxy token (FrontendProxyAuth).
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+
+    // ACA's Envoy ingress reaches the app pod from a private RFC1918 address; trusting these
+    // ranges lets the framework accept the X-Forwarded-Proto header it sets.
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("10.0.0.0"), 8));
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("172.16.0.0"), 12));
+    options.KnownIPNetworks.Add(new System.Net.IPNetwork(IPAddress.Parse("192.168.0.0"), 16));
+});
+builder.Services.AddFrontendProxyAuth(builder.Configuration);
+builder.Services.AddAppRateLimiting(builder.Configuration);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
 builder.Services.AddDevelopmentDataSeeders(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
+
+var proxyAuth = app.Services.GetRequiredService<IOptions<FrontendProxyAuthOptions>>().Value;
+if (proxyAuth.Enabled
+    && !app.Environment.IsDevelopment()
+    && string.IsNullOrWhiteSpace(proxyAuth.SigningKey))
+{
+    throw new InvalidOperationException(
+        "FrontendProxyAuth:SigningKey is required when FrontendProxyAuth is enabled outside Development. "
+        + "Set FrontendProxyAuth__SigningKey or disable it via FrontendProxyAuth__Enabled=false.");
+}
 
 using (var scope = app.Services.CreateScope())
 {
@@ -173,22 +225,73 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "CosmosDB connection check failed");
-        throw;
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "CosmosDB connection check failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
+    }
+}
+
+{
+    var cosmosMessages = app.Services.GetRequiredService<CosmosMessageService>();
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await cosmosMessages.InitializeAsync();
+        logger.LogInformation("CosmosDB messages container ready.");
+    }
+    catch (Exception ex)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "CosmosDB messages container initialization failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
+    }
+}
+
+{
+    using var blobScope = app.Services.CreateScope();
+    var blobStorage = blobScope.ServiceProvider.GetRequiredService<IBlobStorageService>();
+    var logger = blobScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        await blobStorage.EnsureContainerExistsAsync(CancellationToken.None);
+        logger.LogInformation("Blob storage container ready.");
+    }
+    catch (Exception ex)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            logger.LogWarning(ex, "Blob storage container initialization failed (non-fatal in Development)");
+        }
+        else
+        {
+            throw;
+        }
     }
 }
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapScalarWithJwt();
 
     using var seedScope = app.Services.CreateScope();
     var db = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
     await seedScope.ServiceProvider.RunDataSeedersAsync();
 }
+
+app.UseForwardedHeaders();
+app.UseFrontendProxyAuth();
 
 // Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080)
 if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), out var inContainer) || !inContainer)
@@ -197,6 +300,8 @@ if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAIN
 }
 
 app.UseRouting();
+app.UseCors();
+app.UseRateLimiter();
 app.UseOutputCache();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -205,6 +310,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("Health");
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
 

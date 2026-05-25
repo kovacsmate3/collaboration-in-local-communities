@@ -3,6 +3,7 @@
 import * as React from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
+import type { ReactNode } from "react"
 
 function makeQueryClient() {
   return new QueryClient({
@@ -41,7 +42,7 @@ function getQueryClient() {
   return browserQueryClient
 }
 
-export function QueryProvider({ children }: { children: React.ReactNode }) {
+export function QueryProvider({ children }: { children: ReactNode }) {
   const queryClient = getQueryClient()
 
   return (

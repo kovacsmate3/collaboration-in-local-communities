@@ -18,7 +18,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
@@ -359,8 +359,8 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(3000)
-                        .HasColumnType("character varying(3000)")
+                        .HasMaxLength(50000)
+                        .HasColumnType("character varying(50000)")
                         .HasColumnName("description");
 
                     b.Property<Point>("Location")
@@ -457,7 +457,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_tasks_distinct_profiles", "accepted_helper_profile_id IS NULL OR seeker_profile_id <> accepted_helper_profile_id");
 
-                            t.HasCheckConstraint("ck_tasks_status", "status IN ('Open', 'InProgress', 'Completed', 'Cancelled')");
+                            t.HasCheckConstraint("ck_tasks_status", "status IN ('Open', 'InProgress', 'PendingApproval', 'Completed', 'Cancelled')");
                         });
                 });
 
@@ -1090,9 +1090,26 @@ namespace Backend.Infrastructure.Persistence.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("now()");
 
+                    b.Property<DateTimeOffset?>("HelperLastReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("helper_last_read_at");
+
                     b.Property<Guid>("HelperProfileId")
                         .HasColumnType("uuid")
                         .HasColumnName("helper_profile_id");
+
+                    b.Property<DateTimeOffset?>("LastMessageAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_message_at");
+
+                    b.Property<string>("LastMessageContent")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("last_message_content");
+
+                    b.Property<DateTimeOffset?>("SeekerLastReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("seeker_last_read_at");
 
                     b.Property<Guid>("SeekerProfileId")
                         .HasColumnType("uuid")
@@ -1115,9 +1132,9 @@ namespace Backend.Infrastructure.Persistence.Migrations
                     b.HasIndex("SeekerProfileId")
                         .HasDatabaseName("ix_task_conversations_seeker_profile_id");
 
-                    b.HasIndex("TaskId")
+                    b.HasIndex("TaskId", "HelperProfileId")
                         .IsUnique()
-                        .HasDatabaseName("ux_task_conversations_task_id");
+                        .HasDatabaseName("ux_task_conversations_task_helper");
 
                     b.ToTable("task_conversations", "data");
                 });
@@ -1598,15 +1615,15 @@ namespace Backend.Infrastructure.Persistence.Migrations
                 {
                     b.Property<long>("ActiveUsers7d")
                         .HasColumnType("bigint")
-                        .HasColumnName("active_users7d");
+                        .HasColumnName("active_users_7d");
 
                     b.Property<long>("CompletedTasks7d")
                         .HasColumnType("bigint")
-                        .HasColumnName("completed_tasks7d");
+                        .HasColumnName("completed_tasks_7d");
 
                     b.Property<decimal>("CompletionRate7d")
                         .HasColumnType("numeric")
-                        .HasColumnName("completion_rate7d");
+                        .HasColumnName("completion_rate_7d");
 
                     b.Property<long>("RegisteredUsers")
                         .HasColumnType("bigint")
@@ -1614,7 +1631,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                     b.Property<long>("TasksPosted7d")
                         .HasColumnType("bigint")
-                        .HasColumnName("tasks_posted7d");
+                        .HasColumnName("tasks_posted_7d");
 
                     b.ToTable((string)null);
 
@@ -1986,8 +2003,8 @@ namespace Backend.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_task_conversations_profiles_seeker_profile_id");
 
                     b.HasOne("Backend.Domain.Entities.CommunityTask", "Task")
-                        .WithOne("Conversation")
-                        .HasForeignKey("Backend.Domain.Entities.TaskConversation", "TaskId")
+                        .WithMany("Conversations")
+                        .HasForeignKey("TaskId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_task_conversations_tasks_task_id");
@@ -2128,7 +2145,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                     b.Navigation("CompletionConfirmations");
 
-                    b.Navigation("Conversation");
+                    b.Navigation("Conversations");
 
                     b.Navigation("PointsLedgerEntries");
 

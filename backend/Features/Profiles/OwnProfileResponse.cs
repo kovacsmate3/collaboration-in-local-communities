@@ -19,10 +19,16 @@ public sealed record OwnProfileResponse
     public string? Availability { get; init; }
     public string? PhotoUrl { get; init; }
     public string? LocationText { get; init; }
+    public double? Latitude { get; init; }
+    public double? Longitude { get; init; }
     public bool IsProfileCompleted { get; init; }
     public required decimal AverageRating { get; init; }
     public required int ReviewCount { get; init; }
     public required int CompletedTaskCount { get; init; }
+
+    /// <summary>Gets the aggregate reputation score surfaced in the profile widget.</summary>
+    public required int ReputationScore { get; init; }
+
     public required DateTimeOffset CreatedAt { get; init; }
     public required DateTimeOffset UpdatedAt { get; init; }
     public ICollection<Guid> SkillIds { get; init; } = [];

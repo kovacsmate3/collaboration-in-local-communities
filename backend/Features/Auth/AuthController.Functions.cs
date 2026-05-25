@@ -1,9 +1,11 @@
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using Backend.Domain.Entities;
 using Backend.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using NetTopologySuite.Geometries;
 
 namespace Backend.Features.Auth;
@@ -19,6 +21,24 @@ public sealed partial class AuthController
             tokens.AccessToken,
             tokens.AccessTokenExpiresAt,
             tokens.RefreshTokenExpiresAt);
+    }
+
+    private static string BuildVerificationEmailHtml(string confirmationLink)
+    {
+        var assembly = typeof(AuthController).Assembly;
+        using var stream = assembly.GetManifestResourceStream(
+            "Backend.Features.Auth.EmailTemplates.VerifyEmail.html")!;
+        using var reader = new StreamReader(stream);
+        return string.Format(System.Globalization.CultureInfo.InvariantCulture, reader.ReadToEnd(), confirmationLink);
+    }
+
+    private static string BuildPasswordResetEmailHtml(string resetLink)
+    {
+        var assembly = typeof(AuthController).Assembly;
+        using var stream = assembly.GetManifestResourceStream(
+            "Backend.Features.Auth.EmailTemplates.ResetPassword.html")!;
+        using var reader = new StreamReader(stream);
+        return string.Format(System.Globalization.CultureInfo.InvariantCulture, reader.ReadToEnd(), resetLink);
     }
 
     private void SetTokenResponseHeaders()
@@ -83,7 +103,7 @@ public sealed partial class AuthController
 
     private string? GetClientIp()
     {
-        return HttpContext.Connection.RemoteIpAddress?.ToString();
+        return clientIpAccessor.GetClientIp();
     }
 
     private void SetRefreshTokenCookie(AuthTokenResult tokens)
@@ -132,6 +152,32 @@ public sealed partial class AuthController
         }
 
         return ValidationProblem(ModelState);
+    }
+
+    private async Task SendPasswordResetEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var link = $"{emailOptions.Value.FrontendBaseUrl}/reset-password?userId={user.Id}&token={encodedToken}";
+
+        await emailSender.SendEmailAsync(
+            user.Email!,
+            "2gather - Reset your password",
+            BuildPasswordResetEmailHtml(link),
+            cancellationToken);
+    }
+
+    private async Task SendVerificationEmailAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var link = $"{emailOptions.Value.FrontendBaseUrl}/verify-email?userId={user.Id}&token={encodedToken}";
+
+        await emailSender.SendEmailAsync(
+            user.Email!,
+            "2gather - Verify your email address",
+            BuildVerificationEmailHtml(link),
+            cancellationToken);
     }
 
     private bool TryBuildLocation(double? latitude, double? longitude, out Point? location)

@@ -73,6 +73,7 @@ public sealed class AuthTokenServiceTests
     {
         var services = new ServiceCollection();
 
+        services.AddDataProtection();
         services.AddDbContext<AppDbContext>(options =>
             options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
         services.AddApplicationIdentity();

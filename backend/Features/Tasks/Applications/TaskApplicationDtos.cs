@@ -19,6 +19,7 @@ public sealed record PatchApplicationRequest(
 public sealed record TaskApplicationResponse(
     Guid Id,
     Guid TaskId,
+    Guid? ConversationId,
     Guid HelperProfileId,
     string HelperDisplayName,
     string? Message,
@@ -26,16 +27,52 @@ public sealed record TaskApplicationResponse(
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt)
 {
-    public static TaskApplicationResponse FromApplication(TaskApplication application, string helperDisplayName)
+    public static TaskApplicationResponse FromApplication(
+        TaskApplication application,
+        string helperDisplayName,
+        Guid? conversationId = null)
     {
         return new TaskApplicationResponse(
             application.Id,
             application.TaskId,
+            conversationId,
             application.HelperProfileId,
             helperDisplayName,
             application.Message,
             application.Status.ToString(),
             application.CreatedAt,
             application.UpdatedAt);
+    }
+}
+
+[PublicAPI]
+public sealed record MyTaskApplicationResponse(
+    Guid Id,
+    Guid TaskId,
+    Guid? ConversationId,
+    Guid HelperProfileId,
+    string HelperDisplayName,
+    string? Message,
+    string Status,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
+    TaskResponse Task)
+{
+    public static MyTaskApplicationResponse FromApplication(
+        TaskApplication application,
+        string helperDisplayName,
+        Guid? conversationId = null)
+    {
+        return new MyTaskApplicationResponse(
+            application.Id,
+            application.TaskId,
+            conversationId,
+            application.HelperProfileId,
+            helperDisplayName,
+            application.Message,
+            application.Status.ToString(),
+            application.CreatedAt,
+            application.UpdatedAt,
+            TaskResponse.FromTask(application.Task));
     }
 }

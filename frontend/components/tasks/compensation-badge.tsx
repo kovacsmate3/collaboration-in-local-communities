@@ -1,37 +1,48 @@
 import { Badge } from "@/components/ui/badge"
 import { COMPENSATION_LABELS } from "@/lib/constants"
 import { formatCurrency } from "@/lib/format"
-import type { Compensation } from "@/lib/types"
+import type { CompensationType } from "@/lib/types"
 
 interface CompensationBadgeProps {
-  compensation: Compensation
+  compensationType: string
+  compensationAmount?: number | null
 }
 
-/**
- * Visual marker for the compensation type of a task.
- *
- */
-export function CompensationBadge({ compensation }: CompensationBadgeProps) {
-  const variant =
-    compensation.type === "paid"
-      ? "success"
-      : compensation.type === "barter"
-        ? "warning"
-        : "secondary"
+const VARIANT_BY_TYPE: Record<
+  CompensationType,
+  "success" | "warning" | "secondary"
+> = {
+  paid: "success",
+  points: "secondary",
+  barter: "warning",
+  voluntary: "secondary",
+}
+
+function normalizeCompensationType(value: string): CompensationType {
+  const lower = value.toLowerCase()
+  if (
+    lower === "paid" ||
+    lower === "points" ||
+    lower === "barter" ||
+    lower === "voluntary"
+  ) {
+    return lower
+  }
+  // Fallback for any unexpected value keeps the previous secondary-styled badge.
+  return "voluntary"
+}
+
+export function CompensationBadge({
+  compensationType,
+  compensationAmount,
+}: CompensationBadgeProps) {
+  const type = normalizeCompensationType(compensationType)
+  const variant = VARIANT_BY_TYPE[type]
 
   const label =
-    compensation.type === "paid" && typeof compensation.amount === "number"
-      ? formatCurrency(compensation.amount, compensation.currency)
-      : COMPENSATION_LABELS[compensation.type]
+    type === "paid" && typeof compensationAmount === "number"
+      ? `${formatCurrency(compensationAmount, "HUF")} + points`
+      : COMPENSATION_LABELS[type]
 
-  const ariaLabel =
-    compensation.type === "barter" && compensation.barterOffer
-      ? `Barter offered: ${compensation.barterOffer}`
-      : undefined
-
-  return (
-    <Badge variant={variant} aria-label={ariaLabel}>
-      {label}
-    </Badge>
-  )
+  return <Badge variant={variant}>{label}</Badge>
 }

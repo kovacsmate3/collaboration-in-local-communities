@@ -1,27 +1,27 @@
 import { Badge } from "@/components/ui/badge"
-import { TASK_STATUS_LABELS } from "@/lib/constants"
-import type { TaskStatus } from "@/lib/types"
+import { normalizeTaskStatus } from "@/lib/task-status"
 
 interface TaskStatusBadgeProps {
-  status: TaskStatus
+  status: string
 }
 
-const VARIANT: Record<
-  TaskStatus,
-  React.ComponentProps<typeof Badge>["variant"]
-> = {
-  open: "outline",
-  in_progress: "default",
-  completed: "success",
-  reviewed: "secondary",
-  cancelled: "destructive",
+interface StatusDisplay {
+  label: string
+  variant: React.ComponentProps<typeof Badge>["variant"]
 }
 
-/**
- * Same accessibility logic as `CategoryBadge`: the visible text
- * ("Open", "In progress", …) is the information, so name-from-content
- * is correct - no `aria-label` needed.
- */
+const STATUS_DISPLAY: Record<string, StatusDisplay> = {
+  open: { label: "Open", variant: "outline" },
+  in_progress: { label: "In progress", variant: "default" },
+  pending_approval: { label: "Awaiting approval", variant: "warning" },
+  completed: { label: "Completed", variant: "success" },
+  reviewed: { label: "Reviewed", variant: "secondary" },
+  cancelled: { label: "Cancelled", variant: "destructive" },
+}
+
 export function TaskStatusBadge({ status }: TaskStatusBadgeProps) {
-  return <Badge variant={VARIANT[status]}>{TASK_STATUS_LABELS[status]}</Badge>
+  const key = normalizeTaskStatus(status)
+  const display = STATUS_DISPLAY[key] ?? { label: status, variant: "secondary" }
+
+  return <Badge variant={display.variant}>{display.label}</Badge>
 }

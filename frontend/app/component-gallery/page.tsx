@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import type * as React from "react"
+import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { ReputationCard } from "@/components/profile/reputation-card"
+import { ReputationSummary } from "@/components/shared/reputation-summary"
 import {
   colorTokenGroups,
   fontTokens,
@@ -55,6 +57,61 @@ const badgeVariants = [
   "muted",
   "ghost",
   "link",
+] as const
+
+const singleReviewTrend = [
+  {
+    date: "2026-01-04",
+    score: 10,
+    averageRating: 0,
+    reviewCount: 0,
+    completedTaskCount: 1,
+  },
+  {
+    date: "2026-01-08",
+    score: 20,
+    averageRating: 5,
+    reviewCount: 1,
+    completedTaskCount: 1,
+  },
+  {
+    date: "2026-01-12",
+    score: 50,
+    averageRating: 5,
+    reviewCount: 1,
+    completedTaskCount: 4,
+  },
+] as const
+
+const highVolumeTrend = [
+  {
+    date: "2026-02-01",
+    score: 98,
+    averageRating: 4.75,
+    reviewCount: 4,
+    completedTaskCount: 6,
+  },
+  {
+    date: "2026-02-12",
+    score: 235,
+    averageRating: 4.8,
+    reviewCount: 12,
+    completedTaskCount: 12,
+  },
+  {
+    date: "2026-03-02",
+    score: 397,
+    averageRating: 4.7,
+    reviewCount: 21,
+    completedTaskCount: 20,
+  },
+  {
+    date: "2026-03-19",
+    score: 584,
+    averageRating: 4.9,
+    reviewCount: 31,
+    completedTaskCount: 28,
+  },
 ] as const
 
 export default function ComponentGalleryPage() {
@@ -216,6 +273,80 @@ export default function ComponentGalleryPage() {
             </Card>
           </div>
         </GallerySection>
+
+        <GallerySection
+          title="Reputation"
+          description="Profile reputation widget and the inline summary primitive that other surfaces compose."
+        >
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ComponentPanel title="Inline summary (sm)">
+              <div className="flex flex-col gap-3">
+                <ReputationSummary
+                  score={0}
+                  averageRating={0}
+                  reviewCount={0}
+                  completedTaskCount={0}
+                />
+                <ReputationSummary
+                  score={40}
+                  averageRating={5}
+                  reviewCount={1}
+                  completedTaskCount={3}
+                />
+                <ReputationSummary
+                  score={584}
+                  averageRating={4.9}
+                  reviewCount={31}
+                  completedTaskCount={28}
+                />
+                <ReputationSummary
+                  score={584}
+                  averageRating={4.9}
+                  reviewCount={31}
+                  completedTaskCount={28}
+                  size="md"
+                />
+                <ReputationSummary
+                  score={584}
+                  averageRating={4.9}
+                  reviewCount={31}
+                  completedTaskCount={28}
+                  showScore={false}
+                />
+              </div>
+            </ComponentPanel>
+
+            <ComponentPanel title="Dashboard widget - new user">
+              <ReputationCard
+                score={0}
+                averageRating={0}
+                reviewCount={0}
+                completedTaskCount={0}
+                showOwnerCtas
+              />
+            </ComponentPanel>
+
+            <ComponentPanel title="Dashboard widget - single review">
+              <ReputationCard
+                score={50}
+                averageRating={5}
+                reviewCount={1}
+                completedTaskCount={4}
+                trend={singleReviewTrend}
+              />
+            </ComponentPanel>
+
+            <ComponentPanel title="Dashboard widget - high volume helper">
+              <ReputationCard
+                score={584}
+                averageRating={4.9}
+                reviewCount={31}
+                completedTaskCount={28}
+                trend={highVolumeTrend}
+              />
+            </ComponentPanel>
+          </div>
+        </GallerySection>
       </div>
     </main>
   )
@@ -228,7 +359,7 @@ function GallerySection({
 }: Readonly<{
   title: string
   description: string
-  children: React.ReactNode
+  children: ReactNode
 }>) {
   return (
     <section className="flex flex-col gap-4">
@@ -337,7 +468,7 @@ function ShadowTokenCard({ token }: Readonly<{ token: ShadowToken }>) {
 function ComponentPanel({
   title,
   children,
-}: Readonly<{ title: string; children: React.ReactNode }>) {
+}: Readonly<{ title: string; children: ReactNode }>) {
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 shadow-card">
       <h3 className="font-heading text-section-title">{title}</h3>

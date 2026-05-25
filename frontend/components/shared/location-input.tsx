@@ -171,7 +171,7 @@ export function LocationInput({
             onClick={lookupAddress}
           >
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
-            {isSearching ? "Looking up..." : "Lookup address"}
+            {isSearching ? "Searching..." : "Search"}
           </Button>
           <Button
             type="button"

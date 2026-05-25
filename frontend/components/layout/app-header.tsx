@@ -1,7 +1,6 @@
 import Link from "next/link"
 
 import { AdminHeaderLink } from "@/components/layout/admin-header-link"
-import { Button } from "@/components/ui/button"
 import { MainNav } from "@/components/layout/main-nav"
 import { UserMenu } from "@/components/layout/user-menu"
 import { APP_NAME } from "@/lib/constants"
@@ -21,18 +20,18 @@ import { APP_NAME } from "@/lib/constants"
 export function AppHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link href="/feed" className="text-base font-semibold tracking-tight">
+      <div className="mx-auto grid h-14 max-w-6xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 px-4 sm:px-6">
+        <Link
+          href="/feed"
+          className="col-start-1 row-start-1 justify-self-start text-base font-semibold tracking-tight"
+        >
           {APP_NAME}
         </Link>
 
-        <MainNav className="hidden md:flex" />
+        <MainNav className="col-start-2 row-start-1 hidden md:flex" />
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="col-start-3 row-start-1 flex items-center gap-2 justify-self-end">
           <AdminHeaderLink />
-          <Button asChild size="sm" className="hidden sm:inline-flex">
-            <Link href="/post-task">Post a task</Link>
-          </Button>
           <UserMenu />
         </div>
       </div>

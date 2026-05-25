@@ -53,16 +53,12 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         href: "/admin/skills",
         label: "Skills",
         icon: FlipBottomIcon,
-        badge: "Soon",
-        disabled: true,
         matches: (pathname) => pathname.startsWith("/admin/skills"),
       },
       {
         href: "/admin/users",
         label: "Users",
         icon: UserMultiple02Icon,
-        badge: "Soon",
-        disabled: true,
         matches: (pathname) => pathname.startsWith("/admin/users"),
       },
     ],
@@ -82,8 +78,6 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
         href: "/admin/audit-log",
         label: "Audit Log",
         icon: ArchiveIcon,
-        badge: "Soon",
-        disabled: true,
         matches: (pathname) => pathname.startsWith("/admin/audit-log"),
       },
     ],
@@ -111,7 +105,8 @@ export const ADMIN_PAGE_META: Record<string, AdminPageMeta> = {
   "/admin/reports": { label: "Reports", parent: "/admin" },
   "/admin/data-library": { label: "Data Library", parent: "/admin" },
   "/admin/audit-log": { label: "Audit Log", parent: "/admin" },
-  "/admin/profile": { label: "My Account", parent: "/admin" },
+  "/admin/profile": { label: "My Account" },
+  "/admin/profile/edit": { label: "Edit Profile", parent: "/admin/profile" },
 }
 
 export function isAdminNavItemActive(

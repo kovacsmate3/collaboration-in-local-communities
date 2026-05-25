@@ -23,11 +23,25 @@ export const TASK_CATEGORIES: Record<
 
 export const TASK_CATEGORY_LIST = Object.keys(TASK_CATEGORIES) as TaskCategory[]
 
+/**
+ * Display labels for the optional extra reward. Points are always awarded when
+ * a helper completes a task.
+ */
 export const COMPENSATION_LABELS: Record<CompensationType, string> = {
-  paid: "Paid",
-  voluntary: "Voluntary",
-  barter: "Barter",
+  paid: "Paid + points",
+  points: "Points only",
+  voluntary: "Points only",
+  barter: "Barter + points",
 }
+
+export const COMPENSATION_OPTIONS = [
+  { value: "points", label: COMPENSATION_LABELS.points },
+  { value: "paid", label: COMPENSATION_LABELS.paid },
+  { value: "barter", label: COMPENSATION_LABELS.barter },
+] as const satisfies readonly {
+  value: Exclude<CompensationType, "voluntary">
+  label: string
+}[]
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   open: "Open",
@@ -37,7 +51,7 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   cancelled: "Cancelled",
 }
 
-/** Recency filter buckets for the Helper feed search. */
+/** Recency filter buckets for the feed search. */
 export const RECENCY_OPTIONS = [
   { value: "any", label: "Any time" },
   { value: "24h", label: "Last 24 hours" },
