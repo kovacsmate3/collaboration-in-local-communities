@@ -26,6 +26,19 @@ public sealed class TaskCompletionRewardService(
                 $"Cannot award completion points for task {task.Id}: no accepted helper.");
         }
 
+        // Check the change tracker first so an entry staged earlier in this same
+        // DbContext (but not yet saved) is treated as an existing award. AnyAsync
+        // would miss it.
+        var stagedLocally = db.PointsLedger.Local.Any(
+            entry => entry.TaskId == task.Id
+                && entry.ProfileId == helperProfileId
+                && entry.EntryType == PointEntryType.TaskCompletedReward);
+
+        if (stagedLocally)
+        {
+            return null;
+        }
+
         var alreadyAwarded = await db.PointsLedger.AnyAsync(
             entry => entry.TaskId == task.Id
                 && entry.ProfileId == helperProfileId

@@ -36,6 +36,27 @@ public sealed class TaskCompletionRewardServiceTests
     }
 
     [Fact]
+    public async Task StageCompletionRewardAsync_IsIdempotent_WhenAwardIsStagedInSameContext()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var task = SeedCompletedTask(db, CompensationType.Voluntary);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var service = new TaskCompletionRewardService(db, new FlatTaskCompletionPointsCalculator());
+
+        var firstAward = await service.StageCompletionRewardAsync(task, cancellationToken);
+        // No SaveChanges between calls — the second call must see the change-tracker
+        // entry, not just the persisted DB rows.
+        var secondAward = await service.StageCompletionRewardAsync(task, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+
+        Assert.NotNull(firstAward);
+        Assert.Null(secondAward);
+        Assert.Single(db.PointsLedger);
+    }
+
+    [Fact]
     public async Task StageCompletionRewardAsync_IsIdempotent_WhenAwardAlreadyExists()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

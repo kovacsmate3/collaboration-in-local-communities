@@ -28,6 +28,7 @@ import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { RichTextContent } from "@/components/shared/rich-text-content"
 import { formatRelativeTime } from "@/lib/format"
+import { normalizeTaskStatus } from "@/lib/task-status"
 import { useAuth } from "@/lib/auth-context"
 import {
   useApplyToTask,
@@ -120,7 +121,7 @@ function TaskActions({ task }: { task: ApiTask }) {
   const { mutate: startConversation, isPending: isStarting } =
     useStartConversation()
   const isSeeker = task.seekerProfileId === user?.profileId
-  const status = task.status.toLowerCase().replace(/([a-z])([A-Z])/g, "$1_$2")
+  const status = normalizeTaskStatus(task.status)
   const canOpenInProgressChat =
     status === "in_progress" &&
     (isSeeker || task.acceptedHelperProfileId === user?.profileId)

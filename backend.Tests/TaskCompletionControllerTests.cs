@@ -263,7 +263,7 @@ public sealed class TaskCompletionControllerTests
         });
 
         await db.SaveChangesAsync(cancellationToken);
-        return new CompletionScenario(taskId, seekerUserId, seekerProfileId, helperUserId, helperProfileId);
+        return new CompletionScenario(taskId, seekerUserId, helperUserId, helperProfileId);
     }
 
     private static async Task<CompletionScenario> SeedPendingApprovalTaskAsync(
@@ -315,7 +315,6 @@ public sealed class TaskCompletionControllerTests
     private sealed record CompletionScenario(
         Guid TaskId,
         Guid SeekerUserId,
-        Guid SeekerProfileId,
         Guid HelperUserId,
         Guid HelperProfileId);
 }
