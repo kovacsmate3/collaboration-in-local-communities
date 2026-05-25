@@ -24,7 +24,7 @@ import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
 import { resendVerificationEmail } from "@/lib/auth/functions"
 import { useCategories } from "@/lib/api/categories"
 import { useCreateTask, useUpdateTask } from "@/lib/api/tasks"
-import { COMPENSATION_LABELS } from "@/lib/constants"
+import { COMPENSATION_OPTIONS } from "@/lib/constants"
 import type { LocationValue } from "@/lib/location"
 import type { CompensationType } from "@/lib/types"
 
@@ -42,7 +42,7 @@ const INITIAL: PostTaskFormState = {
   description: "",
   categoryId: "",
   location: { locationText: "" },
-  compensationType: "voluntary",
+  compensationType: "points",
   compensationAmount: "",
 }
 
@@ -65,9 +65,12 @@ export function PostTaskForm({
     taskId ?? ""
   )
   const isPending = isCreating || isUpdating
-  const [form, setForm] = React.useState<PostTaskFormState>({
-    ...INITIAL,
-    ...initialValues,
+  const [form, setForm] = React.useState<PostTaskFormState>(() => {
+    const next = { ...INITIAL, ...initialValues }
+    return {
+      ...next,
+      compensationType: normalizeCompensationType(next.compensationType),
+    }
   })
   const [isResending, setIsResending] = React.useState(false)
 
@@ -265,7 +268,7 @@ export function PostTaskForm({
       </div>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-medium">Compensation</legend>
+        <legend className="text-sm font-medium">Reward offered</legend>
         <RadioGroup
           value={form.compensationType}
           onValueChange={(v) =>
@@ -273,20 +276,19 @@ export function PostTaskForm({
           }
           className="grid gap-2 sm:grid-cols-3"
         >
-          {(Object.keys(COMPENSATION_LABELS) as CompensationType[]).map(
-            (key) => (
-              <Label
-                key={key}
-                htmlFor={`comp-${key}`}
-                className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background p-3 hover:bg-muted"
-              >
-                <RadioGroupItem id={`comp-${key}`} value={key} />
-                <span className="text-sm font-medium">
-                  {COMPENSATION_LABELS[key]}
-                </span>
-              </Label>
-            )
-          )}
+          {COMPENSATION_OPTIONS.map((option) => (
+            <Label
+              key={option.value}
+              htmlFor={`comp-${option.value}`}
+              className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background p-3 hover:bg-muted"
+            >
+              <RadioGroupItem
+                id={`comp-${option.value}`}
+                value={option.value}
+              />
+              <span className="text-sm font-medium">{option.label}</span>
+            </Label>
+          ))}
         </RadioGroup>
 
         {form.compensationType === "paid" ? (
@@ -323,4 +325,20 @@ export function PostTaskForm({
       </div>
     </form>
   )
+}
+
+function normalizeCompensationType(value: unknown): CompensationType {
+  if (typeof value !== "string") return "points"
+
+  switch (value.toLowerCase()) {
+    case "paid":
+      return "paid"
+    case "barter":
+      return "barter"
+    case "points":
+    case "voluntary":
+      return "points"
+    default:
+      return "points"
+  }
 }

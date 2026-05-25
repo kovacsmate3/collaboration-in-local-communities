@@ -51,7 +51,15 @@ export interface Category {
   icon: string
 }
 
-export type CompensationType = "paid" | "voluntary" | "barter"
+/**
+ * Extra reward offered for a task. Helpers always earn platform points when a
+ * task is completed.
+ *
+ * `points` corresponds to the backend `CompensationType.Points` enum value and
+ * represents the points-only/no-extra-reward case. `voluntary` is a legacy
+ * backend value that is also displayed as points-only in the UI.
+ */
+export type CompensationType = "paid" | "points" | "voluntary" | "barter"
 
 export interface Compensation {
   type: CompensationType
