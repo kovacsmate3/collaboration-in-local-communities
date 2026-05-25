@@ -1,7 +1,6 @@
 import {
   BubbleChatIcon,
   Compass01Icon,
-  Tag01Icon,
   TaskDaily01Icon,
 } from "@hugeicons/core-free-icons"
 
@@ -23,15 +22,9 @@ export interface NavItem {
 export const PRIMARY_NAV: NavItem[] = [
   {
     href: "/feed",
-    label: "Seeker feed",
+    label: "Feed",
     icon: Compass01Icon,
     matches: (p) => p === "/feed" || p.startsWith("/feed/"),
-  },
-  {
-    href: "/helper",
-    label: "Helper feed",
-    icon: Tag01Icon,
-    matches: (p) => p === "/helper" || p.startsWith("/helper/"),
   },
   {
     href: "/tasks",

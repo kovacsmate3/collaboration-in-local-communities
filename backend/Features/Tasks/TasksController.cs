@@ -26,6 +26,8 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         [FromQuery] double? latitude,
         [FromQuery] double? longitude,
         [FromQuery] double? radiusMeters,
+        [FromQuery] string? compensationType = null,
+        [FromQuery] DateTimeOffset? createdAfter = null,
         [FromQuery] int? page = null,
         [FromQuery] int? pageSize = null,
         CancellationToken cancellationToken = default)
@@ -91,6 +93,28 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         if (categoryId.HasValue)
         {
             query = query.Where(task => task.CategoryId == categoryId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(compensationType))
+        {
+            if (!TryParseCompensationType(compensationType, out var parsedCompensation))
+            {
+                ModelState.AddModelError(
+                    nameof(compensationType),
+                    $"Invalid compensation type '{compensationType}'.");
+                return ValidationProblem(ModelState);
+            }
+
+            query = parsedCompensation is CompensationType.Points or CompensationType.Voluntary
+                ? query.Where(task => task.CompensationType == CompensationType.Points
+                    || task.CompensationType == CompensationType.Voluntary)
+                : query.Where(task => task.CompensationType == parsedCompensation);
+        }
+
+        if (createdAfter.HasValue)
+        {
+            var cutoff = createdAfter.Value;
+            query = query.Where(task => task.CreatedAt >= cutoff);
         }
 
         IQueryable<CommunityTask> orderedQuery;
@@ -205,7 +229,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             Location = BuildLocation(request.Latitude, request.Longitude),
             LocationText = StringUtilities.Normalize(request.LocationText),
             CompensationType = compensationType,
-            CompensationAmount = request.CompensationAmount,
+            CompensationAmount = compensationType == CompensationType.Paid ? request.CompensationAmount : null,
             Status = DomainTaskStatus.Open
         };
 
@@ -313,11 +337,24 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             }
 
             task.CompensationType = compensationType;
+            if (compensationType != CompensationType.Paid)
+            {
+                task.CompensationAmount = null;
+            }
+
             anyChange = true;
         }
 
         if (request.CompensationAmount is not null)
         {
+            if (task.CompensationType != CompensationType.Paid)
+            {
+                ModelState.AddModelError(
+                    nameof(request.CompensationAmount),
+                    "CompensationAmount only applies to Paid tasks.");
+                return ValidationProblem(ModelState);
+            }
+
             task.CompensationAmount = request.CompensationAmount;
             anyChange = true;
         }

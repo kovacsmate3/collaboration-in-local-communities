@@ -77,19 +77,26 @@ export interface ApplyToTaskInput {
 export interface TaskListFilters {
   status?: string
   categoryId?: string
+  /** Backend `CompensationType` enum name or value (case-insensitive). */
+  compensationType?: string
+  /** ISO 8601 timestamp; tasks with `createdAt >= createdAfter` are returned. */
+  createdAfter?: string
+  latitude?: number
+  longitude?: number
+  radiusMeters?: number
 }
 
 // ── Query keys ────────────────────────────────────────────────────────────────
 
+type TaskListFiltersKey = Record<string, string | number | undefined>
+
 export const taskKeys = {
   all: ["tasks"] as const,
   lists: () => [...taskKeys.all, "list"] as const,
-  list: (filters: Record<string, string | undefined>) =>
+  list: (filters: TaskListFiltersKey) =>
     [...taskKeys.lists(), filters] as const,
-  infiniteList: (
-    filters: Record<string, string | undefined>,
-    pageSize: number
-  ) => [...taskKeys.list(filters), "infinite", pageSize] as const,
+  infiniteList: (filters: TaskListFiltersKey, pageSize: number) =>
+    [...taskKeys.list(filters), "infinite", pageSize] as const,
   detail: (id: string) => [...taskKeys.all, "detail", id] as const,
   applications: (id: string) =>
     [...taskKeys.detail(id), "applications"] as const,
@@ -100,7 +107,7 @@ export const taskKeys = {
 
 export function useTaskList(filters: TaskListFilters = {}) {
   return useQuery({
-    queryKey: taskKeys.list(filters as Record<string, string | undefined>),
+    queryKey: taskKeys.list(filters as TaskListFiltersKey),
     queryFn: () => apiClient.get<ApiTask[]>(buildTaskListPath(filters)),
   })
 }
@@ -110,10 +117,7 @@ export function useInfiniteTaskList(
   pageSize = 20
 ) {
   return useInfiniteQuery({
-    queryKey: taskKeys.infiniteList(
-      filters as Record<string, string | undefined>,
-      pageSize
-    ),
+    queryKey: taskKeys.infiniteList(filters as TaskListFiltersKey, pageSize),
     initialPageParam: 1,
     queryFn: ({ pageParam }) =>
       apiClient.get<ApiTask[]>(
@@ -233,6 +237,26 @@ function buildTaskListPath(
   const params = new URLSearchParams()
   if (filters.status) params.set("status", filters.status)
   if (filters.categoryId) params.set("categoryId", filters.categoryId)
+  if (filters.compensationType) {
+    params.set("compensationType", filters.compensationType)
+  }
+  if (filters.createdAfter) params.set("createdAfter", filters.createdAfter)
+  // Proximity is a triplet on the backend (latitude + longitude + radiusMeters).
+  // Sending a partial triplet returns a 400, so only forward when all three are
+  // present and finite.
+  if (
+    typeof filters.latitude === "number" &&
+    Number.isFinite(filters.latitude) &&
+    typeof filters.longitude === "number" &&
+    Number.isFinite(filters.longitude) &&
+    typeof filters.radiusMeters === "number" &&
+    Number.isFinite(filters.radiusMeters) &&
+    filters.radiusMeters > 0
+  ) {
+    params.set("latitude", String(filters.latitude))
+    params.set("longitude", String(filters.longitude))
+    params.set("radiusMeters", String(filters.radiusMeters))
+  }
   if (pagination) {
     params.set("page", String(pagination.page))
     params.set("pageSize", String(pagination.pageSize))

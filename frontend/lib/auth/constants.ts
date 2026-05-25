@@ -52,7 +52,6 @@ export const APP_LEGAL_ROUTES = {
 export const PROTECTED_ROUTE_PREFIXES = [
   "/admin",
   "/feed",
-  "/helper",
   "/messages",
   "/post-task",
   "/profile",

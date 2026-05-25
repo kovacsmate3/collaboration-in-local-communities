@@ -86,7 +86,7 @@ export function TasksPageClient() {
                 <EmptyState
                   icon={InboxIcon}
                   title="No applications yet"
-                  description="Apply to open tasks from the helper feed to track them here."
+                  description="Apply to open tasks from the feed to track them here."
                 />
               ) : (
                 <ul className="flex flex-col gap-3">
