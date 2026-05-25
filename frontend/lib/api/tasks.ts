@@ -27,7 +27,7 @@ export interface ApiTask {
   longitude: number | null
   compensationType: string
   compensationAmount: number | null
-  status: "Open" | "InProgress" | "Completed" | "Cancelled"
+  status: "Open" | "InProgress" | "PendingApproval" | "Completed" | "Cancelled"
   createdAt: string
   updatedAt: string
 }
@@ -214,6 +214,30 @@ export function usePatchTaskApplication(taskId: string) {
       void qc.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
       void qc.invalidateQueries({ queryKey: taskKeys.lists() })
       void qc.invalidateQueries({ queryKey: ["conversations"] })
+    },
+  })
+}
+
+export function useSubmitTaskCompletion(taskId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      apiClient.post<ApiTask>(`/tasks/${taskId}/completion-submission`, {}),
+    onSuccess: (updated) => {
+      qc.setQueryData(taskKeys.detail(taskId), updated)
+      void qc.invalidateQueries({ queryKey: taskKeys.lists() })
+    },
+  })
+}
+
+export function useApproveTaskCompletion(taskId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      apiClient.post<ApiTask>(`/tasks/${taskId}/completion-approval`, {}),
+    onSuccess: (updated) => {
+      qc.setQueryData(taskKeys.detail(taskId), updated)
+      void qc.invalidateQueries({ queryKey: taskKeys.lists() })
     },
   })
 }

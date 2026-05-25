@@ -12,6 +12,7 @@ interface StatusDisplay {
 const STATUS_DISPLAY: Record<string, StatusDisplay> = {
   open: { label: "Open", variant: "outline" },
   in_progress: { label: "In progress", variant: "default" },
+  pending_approval: { label: "Awaiting approval", variant: "warning" },
   completed: { label: "Completed", variant: "success" },
   reviewed: { label: "Reviewed", variant: "secondary" },
   cancelled: { label: "Cancelled", variant: "destructive" },
