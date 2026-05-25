@@ -31,7 +31,6 @@ public static class TermsVersionQueries
         CancellationToken cancellationToken)
     {
         return query
-            .Include(a => a.TermsVersion)
             .Where(a => a.UserId == userId
                 && a.TermsVersion.MajorVersion == majorVersion
                 && a.TermsVersion.MinorVersion == minorVersion)

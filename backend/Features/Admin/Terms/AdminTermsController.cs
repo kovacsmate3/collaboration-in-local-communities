@@ -3,6 +3,7 @@ using System.Text.Json;
 using Backend.Domain.Entities;
 using Backend.Features.Terms;
 using Backend.Infrastructure.Persistence;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -117,7 +118,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             MinorVersion = minor,
             PatchVersion = patch,
             Title = title,
-            Content = request.Content,
+            Content = request.Content is not null ? SanitizeContent(request.Content) : null,
             ContentUrl = request.ContentUrl?.Trim(),
             IsActive = false,
             EffectiveFrom = effectiveFrom,
@@ -222,7 +223,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
         terms.MinorVersion = minor;
         terms.PatchVersion = patch;
         terms.Title = title;
-        terms.Content = request.Content;
+        terms.Content = request.Content is not null ? SanitizeContent(request.Content) : null;
         terms.ContentUrl = request.ContentUrl?.Trim();
         terms.EffectiveFrom = effectiveFrom;
         terms.UpdatedAt = DateTimeOffset.UtcNow;
@@ -365,6 +366,8 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
 
         return NoContent();
     }
+
+    private static string SanitizeContent(string html) => new HtmlSanitizer().Sanitize(html);
 
     private Guid? GetActorUserId()
     {

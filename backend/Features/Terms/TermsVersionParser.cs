@@ -14,23 +14,16 @@ public static class TermsVersionParser
         }
 
         var parts = version.Trim().Split('.');
-        if (parts.Length < 2 || parts.Length > 3)
+        if (parts.Length != 3)
         {
             return false;
         }
 
         if (!int.TryParse(parts[0], out major) || major < 0 ||
-            !int.TryParse(parts[1], out minor) || minor < 0)
+            !int.TryParse(parts[1], out minor) || minor < 0 ||
+            !int.TryParse(parts[2], out patch) || patch < 0)
         {
             return false;
-        }
-
-        if (parts.Length == 3)
-        {
-            if (!int.TryParse(parts[2], out patch) || patch < 0)
-            {
-                return false;
-            }
         }
 
         return true;

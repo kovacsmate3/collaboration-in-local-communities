@@ -33,35 +33,17 @@ public sealed record AdminTermsVersionDetail(
     int AcceptanceCount);
 
 [PublicAPI]
-public sealed record CreateTermsVersionRequest
-{
-    [Required]
-    public string Version { get; init; } = string.Empty;
-
-    [Required]
-    public string Title { get; init; } = string.Empty;
-
-    public string? Content { get; init; }
-
-    public string? ContentUrl { get; init; }
-
-    [Required]
-    public DateTimeOffset? EffectiveFrom { get; init; }
-}
+public sealed record CreateTermsVersionRequest(
+    [Required] string Version,
+    [Required] string Title,
+    string? Content,
+    string? ContentUrl,
+    [Required] DateTimeOffset? EffectiveFrom);
 
 [PublicAPI]
-public sealed record UpdateTermsVersionRequest
-{
-    [Required]
-    public string Version { get; init; } = string.Empty;
-
-    [Required]
-    public string Title { get; init; } = string.Empty;
-
-    public string? Content { get; init; }
-
-    public string? ContentUrl { get; init; }
-
-    [Required]
-    public DateTimeOffset? EffectiveFrom { get; init; }
-}
+public sealed record UpdateTermsVersionRequest(
+    [Required] string Version,
+    [Required] string Title,
+    string? Content,
+    string? ContentUrl,
+    [Required] DateTimeOffset? EffectiveFrom);

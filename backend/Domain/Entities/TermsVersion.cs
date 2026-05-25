@@ -10,7 +10,7 @@ public sealed class TermsVersion
     public string Title { get; set; } = string.Empty;
     public string? Content { get; set; }
     public string? ContentUrl { get; set; }
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; set; }
     public DateTimeOffset EffectiveFrom { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
