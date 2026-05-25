@@ -35,7 +35,7 @@ test.describe("Authentication", () => {
     await expectOnFeed(page)
   })
 
-  test("new user can register and is signed in on the feed", async ({
+  test("new user can register and is prompted to verify their email", async ({
     page,
   }) => {
     const email = uniqueEmail("e2e-register")
@@ -53,23 +53,34 @@ test.describe("Authentication", () => {
       page.getByText("Create your account", { exact: true })
     ).toBeVisible()
 
-    // Account step
+    // Account step. "Password" is matched exactly so it doesn't also resolve the
+    // "Confirm password" field.
     await page.getByLabel("Email").fill(email)
-    await page.getByLabel("Password").fill(password)
+    await page.getByLabel("Password", { exact: true }).fill(password)
+    await page.getByLabel("Confirm password").fill(password)
     await page.getByRole("checkbox", { name: /I agree to the Terms/i }).check()
     await page.getByRole("button", { name: "Continue" }).click()
 
     // Profile step — fill the full profile, not just the required name.
+    // Optional fields render their label with a trailing "(optional)", so these
+    // use substring (non-exact) label matching.
     await expect(page.getByLabel("Full name")).toBeVisible()
     await page.getByLabel("Full name").fill(displayName)
     await page.getByLabel("Workplace / school").fill(workplace)
-    await page.getByLabel("Role", { exact: true }).fill(role)
+    await page.getByLabel("Role").fill(role)
     // Free-text location (no geocoding call) — both lat/long stay unset, which the
     // form accepts.
     await page.getByLabel("Location").fill(location)
     await page.getByLabel("Short bio").fill(bio)
     await page.getByRole("button", { name: "Create account" }).click()
 
-    await expectOnFeed(page)
+    // Registration no longer signs the user in: the backend sends a verification
+    // email and the UI shows a "Check your email" confirmation instead of the feed.
+    await expect(
+      page.getByText("Check your email", { exact: true })
+    ).toBeVisible()
+    await expect(
+      page.getByRole("link", { name: "Back to sign in" })
+    ).toBeVisible()
   })
 })

@@ -28,6 +28,12 @@ jobs:
       # this guarantees the >=32-byte minimum even if config is overridden.
       AUTH_SIGNING_KEY: "ci-e2e-only-auth-signing-key-32-byte-minimum"
 
+      # SendGrid options are validated at startup (ValidateOnStart) and require a
+      # non-empty ApiKey, so the backend won't boot without one. The suite never
+      # delivers mail — registration's verification-email send fails gracefully —
+      # so a placeholder is sufficient here.
+      SendGrid__ApiKey: "ci-e2e-placeholder-sendgrid-api-key"
+
       # Frontend → backend proxy target at runtime.
       API_URL: "http://localhost:5073"
 
