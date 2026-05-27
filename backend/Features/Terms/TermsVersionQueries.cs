@@ -13,8 +13,20 @@ public static class TermsVersionQueries
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
+        // A superseded (old) version still has its PublishedAt set, so we must
+        // compare against the currently active version's PublishedAt to tell a
+        // scheduled successor apart from an old one. Without this, the query
+        // would reactivate any previously-active version on every call.
+        var currentActivePublishedAt = await db.TermsVersions
+            .Where(t => t.IsActive)
+            .Select(t => (DateTimeOffset?)t.PublishedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
         var due = await db.TermsVersions
-            .Where(t => !t.IsActive && t.PublishedAt != null && t.EffectiveFrom <= now)
+            .Where(t => !t.IsActive
+                && t.PublishedAt != null
+                && t.EffectiveFrom <= now
+                && (currentActivePublishedAt == null || t.PublishedAt > currentActivePublishedAt))
             .OrderByDescending(t => t.EffectiveFrom)
             .ThenByDescending(t => t.PublishedAt)
             .FirstOrDefaultAsync(cancellationToken);
