@@ -323,10 +323,14 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             // Lazy activation will flip it when effectiveFrom is reached.
             terms.PublishedAt = now;
             terms.UpdatedAt = now;
+            AddAuditEvent("admin.terms_published", terms.Id, new { terms.Version, terms.Title, IsScheduled = isScheduled });
+            await db.SaveChangesAsync(cancellationToken);
         }
         else
         {
-            // Immediate activation: deactivate current active version(s).
+            // Immediate activation: deactivate existing active version(s) first in a
+            // separate SaveChanges so the partial unique index (one is_active=true row)
+            // is satisfied before we mark the new version active.
             var currentlyActive = await db.TermsVersions
                 .Where(t => t.IsActive)
                 .ToListAsync(cancellationToken);
@@ -335,6 +339,11 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             {
                 active.IsActive = false;
                 active.UpdatedAt = now;
+            }
+
+            if (currentlyActive.Count > 0)
+            {
+                await db.SaveChangesAsync(cancellationToken);
             }
 
             terms.IsActive = true;
@@ -347,10 +356,10 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             }
 
             terms.UpdatedAt = now;
+            AddAuditEvent("admin.terms_published", terms.Id, new { terms.Version, terms.Title, IsScheduled = isScheduled });
+            await db.SaveChangesAsync(cancellationToken);
         }
 
-        AddAuditEvent("admin.terms_published", terms.Id, new { terms.Version, terms.Title, IsScheduled = isScheduled });
-        await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
         var counts = await FetchLatestAcceptanceCountsAsync(cancellationToken);
