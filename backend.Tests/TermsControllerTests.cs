@@ -226,6 +226,118 @@ public sealed class TermsControllerTests
     }
 
     [Fact]
+    public async Task GetAcceptanceAsync_PatchBump_RemainsAccepted()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var now = DateTimeOffset.UtcNow;
+        var userId = Guid.NewGuid();
+
+        var accepted010 = new TermsVersion
+        {
+            Id = Guid.NewGuid(),
+            Version = "0.1.0",
+            MajorVersion = 0,
+            MinorVersion = 1,
+            PatchVersion = 0,
+            Title = "Original",
+            IsActive = false,
+            EffectiveFrom = now.AddDays(-10),
+            CreatedAt = now.AddDays(-10),
+            UpdatedAt = now.AddDays(-10)
+        };
+        var active011 = new TermsVersion
+        {
+            Id = Guid.NewGuid(),
+            Version = "0.1.1",
+            MajorVersion = 0,
+            MinorVersion = 1,
+            PatchVersion = 1,
+            Title = "Patch bump",
+            IsActive = true,
+            EffectiveFrom = now.AddDays(-1),
+            CreatedAt = now.AddDays(-1),
+            UpdatedAt = now.AddDays(-1)
+        };
+
+        db.TermsVersions.AddRange(accepted010, active011);
+        db.UserTermsAcceptances.Add(new UserTermsAcceptance
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            TermsVersionId = accepted010.Id,
+            AcceptedAt = now.AddDays(-5),
+            IpAddress = "127.0.0.1"
+        });
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateController(db, userId);
+        var result = await controller.GetAcceptanceAsync(cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<TermsAcceptanceResponse>(ok.Value);
+
+        // Same major.minor (0.1) — patch bump must not require re-acceptance.
+        Assert.True(response.HasAccepted);
+    }
+
+    [Fact]
+    public async Task GetAcceptanceAsync_MinorBump_RequiresReAcceptance()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var now = DateTimeOffset.UtcNow;
+        var userId = Guid.NewGuid();
+
+        var accepted010 = new TermsVersion
+        {
+            Id = Guid.NewGuid(),
+            Version = "0.1.0",
+            MajorVersion = 0,
+            MinorVersion = 1,
+            PatchVersion = 0,
+            Title = "Original",
+            IsActive = false,
+            EffectiveFrom = now.AddDays(-10),
+            CreatedAt = now.AddDays(-10),
+            UpdatedAt = now.AddDays(-10)
+        };
+        var active020 = new TermsVersion
+        {
+            Id = Guid.NewGuid(),
+            Version = "0.2.0",
+            MajorVersion = 0,
+            MinorVersion = 2,
+            PatchVersion = 0,
+            Title = "Minor bump",
+            IsActive = true,
+            EffectiveFrom = now.AddDays(-1),
+            CreatedAt = now.AddDays(-1),
+            UpdatedAt = now.AddDays(-1)
+        };
+
+        db.TermsVersions.AddRange(accepted010, active020);
+        db.UserTermsAcceptances.Add(new UserTermsAcceptance
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            TermsVersionId = accepted010.Id,
+            AcceptedAt = now.AddDays(-5),
+            IpAddress = "127.0.0.1"
+        });
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateController(db, userId);
+        var result = await controller.GetAcceptanceAsync(cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<TermsAcceptanceResponse>(ok.Value);
+
+        // Different minor version (0.1 → 0.2) — must require re-acceptance.
+        Assert.False(response.HasAccepted);
+    }
+
+    [Fact]
     public void GetActiveTermsAsync_AllowsAnonymousAccess()
     {
         var method = typeof(TermsController).GetMethod(nameof(TermsController.GetActiveTermsAsync));

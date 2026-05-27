@@ -192,6 +192,11 @@ internal sealed class TermsVersionConfiguration : IEntityTypeConfiguration<Terms
         builder.HasIndex(terms => terms.IsActive)
             .HasDatabaseName("ix_terms_versions_is_active");
 
+        builder.HasIndex(terms => terms.IsActive)
+            .IsUnique()
+            .HasFilter("is_active = true")
+            .HasDatabaseName("ux_terms_versions_single_active");
+
         builder.HasIndex(terms => terms.EffectiveFrom)
             .HasDatabaseName("ix_terms_versions_effective_from");
 

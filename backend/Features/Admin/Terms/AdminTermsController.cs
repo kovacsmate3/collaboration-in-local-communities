@@ -275,12 +275,8 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
 
         if (string.IsNullOrWhiteSpace(terms.Content))
         {
-            return UnprocessableEntity(new ProblemDetails
-            {
-                Title = "Content required",
-                Detail = "Terms content must be set before publishing.",
-                Status = StatusCodes.Status422UnprocessableEntity
-            });
+            ModelState.AddModelError("content", "Terms content must be set before publishing.");
+            return ValidationProblem(ModelState);
         }
 
         // Only the most recently superseded version may be republished (one-step rollback).

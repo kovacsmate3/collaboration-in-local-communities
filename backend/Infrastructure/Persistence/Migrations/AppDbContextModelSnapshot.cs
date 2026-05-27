@@ -1266,6 +1266,11 @@ namespace Backend.Infrastructure.Persistence.Migrations
                     b.HasIndex("IsActive")
                         .HasDatabaseName("ix_terms_versions_is_active");
 
+                    b.HasIndex("IsActive")
+                        .IsUnique()
+                        .HasFilter("is_active = true")
+                        .HasDatabaseName("ux_terms_versions_single_active");
+
                     b.HasIndex("MajorVersion", "MinorVersion")
                         .HasDatabaseName("ix_terms_versions_major_minor");
 
