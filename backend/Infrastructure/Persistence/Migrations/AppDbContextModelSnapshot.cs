@@ -1223,6 +1223,10 @@ namespace Backend.Infrastructure.Persistence.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_active");
 
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
                     b.Property<int>("MajorVersion")
                         .HasColumnType("integer")
                         .HasColumnName("major_version");
@@ -1282,6 +1286,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
                             MajorVersion = 0,
                             MinorVersion = 1,
                             PatchVersion = 0,
+                            PublishedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Title = "Initial Terms and Conditions",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Version = "0.1.0"

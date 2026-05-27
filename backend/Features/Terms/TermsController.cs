@@ -25,9 +25,35 @@ public sealed class TermsController(AppDbContext db, IClientIpAccessor clientIpA
     [HttpGet("active")]
     public async Task<IActionResult> GetActiveTermsAsync(CancellationToken cancellationToken)
     {
+        var now = DateTimeOffset.UtcNow;
+
+        // Lazy activation: if a scheduled version's effectiveFrom has passed, activate it now.
+        var scheduledToActivate = await db.TermsVersions
+            .Where(t => !t.IsActive && t.PublishedAt != null && t.EffectiveFrom <= now)
+            .OrderByDescending(t => t.EffectiveFrom)
+            .ThenByDescending(t => t.PublishedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (scheduledToActivate != null)
+        {
+            var currentlyActive = await db.TermsVersions
+                .Where(t => t.IsActive)
+                .ToListAsync(cancellationToken);
+
+            foreach (var active in currentlyActive)
+            {
+                active.IsActive = false;
+                active.UpdatedAt = now;
+            }
+
+            scheduledToActivate.IsActive = true;
+            scheduledToActivate.UpdatedAt = now;
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
         var terms = await db.TermsVersions
             .AsNoTracking()
-            .GetCurrentAsync(DateTimeOffset.UtcNow, cancellationToken);
+            .GetCurrentAsync(now, cancellationToken);
 
         if (terms is null)
         {

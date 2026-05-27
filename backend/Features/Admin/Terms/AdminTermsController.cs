@@ -34,6 +34,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             t.PatchVersion,
             t.Title,
             t.IsActive,
+            t.PublishedAt,
             t.EffectiveFrom,
             t.CreatedAt,
             acceptanceCounts.GetValueOrDefault(t.Id, 0)));
@@ -65,6 +66,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             terms.Content,
             terms.ContentUrl,
             terms.IsActive,
+            terms.PublishedAt,
             terms.EffectiveFrom,
             terms.CreatedAt,
             terms.UpdatedAt,
@@ -143,8 +145,6 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             });
         }
 
-        var acceptanceCount = 0;
-
         return CreatedAtAction("GetById", new { id = terms.Id }, new AdminTermsVersionDetail(
             terms.Id,
             terms.Version,
@@ -155,10 +155,11 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             terms.Content,
             terms.ContentUrl,
             terms.IsActive,
+            terms.PublishedAt,
             terms.EffectiveFrom,
             terms.CreatedAt,
             terms.UpdatedAt,
-            acceptanceCount));
+            0));
     }
 
     [HttpPut("{id:guid}")]
@@ -244,6 +245,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             terms.Content,
             terms.ContentUrl,
             terms.IsActive,
+            terms.PublishedAt,
             terms.EffectiveFrom,
             terms.CreatedAt,
             terms.UpdatedAt,
@@ -281,31 +283,75 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             });
         }
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-
-        var currentlyActive = await db.TermsVersions
-            .Where(t => t.IsActive)
-            .ToListAsync(cancellationToken);
-
-        foreach (var active in currentlyActive)
+        // Only the most recently superseded version may be republished (one-step rollback).
+        if (terms.PublishedAt != null)
         {
-            active.IsActive = false;
-            active.UpdatedAt = DateTimeOffset.UtcNow;
+            var lastSupersededId = await db.TermsVersions
+                .Where(t => !t.IsActive && t.PublishedAt != null)
+                .OrderByDescending(t => t.PublishedAt)
+                .Select(t => t.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (terms.Id != lastSupersededId)
+            {
+                return Conflict(new ProblemDetails
+                {
+                    Title = "Republish not allowed",
+                    Detail = "Only the most recently superseded version can be republished.",
+                    Status = StatusCodes.Status409Conflict
+                });
+            }
         }
 
-        terms.IsActive = true;
-        if (terms.EffectiveFrom > DateTimeOffset.UtcNow)
+        var now = DateTimeOffset.UtcNow;
+        var isScheduled = terms.EffectiveFrom > now;
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        // Cancel any other pending scheduled versions.
+        var otherScheduled = await db.TermsVersions
+            .Where(t => !t.IsActive && t.PublishedAt != null && t.EffectiveFrom > now && t.Id != id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var s in otherScheduled)
         {
-            // Keep the future effective date as-is — it will become current when reached.
+            s.PublishedAt = null;
+            s.UpdatedAt = now;
+        }
+
+        if (isScheduled)
+        {
+            // Future-dated: mark as scheduled but keep IsActive = false.
+            // Lazy activation will flip it when effectiveFrom is reached.
+            terms.PublishedAt = now;
+            terms.UpdatedAt = now;
         }
         else
         {
-            terms.EffectiveFrom = DateTimeOffset.UtcNow;
+            // Immediate activation: deactivate current active version(s).
+            var currentlyActive = await db.TermsVersions
+                .Where(t => t.IsActive)
+                .ToListAsync(cancellationToken);
+
+            foreach (var active in currentlyActive)
+            {
+                active.IsActive = false;
+                active.UpdatedAt = now;
+            }
+
+            terms.IsActive = true;
+            terms.PublishedAt = now;
+
+            // Clamp effectiveFrom to now if it's in the past (republish case).
+            if (terms.EffectiveFrom < now)
+            {
+                terms.EffectiveFrom = now;
+            }
+
+            terms.UpdatedAt = now;
         }
 
-        terms.UpdatedAt = DateTimeOffset.UtcNow;
-
-        AddAuditEvent("admin.terms_published", terms.Id, new { terms.Version, terms.Title });
+        AddAuditEvent("admin.terms_published", terms.Id, new { terms.Version, terms.Title, IsScheduled = isScheduled });
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
@@ -321,6 +367,7 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
             terms.Content,
             terms.ContentUrl,
             terms.IsActive,
+            terms.PublishedAt,
             terms.EffectiveFrom,
             terms.CreatedAt,
             terms.UpdatedAt,

@@ -21,6 +21,7 @@ export interface AdminTermsVersionListItem {
   patchVersion: number
   title: string
   isActive: boolean
+  publishedAt: string | null
   effectiveFrom: string
   createdAt: string
   acceptanceCount: number

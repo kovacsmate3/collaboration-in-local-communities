@@ -12,6 +12,7 @@ public sealed record AdminTermsVersionListItem(
     int PatchVersion,
     string Title,
     bool IsActive,
+    DateTimeOffset? PublishedAt,
     DateTimeOffset EffectiveFrom,
     DateTimeOffset CreatedAt,
     int AcceptanceCount);
@@ -27,6 +28,7 @@ public sealed record AdminTermsVersionDetail(
     string? Content,
     string? ContentUrl,
     bool IsActive,
+    DateTimeOffset? PublishedAt,
     DateTimeOffset EffectiveFrom,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,

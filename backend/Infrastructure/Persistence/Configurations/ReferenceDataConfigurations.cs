@@ -177,6 +177,7 @@ internal sealed class TermsVersionConfiguration : IEntityTypeConfiguration<Terms
         builder.Property(terms => terms.Content).HasColumnType("text");
         builder.Property(terms => terms.ContentUrl).HasMaxLength(2048);
         builder.Property(terms => terms.IsActive).HasDefaultValue(false);
+        builder.Property(terms => terms.PublishedAt);
         builder.Property(terms => terms.EffectiveFrom).IsRequired();
         builder.HasCreatedAt(terms => terms.CreatedAt);
         builder.HasUpdatedAt(terms => terms.UpdatedAt);
@@ -204,6 +205,7 @@ internal sealed class TermsVersionConfiguration : IEntityTypeConfiguration<Terms
             Title = "Initial Terms and Conditions",
             Content = PlaceholderContent,
             IsActive = true,
+            PublishedAt = ConfigurationHelpers.SeedTimestamp,
             EffectiveFrom = ConfigurationHelpers.SeedTimestamp,
             CreatedAt = ConfigurationHelpers.SeedTimestamp,
             UpdatedAt = ConfigurationHelpers.SeedTimestamp

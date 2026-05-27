@@ -8,6 +8,7 @@ import {
   type AdminTermsVersionDetail,
   type AdminTermsVersionListItem,
   useCreateTermsVersion,
+  usePublishTermsVersion,
   useUpdateTermsVersion,
 } from "@/lib/api/admin/terms"
 import { Button } from "@/components/ui/button"
@@ -79,11 +80,12 @@ function datetimeLocalToIso(local: string): string {
 }
 
 function buildInitialValues(
-  existing?: AdminTermsVersionDetail | AdminTermsVersionListItem | null
+  existing?: AdminTermsVersionDetail | AdminTermsVersionListItem | null,
+  defaultVersion?: string
 ): FormValues {
   if (!existing) {
     return {
-      version: "",
+      version: defaultVersion ?? "",
       title: "",
       content: "",
       contentUrl: "",
@@ -104,11 +106,13 @@ function buildInitialValues(
 export function CreateTermsVersionDialog({
   open,
   onOpenChange,
+  defaultVersion,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  defaultVersion?: string
 }) {
-  const initial = buildInitialValues(null)
+  const initial = buildInitialValues(null, defaultVersion)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -117,7 +121,7 @@ export function CreateTermsVersionDialog({
         </DialogHeader>
         {open && (
           <TermsVersionFormBody
-            key="create"
+            key={`create-${defaultVersion}`}
             mode="create"
             initial={initial}
             onClose={() => onOpenChange(false)}
@@ -166,6 +170,7 @@ function TermsVersionFormBody({
 }: TermsVersionFormBodyProps) {
   const create = useCreateTermsVersion()
   const update = useUpdateTermsVersion(existingId ?? "")
+  const publish = usePublishTermsVersion()
 
   const [values, setValues] = React.useState<FormValues>(initial)
   const [editorTab, setEditorTab] = React.useState<"visual" | "markdown">(
@@ -186,27 +191,31 @@ function TermsVersionFormBody({
     setEditorTab(tab as "visual" | "markdown")
   }
 
-  function validate(): boolean {
+  function validate(requireContent = false): boolean {
     const errs: Partial<FormValues> = {}
     if (!values.version.trim()) errs.version = "Required"
     else if (!/^\d+\.\d+\.\d+$/.test(values.version.trim()))
       errs.version = "Must be x.y.z format (e.g. 0.1.0)"
     if (!values.title.trim()) errs.title = "Required"
     if (!values.effectiveFrom) errs.effectiveFrom = "Required"
+    if (requireContent && !values.content.trim())
+      errs.content = "Content is required before publishing"
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
 
+  async function resolveContent(): Promise<string> {
+    if (editorTab === "markdown") {
+      return markdownToHtml(markdownSource)
+    }
+    return values.content
+  }
+
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault()
-
-    let finalContent = values.content
-    if (editorTab === "markdown") {
-      finalContent = await markdownToHtml(markdownSource)
-    }
-
     if (!validate()) return
 
+    const finalContent = await resolveContent()
     const payload = {
       version: values.version.trim(),
       title: values.title.trim(),
@@ -222,8 +231,36 @@ function TermsVersionFormBody({
     }
   }
 
-  const isPending = create.isPending || update.isPending
-  const serverError = create.error?.message ?? update.error?.message ?? null
+  async function handlePublish(e: React.SyntheticEvent) {
+    e.preventDefault()
+    const finalContent = await resolveContent()
+    setValues((v) => ({ ...v, content: finalContent }))
+
+    if (!validate(true)) return
+
+    const payload = {
+      version: values.version.trim(),
+      title: values.title.trim(),
+      content: finalContent || undefined,
+      contentUrl: values.contentUrl.trim() || undefined,
+      effectiveFrom: datetimeLocalToIso(values.effectiveFrom),
+    }
+
+    // Create first, then publish the resulting draft.
+    create.mutate(payload, {
+      onSuccess: (created) => {
+        publish.mutate(created.id, { onSuccess: onClose })
+      },
+    })
+  }
+
+  const isSavePending = create.isPending || update.isPending
+  const isPublishPending = isSavePending || publish.isPending
+  const serverError =
+    create.error?.message ??
+    update.error?.message ??
+    publish.error?.message ??
+    null
 
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
@@ -304,6 +341,9 @@ function TermsVersionFormBody({
             />
           </TabsContent>
         </Tabs>
+        {errors.content && (
+          <p className="text-xs text-destructive">{errors.content}</p>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -325,13 +365,23 @@ function TermsVersionFormBody({
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
-          {isPending
+        {mode === "create" && (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isPublishPending}
+            onClick={(e) => void handlePublish(e)}
+          >
+            {isPublishPending ? "Publishing…" : "Publish"}
+          </Button>
+        )}
+        <Button type="submit" disabled={isSavePending || publish.isPending}>
+          {isSavePending
             ? mode === "create"
-              ? "Creating…"
+              ? "Saving…"
               : "Saving…"
             : mode === "create"
-              ? "Create draft"
+              ? "Save as draft"
               : "Save changes"}
         </Button>
       </DialogFooter>

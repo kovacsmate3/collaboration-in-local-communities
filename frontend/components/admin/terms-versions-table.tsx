@@ -28,9 +28,23 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+type VersionStatus = "active" | "scheduled" | "draft" | "old" | "old-republishable"
+
+function getVersionStatus(
+  v: AdminTermsVersionListItem,
+  republishableId: string | null
+): VersionStatus {
+  if (v.isActive) return "active"
+  if (!v.publishedAt) return "draft"
+  if (new Date(v.effectiveFrom) > new Date()) return "scheduled"
+  if (v.id === republishableId) return "old-republishable"
+  return "old"
+}
+
 interface TermsVersionsTableProps {
   versions: AdminTermsVersionListItem[]
   isLoading: boolean
+  republishableId: string | null
   onPublish: (version: AdminTermsVersionListItem) => void
   onEdit: (id: string) => void
   onView: (id: string) => void
@@ -40,6 +54,7 @@ interface TermsVersionsTableProps {
 export function TermsVersionsTable({
   versions,
   isLoading,
+  republishableId,
   onPublish,
   onEdit,
   onView,
@@ -97,6 +112,7 @@ export function TermsVersionsTable({
             <TermsVersionRow
               key={v.id}
               version={v}
+              status={getVersionStatus(v, republishableId)}
               onPublish={onPublish}
               onEdit={onEdit}
               onView={onView}
@@ -112,7 +128,7 @@ export function TermsVersionsTable({
 function TermsTableHeader() {
   return (
     <TableRow>
-      <TableHead className="w-28">Status</TableHead>
+      <TableHead className="w-36">Status</TableHead>
       <TableHead>Version</TableHead>
       <TableHead>Title</TableHead>
       <TableHead>Effective</TableHead>
@@ -124,23 +140,30 @@ function TermsTableHeader() {
 
 function TermsVersionRow({
   version,
+  status,
   onPublish,
   onEdit,
   onView,
   onDelete,
 }: {
   version: AdminTermsVersionListItem
+  status: VersionStatus
   onPublish: (v: AdminTermsVersionListItem) => void
   onEdit: (id: string) => void
   onView: (id: string) => void
   onDelete: (v: AdminTermsVersionListItem) => void
 }) {
-  const isDraft = !version.isActive
+  const rowBg =
+    status === "active"
+      ? "bg-success/5"
+      : status === "scheduled"
+        ? "bg-primary/5"
+        : undefined
 
   return (
-    <TableRow className={version.isActive ? "bg-success/5" : undefined}>
+    <TableRow className={rowBg}>
       <TableCell>
-        <StatusBadge isActive={version.isActive} />
+        <StatusBadge status={status} />
       </TableCell>
       <TableCell className="font-mono text-sm">{version.version}</TableCell>
       <TableCell className="text-sm">{version.title}</TableCell>
@@ -163,16 +186,20 @@ function TermsVersionRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {isDraft && (
+            {(status === "draft" ||
+              status === "old-republishable" ||
+              status === "scheduled") && (
+              <DropdownMenuItem onClick={() => onPublish(version)}>
+                <HugeiconsIcon
+                  icon={Upload01Icon}
+                  className="mr-2 size-4"
+                  strokeWidth={1.5}
+                />
+                {status === "old-republishable" ? "Republish" : "Publish"}
+              </DropdownMenuItem>
+            )}
+            {status === "draft" && (
               <>
-                <DropdownMenuItem onClick={() => onPublish(version)}>
-                  <HugeiconsIcon
-                    icon={Upload01Icon}
-                    className="mr-2 size-4"
-                    strokeWidth={1.5}
-                  />
-                  Publish
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onEdit(version.id)}>
                   <HugeiconsIcon
@@ -196,15 +223,23 @@ function TermsVersionRow({
                 </DropdownMenuItem>
               </>
             )}
-            {!isDraft && (
-              <DropdownMenuItem onClick={() => onView(version.id)}>
-                <HugeiconsIcon
-                  icon={EyeIcon}
-                  className="mr-2 size-4"
-                  strokeWidth={1.5}
-                />
-                View content
-              </DropdownMenuItem>
+            {(status === "active" ||
+              status === "old" ||
+              status === "old-republishable" ||
+              status === "scheduled") && (
+              <>
+                {(status === "old-republishable" || status === "scheduled") && (
+                  <DropdownMenuSeparator />
+                )}
+                <DropdownMenuItem onClick={() => onView(version.id)}>
+                  <HugeiconsIcon
+                    icon={EyeIcon}
+                    className="mr-2 size-4"
+                    strokeWidth={1.5}
+                  />
+                  View content
+                </DropdownMenuItem>
+              </>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -213,13 +248,25 @@ function TermsVersionRow({
   )
 }
 
-function StatusBadge({ isActive }: { isActive: boolean }) {
-  if (isActive) {
-    return <Badge variant="success">Active</Badge>
+function StatusBadge({ status }: { status: VersionStatus }) {
+  switch (status) {
+    case "active":
+      return <Badge variant="success">Active</Badge>
+    case "scheduled":
+      return <Badge variant="secondary">Scheduled</Badge>
+    case "draft":
+      return (
+        <Badge variant="outline" className="text-muted-foreground">
+          Draft
+        </Badge>
+      )
+    case "old-republishable":
+      return <Badge variant="warning">Old · Republishable</Badge>
+    case "old":
+      return (
+        <Badge variant="outline" className="text-muted-foreground/60">
+          Old
+        </Badge>
+      )
   }
-  return (
-    <Badge variant="outline" className="text-muted-foreground">
-      Draft
-    </Badge>
-  )
 }

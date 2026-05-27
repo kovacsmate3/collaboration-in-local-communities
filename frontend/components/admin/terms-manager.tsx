@@ -61,6 +61,29 @@ export function TermsManager() {
     })
   }
 
+  const republishableId = React.useMemo(() => {
+    if (!data) return null
+    const now = new Date()
+    const oldVersions = data.filter(
+      (v) =>
+        !v.isActive &&
+        v.publishedAt !== null &&
+        new Date(v.effectiveFrom) <= now
+    )
+    if (oldVersions.length === 0) return null
+    return oldVersions.sort(
+      (a, b) =>
+        new Date(b.publishedAt as string).getTime() -
+        new Date(a.publishedAt as string).getTime()
+    )[0].id
+  }, [data])
+
+  const nextDefaultVersion = React.useMemo(() => {
+    const active = data?.find((v) => v.isActive)
+    if (!active) return ""
+    return `${active.majorVersion}.${active.minorVersion}.${active.patchVersion + 1}`
+  }, [data])
+
   const histogramData: AdminBarChartRow[] = React.useMemo(() => {
     if (!data || data.length === 0) return []
     const groups = new Map<string, { label: string; value: number }>()
@@ -141,6 +164,7 @@ export function TermsManager() {
       <TermsVersionsTable
         versions={data ?? []}
         isLoading={isLoading}
+        republishableId={republishableId}
         onPublish={setPublishTarget}
         onEdit={(id) => handleEdit(id)}
         onView={(id) => setViewTargetId(id)}
@@ -157,6 +181,7 @@ export function TermsManager() {
       <CreateTermsVersionDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
+        defaultVersion={nextDefaultVersion}
       />
 
       <EditTermsVersionDialog
