@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -81,9 +82,9 @@ public sealed class AuthControllerTests
     private sealed class FakeUserManager()
         : UserManager<ApplicationUser>(
             new FakeUserStore(),
-            Options.Create(new IdentityOptions()),
+            Microsoft.Extensions.Options.Options.Create(new IdentityOptions()),
             new PasswordHasher<ApplicationUser>(),
-            validators: [],
+            userValidators: [],
             passwordValidators: [],
             new UpperInvariantLookupNormalizer(),
             new IdentityErrorDescriber(),
