@@ -35,6 +35,50 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
+function computeAllowedNextVersions(
+  versions: AdminTermsVersionListItem[],
+  excludeId?: string
+): string[] {
+  const others = excludeId
+    ? versions.filter((v) => v.id !== excludeId)
+    : versions
+  if (others.length === 0) return ["0.1.0"]
+
+  const highest = others.reduce<{
+    major: number
+    minor: number
+    patch: number
+  } | null>((acc, v) => {
+    if (!acc)
+      return {
+        major: v.majorVersion,
+        minor: v.minorVersion,
+        patch: v.patchVersion,
+      }
+    if (
+      v.majorVersion > acc.major ||
+      (v.majorVersion === acc.major && v.minorVersion > acc.minor) ||
+      (v.majorVersion === acc.major &&
+        v.minorVersion === acc.minor &&
+        v.patchVersion > acc.patch)
+    ) {
+      return {
+        major: v.majorVersion,
+        minor: v.minorVersion,
+        patch: v.patchVersion,
+      }
+    }
+    return acc
+  }, null)
+
+  if (!highest) return ["0.1.0"]
+  return [
+    `${highest.major}.${highest.minor}.${highest.patch + 1}`,
+    `${highest.major}.${highest.minor + 1}.0`,
+    `${highest.major + 1}.0.0`,
+  ]
+}
+
 export function TermsManager() {
   const { data, isLoading, isError, error, refetch } = useAdminTermsList()
 
@@ -78,11 +122,18 @@ export function TermsManager() {
     )[0].id
   }, [data])
 
-  const nextDefaultVersion = React.useMemo(() => {
-    const active = data?.find((v) => v.isActive)
-    if (!active) return ""
-    return `${active.majorVersion}.${active.minorVersion}.${active.patchVersion + 1}`
-  }, [data])
+  const allowedNextForCreate = React.useMemo(
+    () => computeAllowedNextVersions(data ?? []),
+    [data]
+  )
+
+  const allowedNextForEdit = React.useMemo(
+    () =>
+      editTargetId ? computeAllowedNextVersions(data ?? [], editTargetId) : [],
+    [data, editTargetId]
+  )
+
+  const nextDefaultVersion = allowedNextForCreate[0] ?? ""
 
   const histogramData: AdminBarChartRow[] = React.useMemo(() => {
     if (!data || data.length === 0) return []
@@ -186,10 +237,12 @@ export function TermsManager() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         defaultVersion={nextDefaultVersion}
+        allowedVersions={allowedNextForCreate}
       />
 
       <EditTermsVersionDialog
         version={editDetail ?? null}
+        allowedVersions={allowedNextForEdit}
         onOpenChange={(open) => {
           if (!open) setEditTargetId(null)
         }}

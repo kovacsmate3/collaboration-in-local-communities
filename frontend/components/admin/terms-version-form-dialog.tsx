@@ -41,6 +41,7 @@ interface TermsVersionFormBodyProps {
   mode: "create" | "edit"
   initial: FormValues
   existingId?: string
+  allowedVersions: string[]
   onClose: () => void
 }
 
@@ -107,10 +108,12 @@ export function CreateTermsVersionDialog({
   open,
   onOpenChange,
   defaultVersion,
+  allowedVersions,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultVersion?: string
+  allowedVersions: string[]
 }) {
   const initial = buildInitialValues(null, defaultVersion)
   return (
@@ -124,6 +127,7 @@ export function CreateTermsVersionDialog({
             key={`create-${defaultVersion}`}
             mode="create"
             initial={initial}
+            allowedVersions={allowedVersions}
             onClose={() => onOpenChange(false)}
           />
         )}
@@ -134,9 +138,11 @@ export function CreateTermsVersionDialog({
 
 export function EditTermsVersionDialog({
   version,
+  allowedVersions,
   onOpenChange,
 }: {
   version: AdminTermsVersionDetail | null
+  allowedVersions: string[]
   onOpenChange: (open: boolean) => void
 }) {
   const initial = buildInitialValues(version)
@@ -152,6 +158,7 @@ export function EditTermsVersionDialog({
             mode="edit"
             initial={initial}
             existingId={version?.id}
+            allowedVersions={allowedVersions}
             onClose={() => onOpenChange(false)}
           />
         )}
@@ -166,6 +173,7 @@ function TermsVersionFormBody({
   mode,
   initial,
   existingId,
+  allowedVersions,
   onClose,
 }: TermsVersionFormBodyProps) {
   const create = useCreateTermsVersion()
@@ -193,9 +201,17 @@ function TermsVersionFormBody({
 
   function validate(requireContent = false): boolean {
     const errs: Partial<FormValues> = {}
-    if (!values.version.trim()) errs.version = "Required"
-    else if (!/^\d+\.\d+\.\d+$/.test(values.version.trim()))
+    const trimmedVersion = values.version.trim()
+    if (!trimmedVersion) {
+      errs.version = "Required"
+    } else if (!/^\d+\.\d+\.\d+$/.test(trimmedVersion)) {
       errs.version = "Must be x.y.z format (e.g. 0.1.0)"
+    } else if (
+      !(mode === "edit" && trimmedVersion === initial.version) &&
+      !allowedVersions.includes(trimmedVersion)
+    ) {
+      errs.version = `Must be one of: ${allowedVersions.join(", ")}`
+    }
     if (!values.title.trim()) errs.title = "Required"
     if (!values.effectiveFrom) errs.effectiveFrom = "Required"
     if (requireContent && !values.content.trim())
@@ -288,7 +304,9 @@ function TermsVersionFormBody({
             <p className="text-xs text-destructive">{errors.version}</p>
           )}
           <p className="text-xs text-muted-foreground">
-            Patch bumps (x.y.0 → x.y.1) won&apos;t require user re-acceptance.
+            {allowedVersions.length === 3
+              ? `Allowed: ${allowedVersions[0]} (patch), ${allowedVersions[1]} (minor), ${allowedVersions[2]} (major). Patch bumps don't require re-acceptance.`
+              : `Allowed: ${allowedVersions.join(", ")}.`}
           </p>
         </div>
 
