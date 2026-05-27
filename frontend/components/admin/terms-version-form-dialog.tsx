@@ -246,12 +246,21 @@ function TermsVersionFormBody({
       effectiveFrom: datetimeLocalToIso(values.effectiveFrom),
     }
 
-    // Create first, then publish the resulting draft.
-    create.mutate(payload, {
-      onSuccess: (created) => {
-        publish.mutate(created.id, { onSuccess: onClose })
-      },
-    })
+    if (mode === "edit" && existingId) {
+      // Save changes first, then publish the existing draft.
+      update.mutate(payload, {
+        onSuccess: () => {
+          publish.mutate(existingId, { onSuccess: onClose })
+        },
+      })
+    } else {
+      // Create first, then publish the resulting draft.
+      create.mutate(payload, {
+        onSuccess: (created) => {
+          publish.mutate(created.id, { onSuccess: onClose })
+        },
+      })
+    }
   }
 
   const isSavePending = create.isPending || update.isPending
@@ -365,24 +374,16 @@ function TermsVersionFormBody({
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        {mode === "create" && (
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={isPublishPending}
-            onClick={(e) => void handlePublish(e)}
-          >
-            {isPublishPending ? "Publishing…" : "Publish"}
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={isPublishPending}
+          onClick={(e) => void handlePublish(e)}
+        >
+          {isPublishPending ? "Publishing…" : "Publish"}
+        </Button>
         <Button type="submit" disabled={isSavePending || publish.isPending}>
-          {isSavePending
-            ? mode === "create"
-              ? "Saving…"
-              : "Saving…"
-            : mode === "create"
-              ? "Save as draft"
-              : "Save changes"}
+          {isSavePending ? "Saving…" : "Save as draft"}
         </Button>
       </DialogFooter>
     </form>
