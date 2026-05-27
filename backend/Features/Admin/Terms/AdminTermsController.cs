@@ -335,9 +335,18 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
                 .Where(t => t.IsActive)
                 .ToListAsync(cancellationToken);
 
+            var isRollback = terms.PublishedAt != null;
             foreach (var active in currentlyActive)
             {
                 active.IsActive = false;
+
+                // On rollback, demote the superseded version to draft so it can be
+                // edited and republished rather than being stuck as "Old".
+                if (isRollback)
+                {
+                    active.PublishedAt = null;
+                }
+
                 active.UpdatedAt = now;
             }
 
