@@ -27,6 +27,7 @@ public sealed partial class AuthController(
     IClientIpAccessor clientIpAccessor,
     IEmailSender emailSender,
     IOptions<EmailOptions> emailOptions,
+    IHostEnvironment environment,
     ILogger<AuthController> logger) : ControllerBase
 {
     private const string RefreshTokenCookieName = "refreshToken";
@@ -131,6 +132,13 @@ public sealed partial class AuthController(
 
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        if (environment.IsDevelopment())
+        {
+            var confirmToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
+            await userManager.ConfirmEmailAsync(user, confirmToken);
+            return Ok(new RegisterResponse("Registration successful. Your account is ready to use."));
+        }
 
         bool emailSent = true;
         try

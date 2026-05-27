@@ -61,31 +61,55 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
     }
 
     /// <summary>
-    /// Get reviews received by a profile.
+    /// Get reviews received by a profile, paginated.
     /// </summary>
     /// <param name="id">The profile ID whose reviews should be returned.</param>
+    /// <param name="page">1-based page number (default 1).</param>
+    /// <param name="pageSize">Items per page (default 10, max 50).</param>
     /// <param name="cancellationToken">The cancellation token for the request.</param>
     /// <returns>
-    /// 200 OK with reviews ordered newest first.
+    /// 200 OK with a paginated envelope of reviews ordered newest first.
+    /// 400 Bad Request if pagination parameters are invalid.
     /// 404 Not Found if the profile does not exist.
     /// </returns>
     [HttpGet("{id:guid}/reviews")]
     [EnableRateLimiting(RateLimitingExtensions.ReviewsPolicy)]
-    public async Task<IActionResult> GetProfileReviewsAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetProfileReviewsAsync(
+        Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = DefaultReviewsPageSize,
+        CancellationToken cancellationToken = default)
     {
+        if (page < 1)
+        {
+            ModelState.AddModelError(nameof(page), "Page must be at least 1.");
+            return ValidationProblem(ModelState);
+        }
+
+        if (pageSize < 1 || pageSize > MaxReviewsPageSize)
+        {
+            ModelState.AddModelError(nameof(pageSize), $"PageSize must be between 1 and {MaxReviewsPageSize}.");
+            return ValidationProblem(ModelState);
+        }
+
         if (!await ProfileExistsAsync(id, cancellationToken))
         {
             return NotFound();
         }
 
-        var rawReviews = await db.Reviews
+        var query = db.Reviews
             .AsNoTracking()
-            .Where(review => review.RevieweeProfileId == id)
+            .Where(review => review.RevieweeProfileId == id);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var rawReviews = await query
             .OrderByDescending(review => review.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(review => new
             {
                 review.Id,
-                review.TaskId,
                 review.ReviewerProfileId,
                 ReviewerDisplayName = review.ReviewerProfile.DisplayName,
                 ReviewerPhotoUrl = review.ReviewerProfile.PhotoUrl,
@@ -96,10 +120,9 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             })
             .ToListAsync(cancellationToken);
 
-        var reviews = rawReviews
+        var items = rawReviews
             .Select(review => new ProfileReviewResponse(
                 review.Id,
-                review.TaskId,
                 review.ReviewerProfileId,
                 review.ReviewerDisplayName,
                 blobStorage.RewriteToPublicUrl(review.ReviewerPhotoUrl),
@@ -109,7 +132,10 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
                 review.CreatedAt))
             .ToList();
 
-        return Ok(reviews);
+        var totalPages = totalCount == 0 ? 0 : (int)Math.Ceiling(totalCount / (double)pageSize);
+        var response = new ProfileReviewPagedResponse(items, totalCount, page, pageSize, totalPages);
+
+        return Ok(response);
     }
 
     /// <summary>

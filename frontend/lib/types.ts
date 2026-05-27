@@ -94,9 +94,13 @@ export interface Task {
   helper?: Pick<User, "id" | "name" | "avatarUrl" | "reputation">
 }
 
+/**
+ * Public review payload. The task linkage is intentionally not exposed here
+ * — reviews are stored against a completed task internally for integrity and
+ * duplicate prevention, but that task is private (issue #115).
+ */
 export interface Review {
   id: string
-  taskId: string
   authorId: string
   authorName: string
   authorAvatarUrl?: string

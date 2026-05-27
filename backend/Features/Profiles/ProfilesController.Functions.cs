@@ -7,6 +7,9 @@ public sealed partial class ProfilesController
 {
     private const long MaxPhotoSizeBytes = 5 * 1024 * 1024;
 
+    private const int DefaultReviewsPageSize = 10;
+    private const int MaxReviewsPageSize = 50;
+
     private static readonly Dictionary<string, string> _allowedMimeTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         ["image/jpeg"] = "jpg",

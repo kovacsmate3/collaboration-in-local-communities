@@ -1,0 +1,173 @@
+using System.Security.Claims;
+using Backend.Domain.Entities;
+using Backend.Domain.Enums;
+using Backend.Features.Profiles;
+using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
+using Backend.Infrastructure.Storage;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
+
+namespace Backend.Features.Reviews;
+
+[ApiController]
+[Route("api/tasks/{taskId:guid}/reviews")]
+[Authorize]
+public sealed class ReviewsController(
+    AppDbContext db,
+    IBlobStorageService blobStorage) : ControllerBase
+{
+    /// <summary>
+    /// Submit a review for the other participant in a completed task.
+    /// The seeker reviews the helper; the helper reviews the seeker.
+    /// </summary>
+    /// <param name="taskId">The ID of the completed task being reviewed.</param>
+    /// <param name="request">Rating (1-5) and optional comment.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
+    /// <returns>
+    /// 201 Created with the new review.
+    /// 404 Not Found if the task does not exist.
+    /// 409 Conflict if the task is not completed, has no helper, or a review was already submitted.
+    /// 403 Forbidden if the caller is not a participant of the task.
+    /// 401 Unauthorized if not authenticated.
+    /// </returns>
+    [HttpPost]
+    [EnableRateLimiting(RateLimitingExtensions.ReviewsPolicy)]
+    public async Task<IActionResult> PostReviewAsync(
+        Guid taskId,
+        PostReviewRequest request,
+        CancellationToken cancellationToken)
+    {
+        var profile = await GetCurrentProfileAsync(cancellationToken);
+        if (profile is null)
+        {
+            return Unauthorized();
+        }
+
+        var task = await db.Tasks
+            .FirstOrDefaultAsync(t => t.Id == taskId, cancellationToken);
+
+        if (task is null)
+        {
+            return NotFound();
+        }
+
+        if (task.Status != DomainTaskStatus.Completed)
+        {
+            return Problem(
+                title: "Task is not completed",
+                detail: "Reviews can only be submitted for completed tasks.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        Guid revieweeProfileId;
+        if (task.SeekerProfileId == profile.Id)
+        {
+            if (task.AcceptedHelperProfileId is null)
+            {
+                return Problem(
+                    title: "No helper to review",
+                    detail: "This task has no accepted helper.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            revieweeProfileId = task.AcceptedHelperProfileId.Value;
+        }
+        else if (task.AcceptedHelperProfileId == profile.Id)
+        {
+            revieweeProfileId = task.SeekerProfileId;
+        }
+        else
+        {
+            return Forbid();
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var review = new Review
+        {
+            Id = Guid.NewGuid(),
+            TaskId = taskId,
+            ReviewerProfileId = profile.Id,
+            RevieweeProfileId = revieweeProfileId,
+            Rating = request.Rating,
+            Comment = request.Comment?.Trim(),
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+        db.Reviews.Add(review);
+
+        var revieweeProfile = await db.Profiles
+            .FirstOrDefaultAsync(p => p.Id == revieweeProfileId, cancellationToken);
+
+        if (revieweeProfile is not null)
+        {
+            var prevSum = revieweeProfile.AverageRating * revieweeProfile.ReviewCount;
+            revieweeProfile.ReviewCount += 1;
+            revieweeProfile.AverageRating = decimal.Round(
+                (prevSum + request.Rating) / revieweeProfile.ReviewCount,
+                2,
+                MidpointRounding.AwayFromZero);
+            revieweeProfile.UpdatedAt = now;
+        }
+
+        db.AddActivityEvent(
+            profile.UserId,
+            profile.Id,
+            ActivityEventType.ReviewSubmitted,
+            nameof(Review),
+            review.Id,
+            new { TaskId = taskId, RevieweeProfileId = revieweeProfileId, request.Rating });
+
+        db.AddAuditEvent(
+            profile.UserId,
+            "review.submitted",
+            nameof(Review),
+            review.Id,
+            new
+            {
+                TaskId = taskId,
+                ReviewerProfileId = profile.Id,
+                RevieweeProfileId = revieweeProfileId,
+                request.Rating,
+            });
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (PostgresExceptionHelpers.IsDuplicateReview(ex))
+        {
+            return Problem(
+                title: "Already reviewed",
+                detail: "You have already submitted a review for this task.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        var response = new ProfileReviewResponse(
+            review.Id,
+            profile.Id,
+            profile.DisplayName,
+            blobStorage.RewriteToPublicUrl(profile.PhotoUrl),
+            revieweeProfileId,
+            review.Rating,
+            review.Comment ?? string.Empty,
+            review.CreatedAt);
+
+        return StatusCode(StatusCodes.Status201Created, response);
+    }
+
+    private async Task<UserProfile?> GetCurrentProfileAsync(CancellationToken cancellationToken)
+    {
+        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(claim, out var userId))
+        {
+            return null;
+        }
+
+        return await db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
+    }
+}
