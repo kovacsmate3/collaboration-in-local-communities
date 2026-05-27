@@ -24,6 +24,9 @@ public static class TermsVersionQueries
             return;
         }
 
+        // Deactivate in a separate SaveChanges before activating the new version.
+        // The partial unique index (only one is_active=true row allowed) is checked
+        // per statement, so both changes cannot land in the same batch.
         var currentlyActive = await db.TermsVersions
             .Where(t => t.IsActive)
             .ToListAsync(cancellationToken);
@@ -34,9 +37,22 @@ public static class TermsVersionQueries
             active.UpdatedAt = now;
         }
 
-        due.IsActive = true;
-        due.UpdatedAt = now;
-        await db.SaveChangesAsync(cancellationToken);
+        if (currentlyActive.Count > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        try
+        {
+            due.IsActive = true;
+            due.UpdatedAt = now;
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (PostgresExceptionHelpers.IsUniqueConstraintViolation(ex, "ux_terms_versions_single_active"))
+        {
+            // A concurrent request activated this version between our two saves; that's fine.
+            db.Entry(due).State = EntityState.Detached;
+        }
     }
 
     public static IQueryable<TermsVersion> CurrentCandidates(
