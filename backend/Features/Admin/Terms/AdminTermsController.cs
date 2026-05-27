@@ -18,6 +18,8 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> ListAsync(CancellationToken cancellationToken)
     {
+        await db.ActivateScheduledAsync(DateTimeOffset.UtcNow, cancellationToken);
+
         var acceptanceCounts = await FetchLatestAcceptanceCountsAsync(cancellationToken);
 
         var versions = await db.TermsVersions
