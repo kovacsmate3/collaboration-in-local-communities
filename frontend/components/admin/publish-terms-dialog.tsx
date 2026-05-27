@@ -1,5 +1,7 @@
 "use client"
 
+import type { ReactNode } from "react"
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +24,7 @@ interface PublishTermsDialogProps {
 
 function getDialogCopy(version: AdminTermsVersionListItem | null): {
   title: string
-  description: React.ReactNode
+  description: ReactNode
   action: string
 } {
   if (!version) return { title: "", description: "", action: "Publish" }

@@ -8,6 +8,8 @@ public sealed class TermsVersion
     public int MinorVersion { get; set; }
     public int PatchVersion { get; set; }
     public string Title { get; set; } = string.Empty;
+
+    // ReSharper disable once EntityFramework.ModelValidation.UnlimitedStringLength
     public string? Content { get; set; }
     public string? ContentUrl { get; set; }
     public bool IsActive { get; set; }
