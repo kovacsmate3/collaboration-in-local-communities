@@ -86,6 +86,8 @@ export function TermsManager() {
 
   const histogramData: AdminBarChartRow[] = React.useMemo(() => {
     if (!data || data.length === 0) return []
+    // data is sorted effectiveFrom DESC — iterate in that order so the first
+    // 5 unique major.minor groups are the 5 most recent.
     const groups = new Map<string, { label: string; value: number }>()
     for (const v of data) {
       const key = `${v.majorVersion}.${v.minorVersion}`
@@ -93,13 +95,15 @@ export function TermsManager() {
       if (existing) {
         existing.value += v.acceptanceCount
       } else {
+        if (groups.size >= 5) continue
         groups.set(key, {
           label: `${v.majorVersion}.${v.minorVersion}.x`,
           value: v.acceptanceCount,
         })
       }
     }
-    const rows = Array.from(groups.values())
+    // Reverse so the chart reads oldest → newest (left to right).
+    const rows = Array.from(groups.values()).reverse()
     const max = Math.max(...rows.map((r) => r.value), 1)
     return rows.map((r) => ({
       label: r.label,
