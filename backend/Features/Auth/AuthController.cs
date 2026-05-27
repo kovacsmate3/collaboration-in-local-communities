@@ -50,6 +50,8 @@ public sealed partial class AuthController(
 
         var now = DateTimeOffset.UtcNow;
 
+        await db.ActivateScheduledAsync(now, cancellationToken);
+
         var activeTerms = await db.TermsVersions
             .GetCurrentAsync(now, cancellationToken);
 

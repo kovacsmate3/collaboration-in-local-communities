@@ -199,7 +199,7 @@ function TermsVersionFormBody({
     setEditorTab(tab as "visual" | "markdown")
   }
 
-  function validate(requireContent = false): boolean {
+  function validate(requireContent = false, contentOverride?: string): boolean {
     const errs: Partial<FormValues> = {}
     const trimmedVersion = values.version.trim()
     if (!trimmedVersion) {
@@ -214,7 +214,7 @@ function TermsVersionFormBody({
     }
     if (!values.title.trim()) errs.title = "Required"
     if (!values.effectiveFrom) errs.effectiveFrom = "Required"
-    if (requireContent && !values.content.trim())
+    if (requireContent && !(contentOverride ?? values.content).trim())
       errs.content = "Content is required before publishing"
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -250,9 +250,8 @@ function TermsVersionFormBody({
   async function handlePublish(e: React.SyntheticEvent) {
     e.preventDefault()
     const finalContent = await resolveContent()
-    setValues((v) => ({ ...v, content: finalContent }))
 
-    if (!validate(true)) return
+    if (!validate(true, finalContent)) return
 
     const payload = {
       version: values.version.trim(),
