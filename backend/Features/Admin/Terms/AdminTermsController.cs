@@ -455,17 +455,18 @@ public sealed class AdminTermsController(AppDbContext db) : ControllerBase
     // For each user count only their most recent acceptance, so publishing a new version
     // "moves" users from the old version's count to the new one as they re-accept.
     private Task<Dictionary<Guid, int>> FetchLatestAcceptanceCountsAsync(CancellationToken ct) =>
-        db.Database
-            .SqlQuery<VersionCount>($"""
-                SELECT terms_version_id AS "TermsVersionId", CAST(COUNT(*) AS INTEGER) AS "Count"
-                FROM (
-                    SELECT DISTINCT ON (user_id) terms_version_id
-                    FROM data.user_terms_acceptances
-                    ORDER BY user_id, accepted_at DESC
-                ) latest
-                GROUP BY terms_version_id
-                """)
+        db.UserTermsAcceptances
+            .AsNoTracking()
+            .GroupBy(a => a.UserId)
+            .Select(g => g
+                .OrderByDescending(a => a.AcceptedAt)
+                .First()
+                .TermsVersionId)
+            .GroupBy(termsVersionId => termsVersionId)
+            .Select(g => new
+            {
+                TermsVersionId = g.Key,
+                Count = g.Count()
+            })
             .ToDictionaryAsync(x => x.TermsVersionId, x => x.Count, ct);
-
-    private sealed record VersionCount(Guid TermsVersionId, int Count);
 }
