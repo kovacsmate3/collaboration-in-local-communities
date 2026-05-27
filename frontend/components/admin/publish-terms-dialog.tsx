@@ -29,8 +29,7 @@ function getDialogCopy(version: AdminTermsVersionListItem | null): {
 
   const versionLabel = `${version.majorVersion}.${version.minorVersion}.x`
   const isScheduled =
-    version.publishedAt === null &&
-    new Date(version.effectiveFrom) > new Date()
+    version.publishedAt === null && new Date(version.effectiveFrom) > new Date()
   const isRepublish = version.publishedAt !== null
 
   if (isRepublish) {

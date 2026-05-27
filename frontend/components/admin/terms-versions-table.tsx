@@ -28,7 +28,12 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-type VersionStatus = "active" | "scheduled" | "draft" | "old" | "old-republishable"
+type VersionStatus =
+  | "active"
+  | "scheduled"
+  | "draft"
+  | "old"
+  | "old-republishable"
 
 function getVersionStatus(
   v: AdminTermsVersionListItem,
