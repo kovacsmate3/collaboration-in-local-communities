@@ -48,6 +48,21 @@ public sealed partial class AuthController(
             return ValidationProblem(ModelState);
         }
 
+        var now = DateTimeOffset.UtcNow;
+
+        var activeTerms = await db.TermsVersions
+            .GetCurrentAsync(now, cancellationToken);
+
+        if (activeTerms is null)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Registration unavailable",
+                Detail = "No active terms version exists. Registration is disabled until terms are published.",
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         var user = new ApplicationUser
@@ -69,7 +84,6 @@ public sealed partial class AuthController(
             return IdentityValidationProblem(roleResult);
         }
 
-        var now = DateTimeOffset.UtcNow;
         var profile = new UserProfile
         {
             UserId = user.Id,
@@ -103,20 +117,6 @@ public sealed partial class AuthController(
             {
                 profile.ProfileSkills.Add(new ProfileSkill { SkillId = skillId });
             }
-        }
-
-        var activeTerms = await db.TermsVersions
-            .GetCurrentAsync(now, cancellationToken);
-
-        if (activeTerms is null)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Registration unavailable",
-                Detail = "No active terms version exists. Registration is disabled until terms are published.",
-                Status = StatusCodes.Status400BadRequest
-            });
         }
 
         db.UserTermsAcceptances.Add(new UserTermsAcceptance
