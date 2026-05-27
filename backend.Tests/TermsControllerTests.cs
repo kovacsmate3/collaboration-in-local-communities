@@ -479,7 +479,7 @@ public sealed class TermsControllerTests
     [InlineData("1.two.3")]
     public void TermsVersionParser_RejectsInvalidVersions(string version)
     {
-        var parsed = TermsVersionParser.TryParse(version, out var major, out var minor, out var patch);
+        var parsed = TermsVersionParser.TryParse(version, out _, out _, out _);
 
         Assert.False(parsed);
     }
