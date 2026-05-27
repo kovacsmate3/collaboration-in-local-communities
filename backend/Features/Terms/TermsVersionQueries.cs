@@ -19,7 +19,7 @@ public static class TermsVersionQueries
         // would reactivate any previously-active version on every call.
         var currentActivePublishedAt = await db.TermsVersions
             .Where(t => t.IsActive)
-            .Select(t => (DateTimeOffset?)t.PublishedAt)
+            .Select(t => t.PublishedAt)
             .FirstOrDefaultAsync(cancellationToken);
 
         var due = await db.TermsVersions
