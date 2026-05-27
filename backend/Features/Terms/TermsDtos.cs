@@ -8,6 +8,7 @@ public sealed record ActiveTermsResponse(
     Guid Id,
     string Version,
     string Title,
+    string? Content,
     string? ContentUrl,
     DateTimeOffset EffectiveFrom);
 

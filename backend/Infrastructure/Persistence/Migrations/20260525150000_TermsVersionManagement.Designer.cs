@@ -3,6 +3,7 @@ using System;
 using Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,13 +13,14 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260525150000_TermsVersionManagement")]
+    partial class TermsVersionManagement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
@@ -457,7 +459,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_tasks_distinct_profiles", "accepted_helper_profile_id IS NULL OR seeker_profile_id <> accepted_helper_profile_id");
 
-                            t.HasCheckConstraint("ck_tasks_status", "status IN ('Open', 'InProgress', 'PendingApproval', 'Completed', 'Cancelled')");
+                            t.HasCheckConstraint("ck_tasks_status", "status IN ('Open', 'InProgress', 'Completed', 'Cancelled')");
                         });
                 });
 
@@ -1235,10 +1237,6 @@ namespace Backend.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("patch_version");
 
-                    b.Property<DateTimeOffset?>("PublishedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("published_at");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1264,9 +1262,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_terms_versions_effective_from");
 
                     b.HasIndex("IsActive")
-                        .IsUnique()
-                        .HasDatabaseName("ux_terms_versions_single_active")
-                        .HasFilter("is_active = true");
+                        .HasDatabaseName("ix_terms_versions_is_active");
 
                     b.HasIndex("MajorVersion", "MinorVersion")
                         .HasDatabaseName("ix_terms_versions_major_minor");
@@ -1288,7 +1284,6 @@ namespace Backend.Infrastructure.Persistence.Migrations
                             MajorVersion = 0,
                             MinorVersion = 1,
                             PatchVersion = 0,
-                            PublishedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Title = "Initial Terms and Conditions",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Version = "0.1.0"

@@ -140,25 +140,62 @@ internal sealed class SkillConfiguration : IEntityTypeConfiguration<Skill>
 
 internal sealed class TermsVersionConfiguration : IEntityTypeConfiguration<TermsVersion>
 {
+    private const string PlaceholderContent =
+        "<h2>1. About 2gather</h2>" +
+        "<p>2gather is a platform that connects neighbours who need help with those willing to offer it. " +
+        "By creating an account you agree to use the service in good faith and in accordance with your local laws.</p>" +
+        "<h2>2. Your account</h2>" +
+        "<p>You are responsible for keeping your credentials secure and for all activity that occurs under your account. " +
+        "Notify us immediately if you suspect unauthorised access.</p>" +
+        "<h2>3. Acceptable use</h2>" +
+        "<p>You may not use 2gather to post illegal tasks, harass other users, misrepresent your identity, " +
+        "or scrape the platform without written permission. We reserve the right to suspend accounts that violate these rules.</p>" +
+        "<h2>4. Payments &amp; barter</h2>" +
+        "<p>2gather facilitates agreements between users but is not a party to them. " +
+        "Any payment or exchange is solely between the Seeker and the Helper. We are not liable for disputes arising from tasks.</p>" +
+        "<h2>5. Privacy</h2>" +
+        "<p>We collect only the information needed to operate the service. We do not sell your data. " +
+        "A full privacy policy will be published before the public launch.</p>" +
+        "<h2>6. Limitation of liability</h2>" +
+        "<p>2gather is provided “as is” during this early phase. " +
+        "We make no warranties about uptime or fitness for a particular purpose. " +
+        "Our liability is limited to the maximum extent permitted by applicable law.</p>" +
+        "<h2>7. Changes to these terms</h2>" +
+        "<p>We may update these terms as the product evolves. " +
+        "Continued use of the platform after changes are posted constitutes acceptance of the revised terms.</p>";
+
     public void Configure(EntityTypeBuilder<TermsVersion> builder)
     {
         builder.ToTable(TableNames.TermsVersions, SchemaNames.Config);
 
         builder.HasGeneratedUuid(terms => terms.Id);
         builder.Property(terms => terms.Version).HasMaxLength(32).IsRequired();
+        builder.Property(terms => terms.MajorVersion).IsRequired();
+        builder.Property(terms => terms.MinorVersion).IsRequired();
+        builder.Property(terms => terms.PatchVersion).IsRequired();
         builder.Property(terms => terms.Title).HasMaxLength(200).IsRequired();
+        builder.Property(terms => terms.Content).HasColumnType("text");
         builder.Property(terms => terms.ContentUrl).HasMaxLength(2048);
-        builder.Property(terms => terms.IsActive).HasDefaultValue(true);
+        builder.Property(terms => terms.IsActive).HasDefaultValue(false);
+        builder.Property(terms => terms.PublishedAt);
         builder.Property(terms => terms.EffectiveFrom).IsRequired();
         builder.HasCreatedAt(terms => terms.CreatedAt);
         builder.HasUpdatedAt(terms => terms.UpdatedAt);
 
-        builder.HasIndex(terms => terms.Version)
+        builder.HasIndex(t => new { t.MajorVersion, t.MinorVersion, t.PatchVersion })
             .IsUnique()
-            .HasDatabaseName("ux_terms_versions_version");
+            .HasDatabaseName("ux_terms_versions_version_triple");
+
+        builder.HasIndex(t => new { t.MajorVersion, t.MinorVersion })
+            .HasDatabaseName("ix_terms_versions_major_minor");
 
         builder.HasIndex(terms => terms.IsActive)
             .HasDatabaseName("ix_terms_versions_is_active");
+
+        builder.HasIndex(terms => terms.IsActive)
+            .IsUnique()
+            .HasFilter("is_active = true")
+            .HasDatabaseName("ux_terms_versions_single_active");
 
         builder.HasIndex(terms => terms.EffectiveFrom)
             .HasDatabaseName("ix_terms_versions_effective_from");
@@ -166,9 +203,14 @@ internal sealed class TermsVersionConfiguration : IEntityTypeConfiguration<Terms
         builder.HasData(new TermsVersion
         {
             Id = Guid.Parse("00000000-0000-0000-0000-000000000301"),
-            Version = "1.0",
+            Version = "0.1.0",
+            MajorVersion = 0,
+            MinorVersion = 1,
+            PatchVersion = 0,
             Title = "Initial Terms and Conditions",
+            Content = PlaceholderContent,
             IsActive = true,
+            PublishedAt = ConfigurationHelpers.SeedTimestamp,
             EffectiveFrom = ConfigurationHelpers.SeedTimestamp,
             CreatedAt = ConfigurationHelpers.SeedTimestamp,
             UpdatedAt = ConfigurationHelpers.SeedTimestamp
