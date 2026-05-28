@@ -267,9 +267,12 @@ public sealed class ProfilesControllerTests
         var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
         var result = await controller.GetProfileReviewsAsync(profile.Id, page, pageSize, cancellationToken);
 
-        // ValidationProblem() returns a BadRequestObjectResult (an ObjectResult subclass).
+        // ValidationProblem() returns an ObjectResult whose Value is a
+        // ValidationProblemDetails. In unit tests without a full DI container
+        // the wrapper's StatusCode is null (the 400 only lives on the inner
+        // ProblemDetails.Status), so we assert on the payload type.
         var problem = Assert.IsAssignableFrom<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
+        Assert.IsAssignableFrom<ValidationProblemDetails>(problem.Value);
     }
 
     [Fact]
@@ -289,7 +292,7 @@ public sealed class ProfilesControllerTests
             profile.Id, page: int.MaxValue, pageSize: 50, cancellationToken);
 
         var problem = Assert.IsAssignableFrom<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
+        Assert.IsAssignableFrom<ValidationProblemDetails>(problem.Value);
     }
 
     [Fact]

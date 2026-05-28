@@ -8,6 +8,7 @@ using Backend.Infrastructure.Storage;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Xunit;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
@@ -358,8 +359,14 @@ public sealed class ReviewsControllerTests
 
     private static AppDbContext CreateDbContext()
     {
+        // The InMemory provider does not support transactions and raises
+        // TransactionIgnoredWarning, which is configured as an error in the
+        // app. ReviewsController wraps the review insert in a Serializable
+        // transaction for race-safety against real Postgres, so we have to
+        // suppress that warning under InMemory tests.
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString(), o => o.EnableNullChecks(false))
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
         return new AppDbContext(options);
     }
