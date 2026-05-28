@@ -95,6 +95,16 @@ function ProfileLoaded({
     .filter((name): name is string => Boolean(name))
   const profileUser = toProfileUser(profile, skillNames)
   const [reviewsPage, setReviewsPage] = useState(1)
+  // Reset the page whenever ProfileLoaded is reused for a different profile
+  // during client-side navigation, otherwise the prior profile's page can
+  // leak across and surface as an empty reviews tab on a profile with fewer
+  // pages. Done during render via a previous-prop snapshot per React's
+  // "Adjusting state when a prop changes" guidance (preferred over useEffect).
+  const [prevProfileId, setPrevProfileId] = useState(profile.id)
+  if (prevProfileId !== profile.id) {
+    setPrevProfileId(profile.id)
+    setReviewsPage(1)
+  }
   const reviewsQuery = useProfileReviews(profile.id, reviewsPage)
   const taskHistoryQuery = useProfileTaskHistory(profile.id)
   const reputationTrendQuery = useProfileReputationTrend(profile.id)

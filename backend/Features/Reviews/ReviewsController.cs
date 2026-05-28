@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using System.Data;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Features.Profiles;
@@ -16,7 +16,7 @@ namespace Backend.Features.Reviews;
 [ApiController]
 [Route("api/tasks/{taskId:guid}/reviews")]
 [Authorize]
-public sealed class ReviewsController(
+public sealed partial class ReviewsController(
     AppDbContext db,
     IBlobStorageService blobStorage) : ControllerBase
 {
@@ -98,21 +98,14 @@ public sealed class ReviewsController(
             UpdatedAt = now,
         };
 
+        // Serializable isolation prevents two concurrent reviewers from both
+        // reading the same baseline aggregate and writing back with stale +1.
+        // Combined with the post-insert recompute below, this guarantees the
+        // denormalised stats always match the actual review rows.
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable, cancellationToken);
+
         db.Reviews.Add(review);
-
-        var revieweeProfile = await db.Profiles
-            .FirstOrDefaultAsync(p => p.Id == revieweeProfileId, cancellationToken);
-
-        if (revieweeProfile is not null)
-        {
-            var prevSum = revieweeProfile.AverageRating * revieweeProfile.ReviewCount;
-            revieweeProfile.ReviewCount += 1;
-            revieweeProfile.AverageRating = decimal.Round(
-                (prevSum + request.Rating) / revieweeProfile.ReviewCount,
-                2,
-                MidpointRounding.AwayFromZero);
-            revieweeProfile.UpdatedAt = now;
-        }
 
         db.AddActivityEvent(
             profile.UserId,
@@ -147,6 +140,36 @@ public sealed class ReviewsController(
                 statusCode: StatusCodes.Status409Conflict);
         }
 
+        // Recompute the reputation aggregate from the persisted review rows
+        // (which now includes the row we just inserted) rather than mutating
+        // the denormalised stats in memory. This eliminates the lost-update
+        // race the in-memory read-modify-write was vulnerable to.
+        var stats = await db.Reviews
+            .Where(r => r.RevieweeProfileId == revieweeProfileId)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Count = g.Count(),
+                Sum = g.Sum(r => (decimal)r.Rating),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var revieweeProfile = await db.Profiles
+            .FirstOrDefaultAsync(p => p.Id == revieweeProfileId, cancellationToken);
+
+        if (revieweeProfile is not null && stats is not null && stats.Count > 0)
+        {
+            revieweeProfile.ReviewCount = stats.Count;
+            revieweeProfile.AverageRating = decimal.Round(
+                stats.Sum / stats.Count,
+                2,
+                MidpointRounding.AwayFromZero);
+            revieweeProfile.UpdatedAt = now;
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+
         var response = new ProfileReviewResponse(
             review.Id,
             profile.Id,
@@ -158,16 +181,5 @@ public sealed class ReviewsController(
             review.CreatedAt);
 
         return StatusCode(StatusCodes.Status201Created, response);
-    }
-
-    private async Task<UserProfile?> GetCurrentProfileAsync(CancellationToken cancellationToken)
-    {
-        var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(claim, out var userId))
-        {
-            return null;
-        }
-
-        return await db.Profiles.FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
     }
 }

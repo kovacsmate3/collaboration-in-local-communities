@@ -267,7 +267,28 @@ public sealed class ProfilesControllerTests
         var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
         var result = await controller.GetProfileReviewsAsync(profile.Id, page, pageSize, cancellationToken);
 
-        var problem = Assert.IsType<ObjectResult>(result);
+        // ValidationProblem() returns a BadRequestObjectResult (an ObjectResult subclass).
+        var problem = Assert.IsAssignableFrom<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProfileReviewsAsync_OffsetOverflow_ReturnsValidationProblem()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var profile = CreateProfile("Profile");
+        db.Profiles.Add(profile);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
+
+        // (page-1)*pageSize must be evaluated as long to detect overflow.
+        // page=int.MaxValue, pageSize=50 would wrap to a negative int.
+        var result = await controller.GetProfileReviewsAsync(
+            profile.Id, page: int.MaxValue, pageSize: 50, cancellationToken);
+
+        var problem = Assert.IsAssignableFrom<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
     }
 

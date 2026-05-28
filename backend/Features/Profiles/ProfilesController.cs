@@ -92,6 +92,15 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             return ValidationProblem(ModelState);
         }
 
+        // Compute the offset as long so extreme inputs (e.g. page=int.MaxValue)
+        // don't silently overflow to a negative int before reaching Skip().
+        var offset = (long)(page - 1) * pageSize;
+        if (offset > int.MaxValue)
+        {
+            ModelState.AddModelError(nameof(page), "Page is too large.");
+            return ValidationProblem(ModelState);
+        }
+
         if (!await ProfileExistsAsync(id, cancellationToken))
         {
             return NotFound();
@@ -105,7 +114,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
 
         var rawReviews = await query
             .OrderByDescending(review => review.CreatedAt)
-            .Skip((page - 1) * pageSize)
+            .Skip((int)offset)
             .Take(pageSize)
             .Select(review => new
             {

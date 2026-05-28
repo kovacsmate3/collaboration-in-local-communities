@@ -86,10 +86,55 @@ public sealed class ReviewsControllerTests
         await using var db = CreateDbContext();
         var scenario = await SeedCompletedTaskAsync(db, cancellationToken);
 
-        // Pre-seed the helper with an existing review from a different task.
+        // Pre-seed the helper with two actual review rows from different
+        // tasks, ratings 2 and 4 (sum=6, avg=3.00). The controller now
+        // recomputes the aggregate from persisted rows, so the denormalised
+        // stats must be backed by real Review rows for the test to be valid.
+        var now = DateTimeOffset.UtcNow;
+        var otherReviewer1 = Guid.NewGuid();
+        var otherReviewer2 = Guid.NewGuid();
+        var otherTask1 = Guid.NewGuid();
+        var otherTask2 = Guid.NewGuid();
+        db.Profiles.Add(new UserProfile
+        {
+            Id = otherReviewer1,
+            UserId = Guid.NewGuid(),
+            DisplayName = "Other 1",
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+        db.Profiles.Add(new UserProfile
+        {
+            Id = otherReviewer2,
+            UserId = Guid.NewGuid(),
+            DisplayName = "Other 2",
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+        db.Reviews.AddRange(
+            new Review
+            {
+                Id = Guid.NewGuid(),
+                TaskId = otherTask1,
+                ReviewerProfileId = otherReviewer1,
+                RevieweeProfileId = scenario.HelperProfileId,
+                Rating = 2,
+                CreatedAt = now,
+                UpdatedAt = now,
+            },
+            new Review
+            {
+                Id = Guid.NewGuid(),
+                TaskId = otherTask2,
+                ReviewerProfileId = otherReviewer2,
+                RevieweeProfileId = scenario.HelperProfileId,
+                Rating = 4,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
         var helperProfile = await db.Profiles.FirstAsync(p => p.Id == scenario.HelperProfileId, cancellationToken);
         helperProfile.ReviewCount = 2;
-        helperProfile.AverageRating = 3.00m; // sum=6 across 2 previous reviews
+        helperProfile.AverageRating = 3.00m;
         await db.SaveChangesAsync(cancellationToken);
 
         var controller = CreateController(db, scenario.SeekerUserId);
@@ -99,7 +144,7 @@ public sealed class ReviewsControllerTests
             new PostReviewRequest { Rating = 5 },
             cancellationToken);
 
-        // New average: (6 + 5) / 3 = 3.67
+        // After recompute: ratings [2, 4, 5] → count 3, avg (2+4+5)/3 = 3.67.
         var updated = await db.Profiles.AsNoTracking()
             .FirstAsync(p => p.Id == scenario.HelperProfileId, cancellationToken);
         Assert.Equal(3, updated.ReviewCount);
