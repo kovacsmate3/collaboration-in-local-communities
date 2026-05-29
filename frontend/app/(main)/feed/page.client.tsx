@@ -84,7 +84,7 @@ export function FeedPageClient() {
   )
 
   const serverFilters = React.useMemo<TaskListFilters>(() => {
-    const base: TaskListFilters = { status: "Open" }
+    const base: TaskListFilters = { status: "Open", sort: "relevant" }
     if (filters.category !== "all") {
       base.categoryId = filters.category
     }

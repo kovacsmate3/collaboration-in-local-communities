@@ -84,6 +84,8 @@ export interface TaskListFilters {
   latitude?: number
   longitude?: number
   radiusMeters?: number
+  /** "relevant" orders by proximity to the caller's profile location; omit for newest-first. */
+  sort?: "relevant" | "recency"
 }
 
 // ── Query keys ────────────────────────────────────────────────────────────────
@@ -281,6 +283,7 @@ function buildTaskListPath(
     params.set("longitude", String(filters.longitude))
     params.set("radiusMeters", String(filters.radiusMeters))
   }
+  if (filters.sort) params.set("sort", filters.sort)
   if (pagination) {
     params.set("page", String(pagination.page))
     params.set("pageSize", String(pagination.pageSize))

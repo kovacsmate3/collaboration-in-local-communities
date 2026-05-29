@@ -18,6 +18,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 {
     private const int DefaultPageSize = 20;
     private const int MaxPageSize = 100;
+    private const string SortRelevant = "relevant";
 
     [HttpGet]
     public async Task<IActionResult> ListAsync(
@@ -28,6 +29,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         [FromQuery] double? radiusMeters,
         [FromQuery] string? compensationType = null,
         [FromQuery] DateTimeOffset? createdAfter = null,
+        [FromQuery] string? sort = null,
         [FromQuery] int? page = null,
         [FromQuery] int? pageSize = null,
         CancellationToken cancellationToken = default)
@@ -117,13 +119,45 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             query = query.Where(task => task.CreatedAt >= cutoff);
         }
 
-        IQueryable<CommunityTask> orderedQuery;
+        // Apply hard radius filter regardless of sort order.
         if (proximityOrigin is not null)
         {
             var radius = radiusMeters.GetValueOrDefault();
+            query = query.Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius));
+        }
 
+        IQueryable<CommunityTask> orderedQuery;
+        var effectiveSort = sort?.ToLowerInvariant();
+        if (effectiveSort == SortRelevant)
+        {
+            var userId = GetCurrentUserId();
+            var userLocation = userId.HasValue
+                ? (await db.Profiles
+                    .AsNoTracking()
+                    .Select(p => new { p.UserId, p.Location })
+                    .FirstOrDefaultAsync(p => p.UserId == userId.Value, cancellationToken))?.Location
+                : null;
+
+            if (proximityOrigin is not null)
+            {
+                orderedQuery = query
+                    .OrderBy(task => task.Location!.Distance(proximityOrigin))
+                    .ThenByDescending(task => task.CreatedAt);
+            }
+            else if (userLocation is not null)
+            {
+                orderedQuery = query
+                    .OrderBy(task => task.Location != null ? (double?)task.Location.Distance(userLocation) : null)
+                    .ThenByDescending(task => task.CreatedAt);
+            }
+            else
+            {
+                orderedQuery = query.OrderByDescending(task => task.CreatedAt);
+            }
+        }
+        else if (proximityOrigin is not null)
+        {
             orderedQuery = query
-                .Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius))
                 .OrderBy(task => task.Location!.Distance(proximityOrigin))
                 .ThenByDescending(task => task.CreatedAt);
         }
