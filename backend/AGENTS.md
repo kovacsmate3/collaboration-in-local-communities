@@ -91,8 +91,8 @@ Keep new entity configurations in [`Infrastructure/Persistence/Configurations/`]
 
 | Setting              | Local (`appsettings.Development.json` / compose env) | Azure (env vars)                                                     |
 | -------------------- | ---------------------------------------------------- | -------------------------------------------------------------------- |
-| Postgres connection  | `ConnectionStrings:DefaultConnection`                | `AZURE_POSTGRESQL_HOST`, `_PORT`, `_DATABASE`, `_USERNAME` (managed identity token) |
-| Cosmos endpoint      | `CosmosDb:AccountEndpoint` + `CosmosDb:AccountKey`   | `AZURE_COSMOS_ENDPOINT` (managed identity, no key)                   |
+| Postgres connection  | `ConnectionStrings:DefaultConnection`                | `Azure__Postgres__Host`, `__Port`, `__Database`, `__Username` (managed identity token) |
+| Cosmos endpoint      | `CosmosDb:AccountEndpoint` + `CosmosDb:AccountKey`   | `Azure__CosmosEndpoint` (managed identity, no key)                   |
 | Application Insights | not set                                              | `APPLICATIONINSIGHTS_CONNECTION_STRING`                              |
 
 In `Development`, the Cosmos client switches to gateway mode and accepts the emulator's self-signed certificate for local emulator scenarios. Common local hosts include `localhost`, `127.0.0.1`, and `cosmos`; do not rely on this bypass outside Development.
