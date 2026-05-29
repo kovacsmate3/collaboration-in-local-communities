@@ -1,9 +1,7 @@
-using System.Security.Claims;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Features.Tasks;
 using Backend.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
