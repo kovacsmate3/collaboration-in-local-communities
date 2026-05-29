@@ -111,6 +111,7 @@ public sealed class AuthControllerTests
         await using var services = CreateServices();
         using var scope = services.CreateScope();
         await SeedRolesAsync(scope, cancellationToken);
+        await SeedActiveTermsAsync(scope, cancellationToken);
 
         var controller = CreateController(scope);
         var request = BuildRegisterRequest(password: "short");
@@ -127,6 +128,7 @@ public sealed class AuthControllerTests
         await using var services = CreateServices();
         using var scope = services.CreateScope();
         await SeedRolesAsync(scope, cancellationToken);
+        await SeedActiveTermsAsync(scope, cancellationToken);
 
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -203,6 +205,7 @@ public sealed class AuthControllerTests
         await using var services = CreateServices();
         using var scope = services.CreateScope();
         await SeedRolesAsync(scope, cancellationToken);
+        await SeedActiveTermsAsync(scope, cancellationToken);
 
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var approvedActive = SeedSkill(db, "approved", isActive: true, status: SkillStatus.Approved);
@@ -594,6 +597,41 @@ public sealed class AuthControllerTests
         AssertRefreshCookieSet(controller);
     }
 
+    [Fact]
+    public async Task RegisterAsync_Returns400_WhenNoActiveTermsExist()
+    {
+
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var services = CreateServices();
+        using var scope = services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        // No TermsVersions seeded — the "no active terms" path should trigger.
+        var controller = CreateController(scope);
+
+        var request = new RegisterRequest(
+            Email: "user@test.com",
+            Password: "P@ssword123!",
+            DisplayName: "Test User",
+            Workplace: null,
+            Position: null,
+            LocationText: null,
+            Latitude: null,
+            Longitude: null,
+            Bio: null,
+            AcceptTerms: true,
+            SkillIds: null);
+
+        var result = await controller.RegisterAsync(request, cancellationToken);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        var problem = Assert.IsType<ProblemDetails>(badRequest.Value);
+        Assert.Equal("Registration unavailable", problem.Title);
+
+        // FakeUserStore never writes to db.Users, so the user was not persisted.
+        Assert.Empty(db.Users);
+    }
+
     // ----------------------------------------------------------------------
     // Helpers
     // ----------------------------------------------------------------------
@@ -766,6 +804,23 @@ public sealed class AuthControllerTests
             Bio: null,
             AcceptTerms: acceptTerms,
             SkillIds: skillIds);
+    }
+
+    private static async Task SeedActiveTermsAsync(IServiceScope scope, CancellationToken cancellationToken)
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var now = DateTimeOffset.UtcNow;
+        db.TermsVersions.Add(new TermsVersion
+        {
+            Id = Guid.NewGuid(),
+            Version = "v1",
+            Title = "Terms",
+            IsActive = true,
+            EffectiveFrom = now.AddDays(-1),
+            CreatedAt = now.AddDays(-1),
+            UpdatedAt = now.AddDays(-1)
+        });
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     private static void AssertValidationProblem(IActionResult result, string expectedKey)
