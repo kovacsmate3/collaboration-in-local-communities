@@ -86,7 +86,6 @@ export interface SkillResponse {
 
 export interface ProfileReviewResponse {
   id: string
-  taskId: string
   authorId: string
   authorName: string
   authorAvatarUrl?: string | null
@@ -95,6 +94,24 @@ export interface ProfileReviewResponse {
   comment: string
   createdAt: string
 }
+
+export interface ProfileReviewPagedResponse {
+  items: ProfileReviewResponse[]
+  totalCount: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export interface ProfileReviewsPage {
+  items: Review[]
+  totalCount: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export const REVIEWS_PAGE_SIZE = 10
 
 export interface ProfileTaskHistoryResponse {
   id: string
@@ -129,6 +146,8 @@ export const profileKeys = {
   me: () => [...profileKeys.all, "me"] as const,
   public: (id: string) => [...profileKeys.all, "public", id] as const,
   reviews: (id: string) => [...profileKeys.public(id), "reviews"] as const,
+  reviewsPage: (id: string, page: number, pageSize: number) =>
+    [...profileKeys.reviews(id), { page, pageSize }] as const,
   taskHistory: (id: string) =>
     [...profileKeys.public(id), "task-history"] as const,
   reputationTrend: (id: string) =>
@@ -203,17 +222,33 @@ export function useDeleteProfilePhoto() {
   })
 }
 
-export function useProfileReviews(id: string) {
+export function useProfileReviews(
+  id: string,
+  page: number = 1,
+  pageSize: number = REVIEWS_PAGE_SIZE
+) {
   return useQuery({
-    queryKey: profileKeys.reviews(id),
-    queryFn: async () => {
-      const reviews = await apiClient.get<ProfileReviewResponse[]>(
-        `/profiles/${id}/reviews`
+    queryKey: profileKeys.reviewsPage(id, page, pageSize),
+    queryFn: async (): Promise<ProfileReviewsPage> => {
+      const response = await apiClient.get<ProfileReviewPagedResponse>(
+        `/profiles/${id}/reviews?page=${page}&pageSize=${pageSize}`
       )
 
-      return reviews.map(toReview)
+      return {
+        items: response.items.map(toReview),
+        totalCount: response.totalCount,
+        page: response.page,
+        pageSize: response.pageSize,
+        totalPages: response.totalPages,
+      }
     },
     enabled: id.length > 0,
+    // Reuse the previous page's data only when it belongs to the SAME profile
+    // — otherwise client-side navigation between profiles briefly renders one
+    // user's reviews (and totalCount) under another user's header. queryKey[2]
+    // is the profile id (see profileKeys.reviewsPage).
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[2] === id ? previousData : undefined,
   })
 }
 
@@ -311,7 +346,6 @@ const taskCategoryByBackendCode: Record<string, TaskCategory> = {
 function toReview(review: ProfileReviewResponse): Review {
   return {
     id: review.id,
-    taskId: review.taskId,
     authorId: review.authorId,
     authorName: review.authorName,
     authorAvatarUrl: review.authorAvatarUrl ?? undefined,

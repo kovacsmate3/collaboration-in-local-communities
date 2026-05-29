@@ -142,6 +142,14 @@ public sealed partial class AuthController(
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
+#if DEBUG
+        // Auto-confirm email in local Debug builds so seeded dev users can log in
+        // without a working SendGrid key. Compile-time guard so this can never
+        // reach Release output.
+        var confirmToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        await userManager.ConfirmEmailAsync(user, confirmToken);
+        return Ok(new RegisterResponse("Registration successful. Your account is ready to use."));
+#else
         bool emailSent = true;
         try
         {
@@ -158,6 +166,7 @@ public sealed partial class AuthController(
             : "Registration successful, but we could not send the verification email. Use the resend-verification endpoint to request a new link.";
 
         return Ok(new RegisterResponse(message));
+#endif
     }
 
     [HttpPost("login")]

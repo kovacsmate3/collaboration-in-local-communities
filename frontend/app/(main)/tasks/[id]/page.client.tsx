@@ -1,6 +1,5 @@
 "use client"
 
-import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { notFound } from "next/navigation"
@@ -9,21 +8,15 @@ import { Calendar03Icon, Location01Icon } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
+import { ApplicationControls } from "@/components/tasks/application-controls"
+import { ApproveCompletionButton } from "@/components/tasks/approve-completion-button"
 import { CategoryBadge } from "@/components/tasks/category-badge"
 import { CompensationBadge } from "@/components/tasks/compensation-badge"
+import { ReviewDialog } from "@/components/tasks/review-dialog"
+import { SubmitCompletionButton } from "@/components/tasks/submit-completion-button"
+import { TaskApplicationsPanel } from "@/components/tasks/task-applications-panel"
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { RichTextContent } from "@/components/shared/rich-text-content"
@@ -31,17 +24,12 @@ import { formatRelativeTime } from "@/lib/format"
 import { normalizeTaskStatus } from "@/lib/task-status"
 import { useAuth } from "@/lib/auth-context"
 import {
-  useApplyToTask,
-  useApproveTaskCompletion,
   useMyTaskApplications,
-  usePatchTaskApplication,
-  useSubmitTaskCompletion,
   useTask,
   useTaskApplications,
   useUpdateTask,
-  useWithdrawTaskApplication,
 } from "@/lib/api/tasks"
-import type { ApiTask, ApiTaskApplication } from "@/lib/api/tasks"
+import type { ApiTask } from "@/lib/api/tasks"
 import { useConversations, useStartConversation } from "@/lib/api/conversations"
 
 interface TaskDetailPageClientProps {
@@ -250,274 +238,30 @@ function TaskActions({ task }: { task: ApiTask }) {
   }
 
   if (status === "completed") {
+    const isHelper = task.acceptedHelperProfileId === user?.profileId
+    const revieweeProfileId = isSeeker
+      ? (task.acceptedHelperProfileId ?? null)
+      : isHelper
+        ? task.seekerProfileId
+        : null
+    const revieweeName = isSeeker
+      ? (task.acceptedHelperDisplayName ?? "the helper")
+      : isHelper
+        ? task.seekerDisplayName
+        : null
+
+    if (!revieweeProfileId || !revieweeName) {
+      return null
+    }
+
     return (
-      <div className="flex flex-wrap gap-2">
-        <Button>Leave a review</Button>
-      </div>
+      <ReviewDialog
+        taskId={task.id}
+        revieweeProfileId={revieweeProfileId}
+        revieweeName={revieweeName}
+      />
     )
   }
 
   return null
-}
-
-function SubmitCompletionButton({ taskId }: { taskId: string }) {
-  const { mutate: submitCompletion, isPending } =
-    useSubmitTaskCompletion(taskId)
-
-  function handleSubmit() {
-    submitCompletion(undefined, {
-      onSuccess: () => toast.success("Marked as done. Awaiting approval."),
-      onError: () => toast.error("Could not mark this task as done."),
-    })
-  }
-
-  return (
-    <Button disabled={isPending} onClick={handleSubmit}>
-      {isPending ? "Submitting…" : "Mark as done"}
-    </Button>
-  )
-}
-
-function ApproveCompletionButton({ taskId }: { taskId: string }) {
-  const { mutate: approveCompletion, isPending } =
-    useApproveTaskCompletion(taskId)
-
-  function handleApprove() {
-    approveCompletion(undefined, {
-      onSuccess: () => toast.success("Task completed."),
-      onError: () => toast.error("Could not approve completion."),
-    })
-  }
-
-  return (
-    <Button disabled={isPending} onClick={handleApprove}>
-      {isPending ? "Approving…" : "Approve completion"}
-    </Button>
-  )
-}
-
-function ApplicationControls({
-  taskId,
-  application,
-  isLoadingApplication = false,
-}: {
-  taskId: string
-  application?: ApiTaskApplication
-  isLoadingApplication?: boolean
-}) {
-  const router = useRouter()
-  const [open, setOpen] = React.useState(false)
-  const [message, setMessage] = React.useState("")
-  const { mutate: applyToTask, isPending: isApplying } = useApplyToTask(taskId)
-  const { mutate: withdraw, isPending: isWithdrawing } =
-    useWithdrawTaskApplication(taskId)
-
-  function handleApply(event: React.SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    applyToTask(
-      { message: message.trim() || undefined },
-      {
-        onSuccess: (app) => {
-          setMessage("")
-          setOpen(false)
-          if (app.conversationId) {
-            router.push(`/messages/${app.conversationId}`)
-          } else {
-            toast.success("Application sent.")
-          }
-        },
-        onError: () => toast.error("Could not apply to this task."),
-      }
-    )
-  }
-
-  function handleWithdraw() {
-    if (!application) return
-
-    withdraw(application.id, {
-      onSuccess: () => toast.success("Application withdrawn."),
-      onError: () => toast.error("Could not withdraw the application."),
-    })
-  }
-
-  if (!application && isLoadingApplication) {
-    return <Button disabled>Apply to help</Button>
-  }
-
-  if (application?.status === "Pending") {
-    return (
-      <>
-        <Button variant="outline" disabled>
-          Application pending
-        </Button>
-        {application.conversationId ? (
-          <Button variant="outline" asChild>
-            <Link href={`/messages/${application.conversationId}`}>
-              View conversation
-            </Link>
-          </Button>
-        ) : null}
-        <Button
-          variant="ghost"
-          disabled={isWithdrawing}
-          onClick={handleWithdraw}
-        >
-          {isWithdrawing ? "Withdrawing…" : "Withdraw"}
-        </Button>
-      </>
-    )
-  }
-
-  if (application) {
-    return (
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="outline" className="h-9 rounded-md px-3">
-          Application {application.status.toLowerCase()}
-        </Badge>
-        {application.conversationId ? (
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/messages/${application.conversationId}`}>
-              View conversation
-            </Link>
-          </Button>
-        ) : null}
-      </div>
-    )
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>Apply to help</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <form onSubmit={handleApply}>
-          <DialogHeader>
-            <DialogTitle>Apply to help</DialogTitle>
-            <DialogDescription>
-              Send a short note to the seeker with your availability or relevant
-              experience.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Textarea
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              maxLength={1000}
-              placeholder="I can help this afternoon and have a small hand cart."
-              rows={5}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isApplying}>
-              {isApplying ? "Sending…" : "Send application"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function TaskApplicationsPanel({
-  applications,
-  isLoading,
-  taskId,
-}: {
-  applications: ApiTaskApplication[]
-  isLoading: boolean
-  taskId: string
-}) {
-  const { mutate: patchApplication, isPending } =
-    usePatchTaskApplication(taskId)
-
-  function handleAction(applicationId: string, action: "accept" | "reject") {
-    patchApplication(
-      { applicationId, action },
-      {
-        onSuccess: () =>
-          toast.success(
-            action === "accept"
-              ? "Application accepted."
-              : "Application rejected."
-          ),
-        onError: () => toast.error("Could not update the application."),
-      }
-    )
-  }
-
-  return (
-    <section className="rounded-lg border bg-card p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium">Applications</h2>
-        <Badge variant="muted">{isLoading ? "…" : applications.length}</Badge>
-      </div>
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading applications…</p>
-      ) : applications.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No applications yet.</p>
-      ) : (
-        <div className="divide-y">
-          {applications.map((application) => (
-            <div
-              key={application.id}
-              className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <UserAvatar size="sm" name={application.helperDisplayName} />
-                <span className="text-sm font-medium">
-                  {application.helperDisplayName}
-                </span>
-                <Badge variant="outline">{application.status}</Badge>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {formatRelativeTime(application.createdAt)}
-                </span>
-              </div>
-              {application.message ? (
-                <p className="text-sm text-muted-foreground">
-                  {application.message}
-                </p>
-              ) : null}
-              <div className="flex flex-wrap gap-2">
-                {application.conversationId ? (
-                  <Button size="sm" variant="outline" asChild>
-                    <Link href={`/messages/${application.conversationId}`}>
-                      View chat
-                    </Link>
-                  </Button>
-                ) : null}
-                {application.status === "Pending" ? (
-                  <>
-                    <Button
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() => handleAction(application.id, "accept")}
-                    >
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={isPending}
-                      onClick={() => handleAction(application.id, "reject")}
-                    >
-                      Reject
-                    </Button>
-                  </>
-                ) : null}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  )
 }

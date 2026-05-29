@@ -189,14 +189,110 @@ public sealed class ProfilesControllerTests
         await db.SaveChangesAsync(cancellationToken);
 
         var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
-        var result = await controller.GetProfileReviewsAsync(profile.Id, cancellationToken);
+        var result = await controller.GetProfileReviewsAsync(profile.Id, page: 1, pageSize: 10, cancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        var reviews = Assert.IsAssignableFrom<IEnumerable<ProfileReviewResponse>>(ok.Value).ToList();
+        var paged = Assert.IsType<ProfileReviewPagedResponse>(ok.Value);
 
-        Assert.Equal(["Newer review", "Older review"], reviews.Select(review => review.Comment));
-        Assert.All(reviews, review => Assert.Equal(profile.Id, review.TargetUserId));
-        Assert.All(reviews, review => Assert.Equal(reviewer.DisplayName, review.AuthorName));
+        Assert.Equal(2, paged.TotalCount);
+        Assert.Equal(1, paged.Page);
+        Assert.Equal(10, paged.PageSize);
+        Assert.Equal(1, paged.TotalPages);
+        Assert.Equal(["Newer review", "Older review"], paged.Items.Select(review => review.Comment));
+        Assert.All(paged.Items, review => Assert.Equal(profile.Id, review.TargetUserId));
+        Assert.All(paged.Items, review => Assert.Equal(reviewer.DisplayName, review.AuthorName));
+    }
+
+    [Fact]
+    public async Task GetProfileReviewsAsync_RespectsPaginationParameters()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var profile = CreateProfile("Profile");
+        var reviewer = CreateProfile("Reviewer");
+
+        db.Profiles.AddRange(profile, reviewer);
+
+        // Seed 3 reviews with increasing CreatedAt so ordering is deterministic.
+        var now = DateTimeOffset.UtcNow;
+        for (var i = 0; i < 3; i++)
+        {
+            db.Reviews.Add(new Review
+            {
+                Id = Guid.NewGuid(),
+                TaskId = Guid.NewGuid(),
+                ReviewerProfileId = reviewer.Id,
+                ReviewerProfile = reviewer,
+                RevieweeProfileId = profile.Id,
+                RevieweeProfile = profile,
+                Rating = 5,
+                Comment = $"review {i}",
+                CreatedAt = now.AddMinutes(i),
+                UpdatedAt = now.AddMinutes(i),
+            });
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
+
+        // Page 1, size 2 → newest 2.
+        var page1Result = await controller.GetProfileReviewsAsync(profile.Id, page: 1, pageSize: 2, cancellationToken);
+        var page1 = Assert.IsType<ProfileReviewPagedResponse>(Assert.IsType<OkObjectResult>(page1Result).Value);
+        Assert.Equal(3, page1.TotalCount);
+        Assert.Equal(2, page1.TotalPages);
+        Assert.Equal(2, page1.Items.Count);
+        Assert.Equal(["review 2", "review 1"], page1.Items.Select(r => r.Comment));
+
+        // Page 2, size 2 → oldest 1.
+        var page2Result = await controller.GetProfileReviewsAsync(profile.Id, page: 2, pageSize: 2, cancellationToken);
+        var page2 = Assert.IsType<ProfileReviewPagedResponse>(Assert.IsType<OkObjectResult>(page2Result).Value);
+        Assert.Single(page2.Items);
+        Assert.Equal("review 0", page2.Items[0].Comment);
+    }
+
+    [Theory]
+    [InlineData(0, 10)]
+    [InlineData(-1, 10)]
+    [InlineData(1, 0)]
+    [InlineData(1, 51)]
+    public async Task GetProfileReviewsAsync_InvalidPagination_ReturnsValidationProblem(int page, int pageSize)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var profile = CreateProfile("Profile");
+        db.Profiles.Add(profile);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
+        var result = await controller.GetProfileReviewsAsync(profile.Id, page, pageSize, cancellationToken);
+
+        // ValidationProblem() returns an ObjectResult whose Value is a
+        // ValidationProblemDetails. In unit tests without a full DI container
+        // the wrapper's StatusCode is null (the 400 only lives on the inner
+        // ProblemDetails.Status), so we assert on the payload type.
+        var problem = Assert.IsAssignableFrom<ObjectResult>(result);
+        Assert.IsAssignableFrom<ValidationProblemDetails>(problem.Value);
+    }
+
+    [Fact]
+    public async Task GetProfileReviewsAsync_OffsetOverflow_ReturnsValidationProblem()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var profile = CreateProfile("Profile");
+        db.Profiles.Add(profile);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
+
+        // (page-1)*pageSize must be evaluated as long to detect overflow.
+        // page=int.MaxValue, pageSize=50 would wrap to a negative int.
+        var result = await controller.GetProfileReviewsAsync(
+            profile.Id, page: int.MaxValue, pageSize: 50, cancellationToken);
+
+        var problem = Assert.IsAssignableFrom<ObjectResult>(result);
+        Assert.IsAssignableFrom<ValidationProblemDetails>(problem.Value);
     }
 
     [Fact]

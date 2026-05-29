@@ -99,4 +99,15 @@ public static class PostgresExceptionHelpers
     {
         return IsUniqueConstraintViolation(exception, "ux_points_ledger_task_reward_once");
     }
+
+    /// <summary>
+    /// Checks if a DbUpdateException is a duplicate review violation
+    /// (same reviewer already submitted a review for the same task).
+    /// </summary>
+    /// <param name="exception">The DbUpdateException to check.</param>
+    /// <returns>True if the exception is a duplicate review violation, false otherwise.</returns>
+    public static bool IsDuplicateReview(DbUpdateException exception)
+    {
+        return IsUniqueConstraintViolation(exception, "ux_reviews_task_reviewer");
+    }
 }
