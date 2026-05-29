@@ -7,7 +7,9 @@ import { toast } from "sonner"
 import {
   createCategorySchema,
   updateCategorySchema,
+  type CreateCategoryFormInputValues,
   type CreateCategoryFormValues,
+  type UpdateCategoryFormInputValues,
   type UpdateCategoryFormValues,
 } from "@/lib/api/admin/category-schemas"
 import {
@@ -42,7 +44,11 @@ export function CreateCategoryDialog({
 }: CreateCategoryDialogProps) {
   const { mutateAsync, isPending } = useCreateCategory()
 
-  const form = useForm<CreateCategoryFormValues>({
+  const form = useForm<
+    CreateCategoryFormInputValues,
+    unknown,
+    CreateCategoryFormValues
+  >({
     resolver: zodResolver(createCategorySchema),
     defaultValues: {
       code: "",
@@ -122,7 +128,11 @@ export function EditCategoryDialog({
 }: EditCategoryDialogProps) {
   const { mutateAsync, isPending } = useUpdateCategory()
 
-  const form = useForm<UpdateCategoryFormValues>({
+  const form = useForm<
+    UpdateCategoryFormInputValues,
+    unknown,
+    UpdateCategoryFormValues
+  >({
     resolver: zodResolver(updateCategorySchema),
     values: category
       ? {

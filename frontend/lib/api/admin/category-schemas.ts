@@ -25,12 +25,14 @@ export const createCategorySchema = z.object({
     .optional()
     .or(z.literal("")),
   sortOrder: z.coerce
-    .number()
+    .number<string | number>()
     .int("Sort order must be a whole number")
     .min(0, "Sort order must be 0 or greater"),
 })
 
 export const updateCategorySchema = createCategorySchema.omit({ code: true })
 
-export type CreateCategoryFormValues = z.infer<typeof createCategorySchema>
-export type UpdateCategoryFormValues = z.infer<typeof updateCategorySchema>
+export type CreateCategoryFormInputValues = z.input<typeof createCategorySchema>
+export type CreateCategoryFormValues = z.output<typeof createCategorySchema>
+export type UpdateCategoryFormInputValues = z.input<typeof updateCategorySchema>
+export type UpdateCategoryFormValues = z.output<typeof updateCategorySchema>
