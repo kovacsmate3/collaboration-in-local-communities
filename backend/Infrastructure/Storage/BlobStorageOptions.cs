@@ -4,6 +4,19 @@ public sealed class BlobStorageOptions
 {
     public const string SectionName = "BlobStorage";
 
+    /// <summary>
+    /// Gets or sets the storage account name. When set, the client authenticates with a
+    /// managed identity against <c>https://&lt;account&gt;.blob.core.windows.net</c> (Azure).
+    /// When unset, <see cref="ConnectionString"/> is used (local/Azurite).
+    /// </summary>
+    public string? AccountName { get; set; }
+
+    /// <summary>
+    /// Gets or sets the blob storage connection string used when <see cref="AccountName"/>
+    /// is not supplied (local development against Azurite).
+    /// </summary>
+    public string? ConnectionString { get; set; }
+
     public string ContainerName { get; set; } = "profile-photos";
 
     /// <summary>
