@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Npgsql;
 using Xunit;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
@@ -246,6 +247,71 @@ public sealed class ReviewsControllerTests
 
         Assert.IsType<ForbidResult>(result);
         Assert.Empty(db.Reviews);
+    }
+
+    // ── PostgresExceptionHelpers.IsDuplicateReview ────────────────────────────
+
+    [Fact]
+    public void IsDuplicateReview_MatchesUniqueReviewConstraint()
+    {
+        // Mirrors the shape Npgsql actually emits when the unique index
+        // ux_reviews_task_reviewer rejects a second review from the same
+        // reviewer on the same task. This is the only path that turns the
+        // duplicate insert into a 409 in PostReviewAsync — without coverage,
+        // a constraint rename or SqlState change would silently regress
+        // duplicate posts to a 500.
+        var postgresException = new PostgresException(
+            "duplicate key value violates unique constraint",
+            "ERROR",
+            "ERROR",
+            PostgresErrorCodes.UniqueViolation,
+            detail: null,
+            hint: null,
+            position: 0,
+            internalPosition: 0,
+            internalQuery: null,
+            where: null,
+            schemaName: null,
+            tableName: "reviews",
+            columnName: null,
+            dataTypeName: null,
+            constraintName: "ux_reviews_task_reviewer",
+            file: null,
+            line: null,
+            routine: null);
+        var exception = new DbUpdateException("Duplicate review.", postgresException);
+
+        Assert.True(PostgresExceptionHelpers.IsDuplicateReview(exception));
+    }
+
+    [Fact]
+    public void IsDuplicateReview_DoesNotMatchUnrelatedConstraint()
+    {
+        // A different unique constraint must not be mistaken for the review
+        // dedupe — otherwise unrelated 23505s would surface as "Already
+        // reviewed" 409s on the review endpoint.
+        var postgresException = new PostgresException(
+            "duplicate key value violates unique constraint",
+            "ERROR",
+            "ERROR",
+            PostgresErrorCodes.UniqueViolation,
+            detail: null,
+            hint: null,
+            position: 0,
+            internalPosition: 0,
+            internalQuery: null,
+            where: null,
+            schemaName: null,
+            tableName: "user_terms_acceptances",
+            columnName: null,
+            dataTypeName: null,
+            constraintName: "ux_user_terms_acceptances_user_terms",
+            file: null,
+            line: null,
+            routine: null);
+        var exception = new DbUpdateException("Duplicate.", postgresException);
+
+        Assert.False(PostgresExceptionHelpers.IsDuplicateReview(exception));
     }
 
     // ── PostReviewRequest validation (DataAnnotations) ────────────────────────

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
 namespace Backend.Features.Reviews;
@@ -86,100 +87,124 @@ public sealed partial class ReviewsController(
         }
 
         var now = DateTimeOffset.UtcNow;
-        var review = new Review
-        {
-            Id = Guid.NewGuid(),
-            TaskId = taskId,
-            ReviewerProfileId = profile.Id,
-            RevieweeProfileId = revieweeProfileId,
-            Rating = request.Rating,
-            Comment = request.Comment?.Trim(),
-            CreatedAt = now,
-            UpdatedAt = now,
-        };
 
         // Serializable isolation prevents two concurrent reviewers from both
         // reading the same baseline aggregate and writing back with stale +1.
         // Combined with the post-insert recompute below, this guarantees the
         // denormalised stats always match the actual review rows.
-        await using var transaction = await db.Database.BeginTransactionAsync(
-            IsolationLevel.Serializable, cancellationToken);
-
-        db.Reviews.Add(review);
-
-        db.AddActivityEvent(
-            profile.UserId,
-            profile.Id,
-            ActivityEventType.ReviewSubmitted,
-            nameof(Review),
-            review.Id,
-            new { TaskId = taskId, RevieweeProfileId = revieweeProfileId, request.Rating });
-
-        db.AddAuditEvent(
-            profile.UserId,
-            "review.submitted",
-            nameof(Review),
-            review.Id,
-            new
+        //
+        // The trade-off is that Postgres can raise SQLSTATE 40001
+        // (serialization_failure) when two transactions collide; the
+        // application is expected to retry. We try a handful of times with a
+        // small linear backoff before letting the failure bubble up.
+        const int maxAttempts = 3;
+        for (var attempt = 1; ; attempt++)
+        {
+            var review = new Review
             {
+                Id = Guid.NewGuid(),
                 TaskId = taskId,
                 ReviewerProfileId = profile.Id,
                 RevieweeProfileId = revieweeProfileId,
-                request.Rating,
-            });
+                Rating = request.Rating,
+                Comment = request.Comment?.Trim(),
+                CreatedAt = now,
+                UpdatedAt = now,
+            };
 
-        try
-        {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException ex) when (PostgresExceptionHelpers.IsDuplicateReview(ex))
-        {
-            return Problem(
-                title: "Already reviewed",
-                detail: "You have already submitted a review for this task.",
-                statusCode: StatusCodes.Status409Conflict);
-        }
-
-        // Recompute the reputation aggregate from the persisted review rows
-        // (which now includes the row we just inserted) rather than mutating
-        // the denormalised stats in memory. This eliminates the lost-update
-        // race the in-memory read-modify-write was vulnerable to.
-        var stats = await db.Reviews
-            .Where(r => r.RevieweeProfileId == revieweeProfileId)
-            .GroupBy(_ => 1)
-            .Select(g => new
+            try
             {
-                Count = g.Count(),
-                Sum = g.Sum(r => (decimal)r.Rating),
-            })
-            .FirstOrDefaultAsync(cancellationToken);
+                await using var transaction = await db.Database.BeginTransactionAsync(
+                    IsolationLevel.Serializable, cancellationToken);
 
-        var revieweeProfile = await db.Profiles
-            .FirstOrDefaultAsync(p => p.Id == revieweeProfileId, cancellationToken);
+                db.Reviews.Add(review);
 
-        if (revieweeProfile is not null && stats is not null && stats.Count > 0)
-        {
-            revieweeProfile.ReviewCount = stats.Count;
-            revieweeProfile.AverageRating = decimal.Round(
-                stats.Sum / stats.Count,
-                2,
-                MidpointRounding.AwayFromZero);
-            revieweeProfile.UpdatedAt = now;
-            await db.SaveChangesAsync(cancellationToken);
+                db.AddActivityEvent(
+                    profile.UserId,
+                    profile.Id,
+                    ActivityEventType.ReviewSubmitted,
+                    nameof(Review),
+                    review.Id,
+                    new { TaskId = taskId, RevieweeProfileId = revieweeProfileId, request.Rating });
+
+                db.AddAuditEvent(
+                    profile.UserId,
+                    "review.submitted",
+                    nameof(Review),
+                    review.Id,
+                    new
+                    {
+                        TaskId = taskId,
+                        ReviewerProfileId = profile.Id,
+                        RevieweeProfileId = revieweeProfileId,
+                        request.Rating,
+                    });
+
+                try
+                {
+                    await db.SaveChangesAsync(cancellationToken);
+                }
+                catch (DbUpdateException ex) when (PostgresExceptionHelpers.IsDuplicateReview(ex))
+                {
+                    return Problem(
+                        title: "Already reviewed",
+                        detail: "You have already submitted a review for this task.",
+                        statusCode: StatusCodes.Status409Conflict);
+                }
+
+                // Recompute the reputation aggregate from the persisted review rows
+                // (which now includes the row we just inserted) rather than mutating
+                // the denormalised stats in memory. This eliminates the lost-update
+                // race the in-memory read-modify-write was vulnerable to.
+                var stats = await db.Reviews
+                    .Where(r => r.RevieweeProfileId == revieweeProfileId)
+                    .GroupBy(_ => 1)
+                    .Select(g => new
+                    {
+                        Count = g.Count(),
+                        Sum = g.Sum(r => (decimal)r.Rating),
+                    })
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                var revieweeProfile = await db.Profiles
+                    .FirstOrDefaultAsync(p => p.Id == revieweeProfileId, cancellationToken);
+
+                if (revieweeProfile is not null && stats is not null && stats.Count > 0)
+                {
+                    revieweeProfile.ReviewCount = stats.Count;
+                    revieweeProfile.AverageRating = decimal.Round(
+                        stats.Sum / stats.Count,
+                        2,
+                        MidpointRounding.AwayFromZero);
+                    revieweeProfile.UpdatedAt = now;
+                    await db.SaveChangesAsync(cancellationToken);
+                }
+
+                await transaction.CommitAsync(cancellationToken);
+
+                var response = new ProfileReviewResponse(
+                    review.Id,
+                    profile.Id,
+                    profile.DisplayName,
+                    blobStorage.RewriteToPublicUrl(profile.PhotoUrl),
+                    revieweeProfileId,
+                    review.Rating,
+                    review.Comment ?? string.Empty,
+                    review.CreatedAt);
+
+                return StatusCode(StatusCodes.Status201Created, response);
+            }
+            catch (DbUpdateException ex) when (
+                attempt < maxAttempts &&
+                ex.InnerException is PostgresException pg &&
+                pg.SqlState == PostgresErrorCodes.SerializationFailure)
+            {
+                // Serialization conflict on a concurrent reviewer: discard
+                // tracked state from this failed attempt so the next one can
+                // re-add the review entity cleanly, then back off briefly.
+                db.ChangeTracker.Clear();
+                await Task.Delay(TimeSpan.FromMilliseconds(20 * attempt), cancellationToken);
+            }
         }
-
-        await transaction.CommitAsync(cancellationToken);
-
-        var response = new ProfileReviewResponse(
-            review.Id,
-            profile.Id,
-            profile.DisplayName,
-            blobStorage.RewriteToPublicUrl(profile.PhotoUrl),
-            revieweeProfileId,
-            review.Rating,
-            review.Comment ?? string.Empty,
-            review.CreatedAt);
-
-        return StatusCode(StatusCodes.Status201Created, response);
     }
 }

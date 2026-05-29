@@ -243,7 +243,12 @@ export function useProfileReviews(
       }
     },
     enabled: id.length > 0,
-    placeholderData: (previousData) => previousData,
+    // Reuse the previous page's data only when it belongs to the SAME profile
+    // — otherwise client-side navigation between profiles briefly renders one
+    // user's reviews (and totalCount) under another user's header. queryKey[2]
+    // is the profile id (see profileKeys.reviewsPage).
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[2] === id ? previousData : undefined,
   })
 }
 
