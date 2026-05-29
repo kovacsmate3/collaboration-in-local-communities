@@ -3,6 +3,7 @@ import {
   ArchiveIcon,
   BookOpen01Icon,
   FlipBottomIcon,
+  LegalDocumentIcon,
   ShieldUserIcon,
   Tag01Icon,
   UserMultiple02Icon,
@@ -86,6 +87,12 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
     title: "Configuration",
     items: [
       {
+        href: "/admin/terms",
+        label: "Terms",
+        icon: LegalDocumentIcon,
+        matches: (pathname) => pathname.startsWith("/admin/terms"),
+      },
+      {
         href: "/admin/data-library",
         label: "Data Library",
         icon: BookOpen01Icon,
@@ -103,6 +110,7 @@ export const ADMIN_PAGE_META: Record<string, AdminPageMeta> = {
   "/admin/skills": { label: "Skills", parent: "/admin" },
   "/admin/users": { label: "Users", parent: "/admin" },
   "/admin/reports": { label: "Reports", parent: "/admin" },
+  "/admin/terms": { label: "Terms", parent: "/admin" },
   "/admin/data-library": { label: "Data Library", parent: "/admin" },
   "/admin/audit-log": { label: "Audit Log", parent: "/admin" },
   "/admin/profile": { label: "My Account" },

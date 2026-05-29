@@ -263,6 +263,157 @@ public sealed class ProfilesControllerTests
         Assert.IsType<NotFoundResult>(result);
     }
 
+    [Fact]
+    public async Task GetProfileReputationTrendAsync_ReturnsDailySnapshotsFromCompletedTasksAndReviews()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var profile = CreateProfile("Profile");
+        var helper = CreateProfile("Helper");
+        var seeker = CreateProfile("Seeker");
+        var reviewer = CreateProfile("Reviewer");
+        var category = CreateCategory("repairs", "Repairs", "Wrench01Icon");
+        var firstDay = new DateTimeOffset(2026, 1, 2, 9, 0, 0, TimeSpan.Zero);
+        var secondDay = firstDay.AddDays(1);
+        var thirdDay = firstDay.AddDays(2);
+        var fourthDay = firstDay.AddDays(3);
+        var seekerTask = CreateTask(
+            "Seeker completion",
+            profile,
+            helper,
+            category,
+            DomainTaskStatus.Completed,
+            firstDay.AddDays(-1),
+            firstDay);
+        var helperTask = CreateTask(
+            "Helper completion",
+            seeker,
+            profile,
+            category,
+            DomainTaskStatus.Completed,
+            thirdDay.AddDays(-1),
+            thirdDay);
+
+        db.Profiles.AddRange(profile, helper, seeker, reviewer);
+        db.Categories.Add(category);
+        db.Tasks.AddRange(seekerTask, helperTask);
+        db.Reviews.AddRange(
+            new Review
+            {
+                Id = Guid.NewGuid(),
+                TaskId = seekerTask.Id,
+                ReviewerProfileId = reviewer.Id,
+                ReviewerProfile = reviewer,
+                RevieweeProfileId = profile.Id,
+                RevieweeProfile = profile,
+                Rating = 5,
+                Comment = "Great help",
+                CreatedAt = secondDay,
+                UpdatedAt = secondDay
+            },
+            new Review
+            {
+                Id = Guid.NewGuid(),
+                TaskId = helperTask.Id,
+                ReviewerProfileId = reviewer.Id,
+                ReviewerProfile = reviewer,
+                RevieweeProfileId = profile.Id,
+                RevieweeProfile = profile,
+                Rating = 3,
+                Comment = "Solid help",
+                CreatedAt = fourthDay,
+                UpdatedAt = fourthDay
+            });
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
+        var result = await controller.GetProfileReputationTrendAsync(profile.Id, cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var trend = Assert.IsAssignableFrom<IEnumerable<ProfileReputationTrendPointResponse>>(ok.Value).ToList();
+
+        Assert.Equal(
+            [10, 20, 30, 36],
+            trend.Select(point => point.Score));
+        Assert.Equal(
+            new[] { firstDay, secondDay, thirdDay, fourthDay }
+                .Select(day => DateOnly.FromDateTime(day.UtcDateTime)),
+            trend.Select(point => point.Date));
+        Assert.Equal([0m, 5m, 5m, 4m], trend.Select(point => point.AverageRating));
+        Assert.Equal([0, 1, 1, 2], trend.Select(point => point.ReviewCount));
+        Assert.Equal([1, 1, 2, 2], trend.Select(point => point.CompletedTaskCount));
+    }
+
+    [Fact]
+    public async Task GetPublicProfileAsync_PopulatesReputationScore_FromCalculator()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var profile = CreateProfile("Helper");
+        profile.AverageRating = 4.8m;
+        profile.ReviewCount = 12;
+        profile.CompletedTaskCount = 9;
+        profile.PrivacySettings = new ProfilePrivacySettings
+        {
+            Id = Guid.NewGuid(),
+            ProfileId = profile.Id,
+            ShowWorkplace = true,
+            ShowPosition = true,
+            ShowLocation = true,
+            ShowAvailability = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        db.Profiles.Add(profile);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
+        var result = await controller.GetPublicProfileAsync(profile.Id, cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<PublicProfileResponse>(ok.Value);
+        // 9 x 10 + 4.8 x 12 x 2 = 205
+        Assert.Equal(205, response.ReputationScore);
+        Assert.Equal(profile.AverageRating, response.AverageRating);
+        Assert.Equal(profile.ReviewCount, response.ReviewCount);
+        Assert.Equal(profile.CompletedTaskCount, response.CompletedTaskCount);
+    }
+
+    [Fact]
+    public async Task GetOwnProfileAsync_PopulatesReputationScore_FromCalculator()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
+        var profile = await db.Profiles.FindAsync([profileId], cancellationToken);
+        Assert.NotNull(profile);
+        profile.AverageRating = 5m;
+        profile.ReviewCount = 4;
+        profile.CompletedTaskCount = 3;
+        var privacySettings = new ProfilePrivacySettings
+        {
+            Id = Guid.NewGuid(),
+            ProfileId = profile.Id,
+            ShowWorkplace = true,
+            ShowPosition = true,
+            ShowLocation = true,
+            ShowAvailability = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        profile.PrivacySettings = privacySettings;
+        db.ProfilePrivacySettings.Add(privacySettings);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+        var result = await controller.GetOwnProfileAsync(cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<OwnProfileResponse>(ok.Value);
+        // 3 x 10 + 5 x 4 x 2 = 70
+        Assert.Equal(70, response.ReputationScore);
+    }
+
     private static async Task<(Guid userId, Guid profileId)> SeedProfileAsync(
         AppDbContext db, CancellationToken cancellationToken)
     {
@@ -313,7 +464,8 @@ public sealed class ProfilesControllerTests
         UserProfile? acceptedHelper,
         Category category,
         DomainTaskStatus status,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        DateTimeOffset? completedAt = null)
     {
         return new CommunityTask
         {
@@ -330,7 +482,8 @@ public sealed class ProfilesControllerTests
             CompensationType = CompensationType.Voluntary,
             Status = status,
             CreatedAt = createdAt,
-            UpdatedAt = createdAt
+            UpdatedAt = completedAt ?? createdAt,
+            CompletedAt = completedAt
         };
     }
 
