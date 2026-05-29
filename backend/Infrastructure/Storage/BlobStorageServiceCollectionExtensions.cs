@@ -1,5 +1,6 @@
 using Azure.Identity;
 using Azure.Storage.Blobs;
+using Microsoft.Extensions.Options;
 
 namespace Backend.Infrastructure.Storage;
 
@@ -13,19 +14,22 @@ public static class BlobStorageServiceCollectionExtensions
             .Bind(configuration.GetSection(BlobStorageOptions.SectionName))
             .ValidateOnStart();
 
-        services.AddSingleton(_ =>
+        services.AddSingleton(serviceProvider =>
         {
-            var accountName = Environment.GetEnvironmentVariable("AZURE_STORAGE_ACCOUNT_NAME");
-            if (!string.IsNullOrEmpty(accountName))
+            // Read everything from the bound options (configuration) rather than the
+            // environment directly, so the lookup is consistent with the rest of the host.
+            var options = serviceProvider.GetRequiredService<IOptions<BlobStorageOptions>>().Value;
+
+            if (!string.IsNullOrEmpty(options.AccountName))
             {
                 // Azure: use managed identity — no connection string required
-                var serviceUri = new Uri($"https://{accountName}.blob.core.windows.net");
+                var serviceUri = new Uri($"https://{options.AccountName}.blob.core.windows.net");
                 return new BlobServiceClient(serviceUri, new DefaultAzureCredential());
             }
 
-            var connectionString = configuration["BlobStorage:ConnectionString"]
+            var connectionString = options.ConnectionString
                 ?? throw new InvalidOperationException(
-                    "No blob storage config found. Set AZURE_STORAGE_ACCOUNT_NAME (Azure) or BlobStorage:ConnectionString (local).");
+                    "No blob storage config found. Set BlobStorage:AccountName (Azure) or BlobStorage:ConnectionString (local).");
 
             return new BlobServiceClient(connectionString);
         });

@@ -3,6 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Location01Icon } from "@hugeicons/core-free-icons"
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { CategoryBadge } from "@/components/tasks/category-badge"
 import { CompensationBadge } from "@/components/tasks/compensation-badge"
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
@@ -14,10 +15,16 @@ import { cn } from "@/lib/utils"
 interface TaskCardProps {
   task: ApiTask
   hideStatus?: boolean
+  applicationStatus?: string
   className?: string
 }
 
-export function TaskCard({ task, hideStatus, className }: TaskCardProps) {
+export function TaskCard({
+  task,
+  hideStatus,
+  applicationStatus,
+  className,
+}: TaskCardProps) {
   return (
     <Card className={cn("transition-colors hover:border-ring/40", className)}>
       <Link
@@ -32,6 +39,15 @@ export function TaskCard({ task, hideStatus, className }: TaskCardProps) {
               compensationAmount={task.compensationAmount}
             />
             {!hideStatus ? <TaskStatusBadge status={task.status} /> : null}
+            {applicationStatus ? (
+              <Badge
+                variant={
+                  applicationStatus === "Rejected" ? "destructive" : "outline"
+                }
+              >
+                Application {applicationStatus.toLowerCase()}
+              </Badge>
+            ) : null}
             <span className="ml-auto text-xs text-muted-foreground">
               {formatRelativeTime(task.createdAt)}
             </span>

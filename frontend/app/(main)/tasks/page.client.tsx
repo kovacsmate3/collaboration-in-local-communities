@@ -1,17 +1,25 @@
 "use client"
 
 import Link from "next/link"
+import { InboxIcon } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/shared/page-header"
+import { TaskCard } from "@/components/tasks/task-card"
 import { TaskList } from "@/components/tasks/task-list"
+import { EmptyState } from "@/components/shared/empty-state"
 import { useAuth } from "@/lib/auth-context"
-import { useTaskList } from "@/lib/api/tasks"
+import { useMyTaskApplications, useTaskList } from "@/lib/api/tasks"
 
 export function TasksPageClient() {
   const { user } = useAuth()
   const { data: tasks = [], isLoading, isError } = useTaskList()
+  const {
+    data: applications = [],
+    isLoading: isLoadingApplications,
+    isError: isApplicationsError,
+  } = useMyTaskApplications()
 
   const posted = tasks.filter((t) => t.seekerProfileId === user?.profileId)
   const accepted = tasks.filter(
@@ -38,9 +46,12 @@ export function TasksPageClient() {
           <TabsTrigger value="accepted">
             Accepted ({isLoading ? "…" : accepted.length})
           </TabsTrigger>
+          <TabsTrigger value="applied">
+            Applied ({isLoadingApplications ? "…" : applications.length})
+          </TabsTrigger>
         </TabsList>
 
-        {isError ? (
+        {isError || isApplicationsError ? (
           <p className="mt-4 text-sm text-destructive">
             Could not load tasks. Please try again.
           </p>
@@ -66,6 +77,28 @@ export function TasksPageClient() {
                   emptyTitle="No accepted tasks"
                   emptyDescription="Browse the feed and accept a task to see it here."
                 />
+              )}
+            </TabsContent>
+            <TabsContent value="applied">
+              {isLoadingApplications ? (
+                <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+              ) : applications.length === 0 ? (
+                <EmptyState
+                  icon={InboxIcon}
+                  title="No applications yet"
+                  description="Apply to open tasks from the feed to track them here."
+                />
+              ) : (
+                <ul className="flex flex-col gap-3">
+                  {applications.map((application) => (
+                    <li key={application.id}>
+                      <TaskCard
+                        task={application.task}
+                        applicationStatus={application.status}
+                      />
+                    </li>
+                  ))}
+                </ul>
               )}
             </TabsContent>
           </>

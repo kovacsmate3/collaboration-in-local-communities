@@ -15,9 +15,8 @@ public static class ApplicationAuthenticationServiceCollectionExtensions
             .Get<AuthOptions>() ?? new AuthOptions();
 
         var signingKey = authOptions.SigningKey
-            ?? configuration["AUTH_SIGNING_KEY"]
             ?? throw new InvalidOperationException(
-                "Auth signing key is required. Set Auth:SigningKey or AUTH_SIGNING_KEY.");
+                "Auth signing key is required. Set Auth:SigningKey (environment: Auth__SigningKey).");
 
         if (Encoding.UTF8.GetByteCount(signingKey) < 32)
         {

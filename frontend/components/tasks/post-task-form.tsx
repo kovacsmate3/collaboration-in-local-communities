@@ -23,8 +23,8 @@ import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
 import { resendVerificationEmail } from "@/lib/auth/functions"
 import { useCategories } from "@/lib/api/categories"
-import { useCreateTask } from "@/lib/api/tasks"
-import { COMPENSATION_LABELS } from "@/lib/constants"
+import { useCreateTask, useUpdateTask } from "@/lib/api/tasks"
+import { COMPENSATION_OPTIONS } from "@/lib/constants"
 import type { LocationValue } from "@/lib/location"
 import type { CompensationType } from "@/lib/types"
 
@@ -42,17 +42,36 @@ const INITIAL: PostTaskFormState = {
   description: "",
   categoryId: "",
   location: { locationText: "" },
-  compensationType: "voluntary",
+  compensationType: "points",
   compensationAmount: "",
 }
 
-export function PostTaskForm() {
+interface PostTaskFormProps {
+  taskId?: string
+  initialValues?: Partial<PostTaskFormState>
+}
+
+export function PostTaskForm({
+  taskId,
+  initialValues,
+}: PostTaskFormProps = {}) {
+  const isEditing = Boolean(taskId)
   const { user } = useAuth()
   const router = useRouter()
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories()
-  const { mutate: createTask, isPending } = useCreateTask()
-  const [form, setForm] = React.useState<PostTaskFormState>(INITIAL)
+  const { mutate: createTask, isPending: isCreating } = useCreateTask()
+  const { mutate: updateTask, isPending: isUpdating } = useUpdateTask(
+    taskId ?? ""
+  )
+  const isPending = isCreating || isUpdating
+  const [form, setForm] = React.useState<PostTaskFormState>(() => {
+    const next = { ...INITIAL, ...initialValues }
+    return {
+      ...next,
+      compensationType: normalizeCompensationType(next.compensationType),
+    }
+  })
   const [isResending, setIsResending] = React.useState(false)
 
   const update = <K extends keyof PostTaskFormState>(
@@ -73,7 +92,7 @@ export function PostTaskForm() {
     }
   }
 
-  if (user && !user.emailVerified) {
+  if (!isEditing && user && !user.emailVerified) {
     return (
       <div className="rounded-md border border-amber-200 bg-amber-50 px-5 py-4 dark:border-amber-900 dark:bg-amber-950">
         <p className="font-medium text-amber-800 dark:text-amber-200">
@@ -104,6 +123,12 @@ export function PostTaskForm() {
   function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
 
+    const title = form.title.trim()
+    if (title.length < 3) {
+      toast.error("Title must be at least 3 characters.")
+      return
+    }
+
     const plainText = form.description.replace(/<[^>]*>/g, "").trim()
     if (plainText.length < 10) {
       toast.error("Description must be at least 10 characters.")
@@ -114,14 +139,52 @@ export function PostTaskForm() {
       return
     }
 
+    if (!form.categoryId) {
+      toast.error("Pick a category.")
+      return
+    }
+
     const amount =
       form.compensationType === "paid" && form.compensationAmount
         ? Number(form.compensationAmount)
         : undefined
 
+    if (
+      form.compensationType === "paid" &&
+      (amount === undefined || !Number.isFinite(amount) || amount < 0)
+    ) {
+      toast.error("Enter a valid paid amount.")
+      return
+    }
+
+    if (isEditing) {
+      updateTask(
+        {
+          title,
+          description: form.description,
+          categoryId: form.categoryId,
+          compensationType: form.compensationType,
+          compensationAmount: amount,
+          locationText: form.location.locationText || undefined,
+        },
+        {
+          onSuccess: () => {
+            toast.success("Task updated!")
+            router.push(`/tasks/${taskId}`)
+          },
+          onError: (err) => {
+            const message =
+              err instanceof Error ? err.message : "Could not update the task."
+            toast.error(message)
+          },
+        }
+      )
+      return
+    }
+
     createTask(
       {
-        title: form.title,
+        title,
         description: form.description,
         categoryId: form.categoryId,
         compensationType: form.compensationType,
@@ -151,6 +214,7 @@ export function PostTaskForm() {
         <Input
           id="title"
           required
+          minLength={3}
           maxLength={160}
           placeholder="e.g. Help carrying boxes to my new apartment"
           value={form.title}
@@ -204,7 +268,7 @@ export function PostTaskForm() {
       </div>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-medium">Compensation</legend>
+        <legend className="text-sm font-medium">Reward offered</legend>
         <RadioGroup
           value={form.compensationType}
           onValueChange={(v) =>
@@ -212,20 +276,19 @@ export function PostTaskForm() {
           }
           className="grid gap-2 sm:grid-cols-3"
         >
-          {(Object.keys(COMPENSATION_LABELS) as CompensationType[]).map(
-            (key) => (
-              <Label
-                key={key}
-                htmlFor={`comp-${key}`}
-                className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background p-3 hover:bg-muted"
-              >
-                <RadioGroupItem id={`comp-${key}`} value={key} />
-                <span className="text-sm font-medium">
-                  {COMPENSATION_LABELS[key]}
-                </span>
-              </Label>
-            )
-          )}
+          {COMPENSATION_OPTIONS.map((option) => (
+            <Label
+              key={option.value}
+              htmlFor={`comp-${option.value}`}
+              className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background p-3 hover:bg-muted"
+            >
+              <RadioGroupItem
+                id={`comp-${option.value}`}
+                value={option.value}
+              />
+              <span className="text-sm font-medium">{option.label}</span>
+            </Label>
+          ))}
         </RadioGroup>
 
         {form.compensationType === "paid" ? (
@@ -235,6 +298,8 @@ export function PostTaskForm() {
               id="amount"
               type="number"
               min={0}
+              max={9_999_999_999.99}
+              step="0.01"
               required
               placeholder="e.g. 5000"
               value={form.compensationAmount}
@@ -246,12 +311,34 @@ export function PostTaskForm() {
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" asChild>
-          <Link href="/feed">Cancel</Link>
+          <Link href={isEditing ? `/tasks/${taskId}` : "/feed"}>Cancel</Link>
         </Button>
         <Button type="submit" disabled={isPending || !form.categoryId}>
-          {isPending ? "Posting…" : "Post task"}
+          {isEditing
+            ? isPending
+              ? "Saving…"
+              : "Save changes"
+            : isPending
+              ? "Posting…"
+              : "Post task"}
         </Button>
       </div>
     </form>
   )
+}
+
+function normalizeCompensationType(value: unknown): CompensationType {
+  if (typeof value !== "string") return "points"
+
+  switch (value.toLowerCase()) {
+    case "paid":
+      return "paid"
+    case "barter":
+      return "barter"
+    case "points":
+    case "voluntary":
+      return "points"
+    default:
+      return "points"
+  }
 }

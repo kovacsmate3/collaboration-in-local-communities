@@ -88,4 +88,24 @@ public sealed class AdminAnalyticsController(AppDbContext db) : ControllerBase
 
         return Ok(new ChartDataResponse(entries));
     }
+
+    [HttpGet("charts/task-application-status")]
+    public async Task<IActionResult> GetTaskApplicationStatusChartAsync(CancellationToken cancellationToken)
+    {
+        var groups = await db.TaskApplications.AsNoTracking()
+            .GroupBy(a => a.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var total = groups.Sum(g => g.Count);
+        var entries = groups
+            .OrderByDescending(g => g.Count)
+            .Select(g => new ChartEntry(
+                g.Status.ToString(),
+                g.Count,
+                total > 0 ? Math.Round(g.Count * 100.0 / total, 1) : 0))
+            .ToList();
+
+        return Ok(new ChartDataResponse(entries));
+    }
 }

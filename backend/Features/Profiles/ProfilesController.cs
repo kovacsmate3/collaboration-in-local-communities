@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
+using Backend.Domain.Reputation;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Security;
 using Backend.Infrastructure.Storage;
@@ -51,7 +52,9 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             LocationText = privacy?.ShowLocation == true ? profile.LocationText : null,
             AverageRating = profile.AverageRating,
             ReviewCount = profile.ReviewCount,
-            CompletedTaskCount = profile.CompletedTaskCount
+            CompletedTaskCount = profile.CompletedTaskCount,
+            ReputationScore = ReputationScoreCalculator.Compute(
+                profile.AverageRating, profile.ReviewCount, profile.CompletedTaskCount)
         };
 
         return Ok(response);
@@ -227,6 +230,8 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             AverageRating = profile.AverageRating,
             ReviewCount = profile.ReviewCount,
             CompletedTaskCount = profile.CompletedTaskCount,
+            ReputationScore = ReputationScoreCalculator.Compute(
+                profile.AverageRating, profile.ReviewCount, profile.CompletedTaskCount),
             CreatedAt = profile.CreatedAt,
             UpdatedAt = profile.UpdatedAt,
             SkillIds = profile.ProfileSkills.Select(ps => ps.SkillId).ToList(),
@@ -339,6 +344,8 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             AverageRating = profile.AverageRating,
             ReviewCount = profile.ReviewCount,
             CompletedTaskCount = profile.CompletedTaskCount,
+            ReputationScore = ReputationScoreCalculator.Compute(
+                profile.AverageRating, profile.ReviewCount, profile.CompletedTaskCount),
             CreatedAt = profile.CreatedAt,
             UpdatedAt = profile.UpdatedAt,
             SkillIds = profile.ProfileSkills.Select(ps => ps.SkillId).ToList(),

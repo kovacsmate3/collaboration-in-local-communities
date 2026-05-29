@@ -18,7 +18,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
@@ -457,7 +457,7 @@ namespace Backend.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_tasks_distinct_profiles", "accepted_helper_profile_id IS NULL OR seeker_profile_id <> accepted_helper_profile_id");
 
-                            t.HasCheckConstraint("ck_tasks_status", "status IN ('Open', 'InProgress', 'Completed', 'Cancelled')");
+                            t.HasCheckConstraint("ck_tasks_status", "status IN ('Open', 'InProgress', 'PendingApproval', 'Completed', 'Cancelled')");
                         });
                 });
 
@@ -1198,6 +1198,10 @@ namespace Backend.Infrastructure.Persistence.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
+                    b.Property<string>("Content")
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
                     b.Property<string>("ContentUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)")
@@ -1216,8 +1220,24 @@ namespace Backend.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(true)
+                        .HasDefaultValue(false)
                         .HasColumnName("is_active");
+
+                    b.Property<int>("MajorVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("major_version");
+
+                    b.Property<int>("MinorVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("minor_version");
+
+                    b.Property<int>("PatchVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("patch_version");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -1244,11 +1264,16 @@ namespace Backend.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_terms_versions_effective_from");
 
                     b.HasIndex("IsActive")
-                        .HasDatabaseName("ix_terms_versions_is_active");
-
-                    b.HasIndex("Version")
                         .IsUnique()
-                        .HasDatabaseName("ux_terms_versions_version");
+                        .HasDatabaseName("ux_terms_versions_single_active")
+                        .HasFilter("is_active = true");
+
+                    b.HasIndex("MajorVersion", "MinorVersion")
+                        .HasDatabaseName("ix_terms_versions_major_minor");
+
+                    b.HasIndex("MajorVersion", "MinorVersion", "PatchVersion")
+                        .IsUnique()
+                        .HasDatabaseName("ux_terms_versions_version_triple");
 
                     b.ToTable("terms_versions", "config");
 
@@ -1256,12 +1281,17 @@ namespace Backend.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("00000000-0000-0000-0000-000000000301"),
+                            Content = "<h2>1. About 2gather</h2><p>2gather is a platform that connects neighbours who need help with those willing to offer it. By creating an account you agree to use the service in good faith and in accordance with your local laws.</p><h2>2. Your account</h2><p>You are responsible for keeping your credentials secure and for all activity that occurs under your account. Notify us immediately if you suspect unauthorised access.</p><h2>3. Acceptable use</h2><p>You may not use 2gather to post illegal tasks, harass other users, misrepresent your identity, or scrape the platform without written permission. We reserve the right to suspend accounts that violate these rules.</p><h2>4. Payments &amp; barter</h2><p>2gather facilitates agreements between users but is not a party to them. Any payment or exchange is solely between the Seeker and the Helper. We are not liable for disputes arising from tasks.</p><h2>5. Privacy</h2><p>We collect only the information needed to operate the service. We do not sell your data. A full privacy policy will be published before the public launch.</p><h2>6. Limitation of liability</h2><p>2gather is provided “as is” during this early phase. We make no warranties about uptime or fitness for a particular purpose. Our liability is limited to the maximum extent permitted by applicable law.</p><h2>7. Changes to these terms</h2><p>We may update these terms as the product evolves. Continued use of the platform after changes are posted constitutes acceptance of the revised terms.</p>",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             EffectiveFrom = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsActive = true,
+                            MajorVersion = 0,
+                            MinorVersion = 1,
+                            PatchVersion = 0,
+                            PublishedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Title = "Initial Terms and Conditions",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            Version = "1.0"
+                            Version = "0.1.0"
                         });
                 });
 

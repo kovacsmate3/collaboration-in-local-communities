@@ -91,28 +91,36 @@ Keep new entity configurations in [`Infrastructure/Persistence/Configurations/`]
 
 | Setting              | Local (`appsettings.Development.json` / compose env) | Azure (env vars)                                                     |
 | -------------------- | ---------------------------------------------------- | -------------------------------------------------------------------- |
-| Postgres connection  | `ConnectionStrings:DefaultConnection`                | `AZURE_POSTGRESQL_HOST`, `_PORT`, `_DATABASE`, `_USERNAME` (managed identity token) |
-| Cosmos endpoint      | `CosmosDb:AccountEndpoint` + `CosmosDb:AccountKey`   | `AZURE_COSMOS_ENDPOINT` (managed identity, no key)                   |
+| Postgres connection  | `ConnectionStrings:DefaultConnection`                | `Azure__Postgres__Host`, `__Port`, `__Database`, `__Username` (managed identity token) |
+| Cosmos endpoint      | `CosmosDb:AccountEndpoint` + `CosmosDb:AccountKey`   | `Azure__CosmosEndpoint` (managed identity, no key)                   |
 | Application Insights | not set                                              | `APPLICATIONINSIGHTS_CONNECTION_STRING`                              |
 
 In `Development`, the Cosmos client switches to gateway mode and accepts the emulator's self-signed certificate for local emulator scenarios. Common local hosts include `localhost`, `127.0.0.1`, and `cosmos`; do not rely on this bypass outside Development.
 
 ## Migrations
 
-EF Core migrations live in `Infrastructure/Persistence/Migrations`. Run from the repo root:
+EF Core migrations live in `Infrastructure/Persistence/Migrations`. **Always generate them with `dotnet ef` — never write migration files by hand.** A hand-written `.cs` file without the matching `.Designer.cs` is invisible to EF's migration runner; `MigrateAsync()` at startup will silently skip it.
+
+The full workflow from repo root:
 
 ```bash
-# Create a migration
+# 1. Update the entity/configuration (OnModelCreating / IEntityTypeConfiguration)
+
+# 2. Generate the migration — EF diffs the model against AppDbContextModelSnapshot
 dotnet ef migrations add <Name> \
   --project backend --startup-project backend \
   --context Backend.Infrastructure.Persistence.AppDbContext \
   --output-dir Infrastructure/Persistence/Migrations
+# This produces <timestamp>_<Name>.cs AND <timestamp>_<Name>.Designer.cs
+# and updates AppDbContextModelSnapshot.cs automatically.
 
-# Apply migrations
+# 3. Review the generated Up() / Down() for correctness, then apply
 dotnet ef database update \
   --project backend --startup-project backend \
   --context Backend.Infrastructure.Persistence.AppDbContext
 ```
+
+`MigrateAsync()` runs automatically on every dev startup (see `Program.cs`), so after the files are generated and committed any fresh DB will self-migrate.
 
 One migration per logical change; use a meaningful name (`AddPostgisExtension`, not `Update1`). If you need a new Postgres extension, enable it in the migration's `Up()` (`migrationBuilder.Sql("CREATE EXTENSION IF NOT EXISTS …")`), not at runtime.
 

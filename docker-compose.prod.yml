@@ -23,9 +23,9 @@ services:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       CosmosDb__AccountEndpoint: ${COSMOS_ENDPOINT:?COSMOS_ENDPOINT is required}
       CosmosDb__AccountKey: ${COSMOS_KEY:?COSMOS_KEY is required}
-      AUTH_SIGNING_KEY: ${AUTH_SIGNING_KEY:?AUTH_SIGNING_KEY is required}
+      Auth__SigningKey: ${Auth__SigningKey:?Auth__SigningKey is required}
       FrontendProxyAuth__SigningKey: ${FRONTEND_PROXY_SIGNING_KEY:?FRONTEND_PROXY_SIGNING_KEY is required}
-      AZURE_STORAGE_ACCOUNT_NAME: ${AZURE_STORAGE_ACCOUNT_NAME:?AZURE_STORAGE_ACCOUNT_NAME is required}
+      BlobStorage__AccountName: ${BlobStorage__AccountName:?BlobStorage__AccountName is required}
       BlobStorage__ContainerName: ${BLOB_CONTAINER_NAME:-profile-photos}
     depends_on:
       db:

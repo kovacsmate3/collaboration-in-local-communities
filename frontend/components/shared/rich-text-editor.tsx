@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef } from "react"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Placeholder from "@tiptap/extension-placeholder"
@@ -22,18 +22,27 @@ export function RichTextEditor({
   className,
   maxLength,
 }: RichTextEditorProps) {
-  const [charCount, setCharCount] = useState(value.length)
+  const charCount = value.length
+  const isEditorUpdateRef = useRef(false)
 
   const editor = useEditor({
     extensions: [StarterKit, Placeholder.configure({ placeholder })],
     content: value || "<p></p>",
     onUpdate({ editor: e }) {
-      const html = e.getHTML()
-      setCharCount(html.length)
-      onChange(html)
+      isEditorUpdateRef.current = true
+      onChange(e.getHTML())
     },
     immediatelyRender: false,
   })
+
+  useEffect(() => {
+    if (!editor || isEditorUpdateRef.current) {
+      isEditorUpdateRef.current = false
+      return
+    }
+
+    editor.commands.setContent(value || "<p></p>")
+  }, [editor, value])
 
   const isNearLimit = maxLength !== undefined && charCount >= maxLength * 0.9
   const isOverLimit = maxLength !== undefined && charCount > maxLength

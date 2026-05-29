@@ -27,4 +27,7 @@ public sealed record PublicProfileResponse
     public required decimal AverageRating { get; init; }
     public required int ReviewCount { get; init; }
     public required int CompletedTaskCount { get; init; }
+
+    /// <summary>Gets the aggregate reputation score surfaced in the profile widget.</summary>
+    public required int ReputationScore { get; init; }
 }

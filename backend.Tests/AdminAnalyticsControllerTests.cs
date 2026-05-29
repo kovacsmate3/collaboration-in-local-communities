@@ -214,6 +214,57 @@ public sealed class AdminAnalyticsControllerTests
         Assert.Equal(1, paidEntry.Count);
     }
 
+    [Fact]
+    public async Task GetTaskApplicationStatusChart_ReturnsGroupedByStatus()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (catId, seekerProfileId) = await SeedMinimalRequiredEntities(db, cancellationToken);
+
+        var helperProfileId = Guid.NewGuid();
+        db.Profiles.Add(new UserProfile
+        {
+            Id = helperProfileId,
+            UserId = Guid.NewGuid(),
+            DisplayName = "Helper",
+            IsProfileCompleted = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        });
+
+        var task = MakeTask(catId, seekerProfileId, DomainTaskStatus.Open, CompensationType.Voluntary);
+        db.Tasks.Add(task);
+        db.TaskApplications.Add(new TaskApplication
+        {
+            Id = Guid.NewGuid(),
+            TaskId = task.Id,
+            HelperProfileId = helperProfileId,
+            Status = TaskApplicationStatus.Pending,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        });
+        db.TaskApplications.Add(new TaskApplication
+        {
+            Id = Guid.NewGuid(),
+            TaskId = task.Id,
+            HelperProfileId = Guid.NewGuid(),
+            Status = TaskApplicationStatus.Rejected,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        });
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateController(db);
+        var result = await controller.GetTaskApplicationStatusChartAsync(cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<ChartDataResponse>(ok.Value);
+
+        Assert.Equal(2, response.Entries.Count);
+        Assert.Contains(response.Entries, e => e.Label == "Pending" && e.Count == 1);
+        Assert.Contains(response.Entries, e => e.Label == "Rejected" && e.Count == 1);
+    }
+
     private static async Task<(Guid CatId, Guid ProfileId)> SeedMinimalRequiredEntities(
         AppDbContext db,
         CancellationToken cancellationToken)

@@ -45,6 +45,12 @@ public sealed class AzureBlobStorageService(
                 return;
             }
 
+            if (!parsed.BlobName.StartsWith("profiles/", StringComparison.OrdinalIgnoreCase))
+            {
+                logger.LogWarning("Refusing to delete blob with unexpected name prefix: {BlobName}.", parsed.BlobName);
+                return;
+            }
+
             var container = GetContainer();
             await container.GetBlobClient(parsed.BlobName).DeleteIfExistsAsync(cancellationToken: cancellationToken);
         }

@@ -48,6 +48,23 @@ public sealed partial class AuthController(
             return ValidationProblem(ModelState);
         }
 
+        var now = DateTimeOffset.UtcNow;
+
+        await db.ActivateScheduledAsync(now, cancellationToken);
+
+        var activeTerms = await db.TermsVersions
+            .GetCurrentAsync(now, cancellationToken);
+
+        if (activeTerms is null)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Registration unavailable",
+                Detail = "No active terms version exists. Registration is disabled until terms are published.",
+                Status = StatusCodes.Status400BadRequest
+            });
+        }
+
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         var user = new ApplicationUser
@@ -69,7 +86,6 @@ public sealed partial class AuthController(
             return IdentityValidationProblem(roleResult);
         }
 
-        var now = DateTimeOffset.UtcNow;
         var profile = new UserProfile
         {
             UserId = user.Id,
@@ -105,20 +121,14 @@ public sealed partial class AuthController(
             }
         }
 
-        var activeTerms = await db.TermsVersions
-            .GetCurrentAsync(now, cancellationToken);
-
-        if (activeTerms is not null)
+        db.UserTermsAcceptances.Add(new UserTermsAcceptance
         {
-            db.UserTermsAcceptances.Add(new UserTermsAcceptance
-            {
-                Id = Guid.NewGuid(),
-                UserId = user.Id,
-                TermsVersionId = activeTerms.Id,
-                AcceptedAt = now,
-                IpAddress = GetClientIp()
-            });
-        }
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            TermsVersionId = activeTerms.Id,
+            AcceptedAt = now,
+            IpAddress = GetClientIp()
+        });
 
         AddAuditEvent(user.Id, "auth.registered", "ApplicationUser", user.Id, new { user.Email });
         db.AddActivityEvent(

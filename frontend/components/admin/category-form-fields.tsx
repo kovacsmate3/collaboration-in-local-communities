@@ -23,7 +23,7 @@ interface CategoryFormValues {
   name: string
   icon: string
   description?: string
-  sortOrder: number
+  sortOrder: string | number
 }
 
 interface CategoryFormFieldsProps {

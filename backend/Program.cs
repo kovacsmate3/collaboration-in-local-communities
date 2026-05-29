@@ -2,8 +2,10 @@ using System.Net;
 using Azure.Core;
 using Azure.Identity;
 using Backend.Application.Categories;
+using Backend.Application.TaskCompletion;
 using Backend.Features.Auth;
 using Backend.Features.Conversations;
+using Backend.Infrastructure.Azure;
 using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.OpenApi;
@@ -20,6 +22,44 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Bind application-owned Azure settings from the "Azure" configuration section.
+// Values flow through any ASP.NET Core configuration provider (appsettings,
+// environment variables like Azure__CosmosEndpoint / Azure__Postgres__Host, etc.).
+//
+// Back-compat: the deployed Azure Container App still injects the legacy AZURE_*
+// Service Connector variables. Alias them onto the structured Azure:* keys (only when
+// the structured key isn't already supplied) so both forms work until the Container App
+// settings are migrated. This reads through builder.Configuration, so no direct
+// Environment.GetEnvironmentVariable calls are needed.
+var legacyAzureAliases = new (string LegacyKey, string StructuredKey)[]
+{
+    ("AZURE_COSMOS_ENDPOINT", "Azure:CosmosEndpoint"),
+    ("AZURE_POSTGRESQL_HOST", "Azure:Postgres:Host"),
+    ("AZURE_POSTGRESQL_PORT", "Azure:Postgres:Port"),
+    ("AZURE_POSTGRESQL_DATABASE", "Azure:Postgres:Database"),
+    ("AZURE_POSTGRESQL_USERNAME", "Azure:Postgres:Username"),
+};
+
+var aliasedAzureSettings = new Dictionary<string, string?>();
+foreach (var (legacyKey, structuredKey) in legacyAzureAliases)
+{
+    var legacyValue = builder.Configuration[legacyKey];
+    if (!string.IsNullOrEmpty(legacyValue)
+        && string.IsNullOrEmpty(builder.Configuration[structuredKey]))
+    {
+        aliasedAzureSettings[structuredKey] = legacyValue;
+    }
+}
+
+if (aliasedAzureSettings.Count > 0)
+{
+    builder.Configuration.AddInMemoryCollection(aliasedAzureSettings);
+}
+
+var azureOptions = builder.Configuration
+    .GetSection(AzureOptions.SectionName)
+    .Get<AzureOptions>() ?? new AzureOptions();
+
 var applicationInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
 if (!string.IsNullOrEmpty(applicationInsightsConnectionString))
 {
@@ -34,18 +74,16 @@ builder.Services.AddOpenApiWithJwt();
 
 builder.Services.AddSingleton(_ =>
 {
-    var azureEndpoint = Environment.GetEnvironmentVariable("AZURE_COSMOS_ENDPOINT");
-
-    if (!string.IsNullOrEmpty(azureEndpoint))
+    if (!string.IsNullOrEmpty(azureOptions.CosmosEndpoint))
     {
         // Azure: use managed identity, no key needed
-        return new CosmosClient(azureEndpoint, new DefaultAzureCredential());
+        return new CosmosClient(azureOptions.CosmosEndpoint, new DefaultAzureCredential());
     }
 
     // Key-based: Development uses emulator config; other envs must supply explicit config
     var endpoint = builder.Configuration["CosmosDb:AccountEndpoint"]
         ?? throw new InvalidOperationException(
-            "No CosmosDB config found. Set AZURE_COSMOS_ENDPOINT (Azure) or CosmosDb:AccountEndpoint (local).");
+            "No CosmosDB config found. Set Azure:CosmosEndpoint (Azure) or CosmosDb:AccountEndpoint (local).");
     var key = builder.Configuration["CosmosDb:AccountKey"]
         ?? throw new InvalidOperationException("CosmosDb:AccountKey required when not using managed identity.");
 
@@ -70,18 +108,19 @@ builder.Services.AddSingleton(_ =>
 
 builder.Services.AddSingleton(_ =>
 {
-    var azureHost = Environment.GetEnvironmentVariable("AZURE_POSTGRESQL_HOST");
     NpgsqlDataSourceBuilder dataSourceBuilder;
 
-    if (!string.IsNullOrEmpty(azureHost))
+    if (!string.IsNullOrEmpty(azureOptions.Postgres.Host))
     {
         // Azure: Service Connector vars + managed identity token
         var azureConnectionString = new NpgsqlConnectionStringBuilder
         {
-            Host = azureHost,
-            Port = GetOptionalPort(),
-            Database = GetRequiredEnvironmentVariable("AZURE_POSTGRESQL_DATABASE"),
-            Username = GetRequiredEnvironmentVariable("AZURE_POSTGRESQL_USERNAME"),
+            Host = azureOptions.Postgres.Host,
+            Port = azureOptions.Postgres.Port,
+            Database = azureOptions.Postgres.Database
+                ?? throw new InvalidOperationException("Missing required configuration value: 'Azure:Postgres:Database'."),
+            Username = azureOptions.Postgres.Username
+                ?? throw new InvalidOperationException("Missing required configuration value: 'Azure:Postgres:Username'."),
             SslMode = SslMode.Require
         }.ToString();
 
@@ -104,7 +143,7 @@ builder.Services.AddSingleton(_ =>
         // Local / fallback: plain connection string from config
         var localConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
-                "No database configuration found. Set AZURE_POSTGRESQL_HOST (for Azure) or ConnectionStrings:DefaultConnection (for local).");
+                "No database configuration found. Set Azure:Postgres:Host (for Azure) or ConnectionStrings:DefaultConnection (for local).");
         dataSourceBuilder = new NpgsqlDataSourceBuilder(localConnectionString);
     }
 
@@ -118,6 +157,8 @@ builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
     options.UseNpgsql(dataSource, npgsql => npgsql.UseNetTopologySuite());
 });
 builder.Services.AddScoped<IListCategoriesQuery, EfListCategoriesQuery>();
+builder.Services.AddSingleton<ITaskCompletionPointsCalculator, FlatTaskCompletionPointsCalculator>();
+builder.Services.AddScoped<ITaskCompletionRewardService, TaskCompletionRewardService>();
 builder.Services.AddScoped<IAuthTokenService, AuthTokenService>();
 builder.Services.AddScoped<RefreshTokenPruner>();
 builder.Services.AddMemoryCache();
@@ -290,8 +331,14 @@ if (app.Environment.IsDevelopment())
 app.UseForwardedHeaders();
 app.UseFrontendProxyAuth();
 
-// Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080)
-if (!bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), out var inContainer) || !inContainer)
+// Skip HTTPS redirect inside Docker containers (HTTP-only on port 8080).
+// DOTNET_RUNNING_IN_CONTAINER is set by the official .NET base images; read it through
+// configuration (consistent with the rest of the composition root) with a tolerant
+// parse so a non-boolean value can't crash startup — unknown/missing means "not in a
+// container", keeping HTTPS redirection on.
+var runningInContainer =
+    bool.TryParse(builder.Configuration["DOTNET_RUNNING_IN_CONTAINER"], out var inContainer) && inContainer;
+if (!runningInContainer)
 {
     app.UseHttpsRedirection();
 }
@@ -310,26 +357,3 @@ app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
-
-static int GetOptionalPort()
-{
-    var value = Environment.GetEnvironmentVariable("AZURE_POSTGRESQL_PORT");
-    if (string.IsNullOrWhiteSpace(value))
-    {
-        return 5432;
-    }
-
-    if (!int.TryParse(value, out var port))
-    {
-        throw new InvalidOperationException(
-            $"Environment variable 'AZURE_POSTGRESQL_PORT' has an invalid value '{value}'. Expected a valid integer port number.");
-    }
-
-    return port;
-}
-
-static string GetRequiredEnvironmentVariable(string name)
-{
-    return Environment.GetEnvironmentVariable(name)
-        ?? throw new InvalidOperationException($"Missing required environment variable: {name}.");
-}

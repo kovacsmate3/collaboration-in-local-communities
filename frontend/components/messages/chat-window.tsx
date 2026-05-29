@@ -6,6 +6,8 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Sent02Icon } from "@hugeicons/core-free-icons"
 import type { SubmitEvent } from "react"
 
+import { toast } from "sonner"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -17,6 +19,7 @@ import type {
   ApiConversationPreview,
   ApiMessage,
 } from "@/lib/api/conversations"
+import { usePatchTaskApplication } from "@/lib/api/tasks"
 import { useConversationHub } from "@/lib/chat-hub"
 
 interface ChatWindowProps {
@@ -39,8 +42,32 @@ export function ChatWindow({
   const bottomRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const { mutate: sendMessage, isPending } = useSendMessage(conversation.id)
+  const { mutate: patchApplication, isPending: isPatchingApplication } =
+    usePatchTaskApplication(conversation.taskId)
 
   useConversationHub(conversation.id, user?.profileId)
+
+  function handleAccept() {
+    if (!conversation.pendingApplicationId) return
+    patchApplication(
+      { applicationId: conversation.pendingApplicationId, action: "accept" },
+      {
+        onSuccess: () => toast.success("Application accepted."),
+        onError: () => toast.error("Could not accept the application."),
+      }
+    )
+  }
+
+  function handleReject() {
+    if (!conversation.pendingApplicationId) return
+    patchApplication(
+      { applicationId: conversation.pendingApplicationId, action: "reject" },
+      {
+        onSuccess: () => toast.success("Application rejected."),
+        onError: () => toast.error("Could not reject the application."),
+      }
+    )
+  }
 
   const lastMessageId = messages[messages.length - 1]?.id
 
@@ -50,6 +77,7 @@ export function ChatWindow({
 
   function handleSend(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (isPending) return
     const content = draft.trim()
     if (!content) return
     setDraft("")
@@ -78,6 +106,30 @@ export function ChatWindow({
           </Link>
         </div>
       </header>
+
+      {conversation.pendingApplicationId ? (
+        <div className="flex items-center gap-3 border-b border-border bg-muted/40 px-4 py-2.5">
+          <p className="flex-1 text-sm text-muted-foreground">
+            {conversation.otherParticipant.displayName} applied to help with
+            this task.
+          </p>
+          <Button
+            size="sm"
+            disabled={isPatchingApplication}
+            onClick={handleAccept}
+          >
+            Accept
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={isPatchingApplication}
+            onClick={handleReject}
+          >
+            Decline
+          </Button>
+        </div>
+      ) : null}
 
       <ScrollArea className="flex-1 px-4">
         <div className="flex flex-col gap-2 py-4">
