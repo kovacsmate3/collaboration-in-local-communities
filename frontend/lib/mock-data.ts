@@ -129,7 +129,6 @@ export const mockTasks: Task[] = [
 export const mockReviews: Review[] = [
   {
     id: "r_001",
-    taskId: "t_old_1",
     authorId: "u_marta",
     authorName: "Márta Szabó",
     targetUserId: currentUser.id,
@@ -139,7 +138,6 @@ export const mockReviews: Review[] = [
   },
   {
     id: "r_002",
-    taskId: "t_old_2",
     authorId: "u_david",
     authorName: "Dávid Nagy",
     targetUserId: currentUser.id,

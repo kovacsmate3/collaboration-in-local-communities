@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { useQueries } from "@tanstack/react-query"
 
@@ -93,12 +94,24 @@ function ProfileLoaded({
     .map((query, index) => query.data?.name ?? skillIds[index])
     .filter((name): name is string => Boolean(name))
   const profileUser = toProfileUser(profile, skillNames)
-  const reviewsQuery = useProfileReviews(profile.id)
+  const [reviewsPage, setReviewsPage] = useState(1)
+  // Reset the page whenever ProfileLoaded is reused for a different profile
+  // during client-side navigation, otherwise the prior profile's page can
+  // leak across and surface as an empty reviews tab on a profile with fewer
+  // pages. Done during render via a previous-prop snapshot per React's
+  // "Adjusting state when a prop changes" guidance (preferred over useEffect).
+  const [prevProfileId, setPrevProfileId] = useState(profile.id)
+  if (prevProfileId !== profile.id) {
+    setPrevProfileId(profile.id)
+    setReviewsPage(1)
+  }
+  const reviewsQuery = useProfileReviews(profile.id, reviewsPage)
   const taskHistoryQuery = useProfileTaskHistory(profile.id)
   const reputationTrendQuery = useProfileReputationTrend(profile.id)
-  const reviews = reviewsQuery.data ?? []
+  const reviews = reviewsQuery.data?.items ?? []
   const taskHistory = taskHistoryQuery.data ?? []
-  const reviewsCount = reviewsQuery.data?.length ?? profile.reviewCount
+  const reviewsCount = reviewsQuery.data?.totalCount ?? profile.reviewCount
+  const reviewsTotalPages = reviewsQuery.data?.totalPages ?? 0
   const taskHistoryCount =
     taskHistoryQuery.data?.length ?? profile.completedTaskCount
 
@@ -140,7 +153,13 @@ function ProfileLoaded({
           ) : reviewsQuery.isError ? (
             <ProfileTabError label="Reviews" />
           ) : (
-            <ReviewsList reviews={reviews} />
+            <ReviewsList
+              reviews={reviews}
+              page={reviewsPage}
+              totalPages={reviewsTotalPages}
+              onPageChange={setReviewsPage}
+              isFetching={reviewsQuery.isFetching}
+            />
           )}
         </TabsContent>
         <TabsContent value="history">
