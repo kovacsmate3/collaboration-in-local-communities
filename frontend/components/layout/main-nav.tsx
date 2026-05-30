@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { useTranslations } from "next-intl"
 
 import { PRIMARY_NAV } from "@/lib/nav"
 import { useUnreadCount } from "@/lib/api/conversations"
@@ -21,6 +22,7 @@ interface MainNavProps {
 export function MainNav({ className }: MainNavProps) {
   const pathname = usePathname()
   const unreadCount = useUnreadCount()
+  const t = useTranslations("nav")
 
   return (
     <nav className={cn("flex items-center gap-1", className)}>
@@ -28,6 +30,7 @@ export function MainNav({ className }: MainNavProps) {
         const active = item.matches
           ? item.matches(pathname)
           : pathname === item.href
+        const label = t(item.labelKey)
         return (
           <Link
             key={item.href}
@@ -35,7 +38,7 @@ export function MainNav({ className }: MainNavProps) {
             aria-current={active ? "page" : undefined}
             aria-label={
               item.href === "/messages" && unreadCount > 0
-                ? `${item.label}, ${unreadCount} unread`
+                ? t("messagesUnreadAria", { label, count: unreadCount })
                 : undefined
             }
             className={cn(
@@ -51,7 +54,7 @@ export function MainNav({ className }: MainNavProps) {
                 <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
               )}
             </span>
-            {item.label}
+            {label}
           </Link>
         )
       })}

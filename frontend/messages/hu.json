@@ -1,0 +1,21 @@
+{
+  "common": {
+    "openUserMenu": "Felhasználói menü megnyitása",
+    "primaryNav": "Főmenü",
+    "signedOutToast": "Kijelentkezve"
+  },
+  "nav": {
+    "feed": "Hírfolyam",
+    "myTasks": "Feladataim",
+    "messages": "Üzenetek",
+    "messagesUnreadAria": "{label}, {count} olvasatlan",
+    "signIn": "Bejelentkezés",
+    "profile": "Profil",
+    "settings": "Beállítások",
+    "logout": "Kijelentkezés"
+  },
+  "languageSwitcher": {
+    "label": "Nyelv váltása",
+    "selectedSuffix": "(jelenlegi)"
+  }
+}

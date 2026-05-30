@@ -1,0 +1,21 @@
+{
+  "common": {
+    "openUserMenu": "Open user menu",
+    "primaryNav": "Primary",
+    "signedOutToast": "Signed out"
+  },
+  "nav": {
+    "feed": "Feed",
+    "myTasks": "My tasks",
+    "messages": "Messages",
+    "messagesUnreadAria": "{label}, {count} unread",
+    "signIn": "Sign in",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "languageSwitcher": {
+    "label": "Change language",
+    "selectedSuffix": "(current)"
+  }
+}

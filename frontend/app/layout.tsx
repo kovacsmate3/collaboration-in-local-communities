@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
+import { NextIntlClientProvider } from "next-intl"
+import { getLocale, getMessages } from "next-intl/server"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -17,24 +19,35 @@ export const metadata: Metadata = {
   description: APP_TAGLINE,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: ReactNode
 }>) {
+  // Resolve the active locale + load its catalog server-side so SSR markup
+  // is rendered in the right language with no client-side flash.
+  const locale = await getLocale()
+  const messages = await getMessages()
+
   return (
-    <html lang="en" suppressHydrationWarning className="font-sans antialiased">
+    <html
+      lang={locale}
+      suppressHydrationWarning
+      className="font-sans antialiased"
+    >
       <body>
-        <ThemeProvider>
-          <QueryProvider>
-            <AuthProvider>
-              <RegisterDraftProvider>
-                {children}
-                <Toaster />
-              </RegisterDraftProvider>
-            </AuthProvider>
-          </QueryProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <ThemeProvider>
+            <QueryProvider>
+              <AuthProvider>
+                <RegisterDraftProvider>
+                  {children}
+                  <Toaster />
+                </RegisterDraftProvider>
+              </AuthProvider>
+            </QueryProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

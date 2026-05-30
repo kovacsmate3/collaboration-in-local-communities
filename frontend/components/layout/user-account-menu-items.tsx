@@ -7,6 +7,7 @@ import {
   Settings02Icon,
   UserCircleIcon,
 } from "@hugeicons/core-free-icons"
+import { useTranslations } from "next-intl"
 
 import {
   DropdownMenuItem,
@@ -24,18 +25,20 @@ export function UserAccountMenuItems({
   profileHref = "/profile",
   settingsHref = "/profile/edit",
 }: UserAccountMenuItemsProps) {
+  const t = useTranslations("nav")
+
   return (
     <>
       <DropdownMenuItem asChild>
         <Link href={profileHref}>
           <HugeiconsIcon icon={UserCircleIcon} className="size-4" />
-          Profile
+          {t("profile")}
         </Link>
       </DropdownMenuItem>
       <DropdownMenuItem asChild>
         <Link href={settingsHref}>
           <HugeiconsIcon icon={Settings02Icon} className="size-4" />
-          Settings
+          {t("settings")}
         </Link>
       </DropdownMenuItem>
       <DropdownMenuSeparator />
@@ -47,7 +50,7 @@ export function UserAccountMenuItems({
         }}
       >
         <HugeiconsIcon icon={Logout01Icon} className="size-4" />
-        Log out
+        {t("logout")}
       </DropdownMenuItem>
     </>
   )

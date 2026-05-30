@@ -1,8 +1,13 @@
 import type { NextConfig } from "next"
 import { dirname } from "node:path"
 import { fileURLToPath } from "node:url"
+import createNextIntlPlugin from "next-intl/plugin"
 
 const projectRoot = dirname(fileURLToPath(import.meta.url))
+
+// next-intl plugin: tells next how to load per-request locale + messages
+// (see i18n/request.ts). Cookie-based — no URL prefix routing.
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts")
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -36,4 +41,4 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)
