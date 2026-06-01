@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useEffect, useRef, useState, type SubmitEvent } from "react"
 import { useForm, type FieldErrors } from "react-hook-form"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { RegisterAccountStep } from "@/components/auth/register-account-step"
@@ -23,7 +24,6 @@ import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
 import { useRegisterDraft } from "@/lib/register-draft"
 import {
   getAuthErrorMessage,
-  getRegisterSubmitLabel,
   type RegistrationStep,
 } from "@/lib/auth/functions"
 import { toRegisterInput } from "@/lib/auth/mappers"
@@ -35,6 +35,7 @@ import {
 } from "@/lib/auth/schemas"
 
 export function RegisterForm() {
+  const t = useTranslations("auth.register")
   const { register } = useAuth()
   const { draft, saveDraft, clearDraft } = useRegisterDraft()
   const [step, setStep] = useState<RegistrationStep>(draft?.step ?? "account")
@@ -96,7 +97,7 @@ export function RegisterForm() {
       clearDraft()
       setRegistrationMessage(message)
     } catch (error) {
-      const message = getAuthErrorMessage(error, "Unable to create account.")
+      const message = getAuthErrorMessage(error, t("unableToCreate"))
       form.setError("root", { message })
       toast.error(message)
     }
@@ -106,17 +107,23 @@ export function RegisterForm() {
     setStep(hasAccountErrors(errors) ? "account" : "profile")
   }
 
+  const submitLabel = isSubmitting
+    ? t("submitting")
+    : step === "account"
+      ? t("submitContinue")
+      : t("submitCreate")
+
   if (registrationMessage) {
     return (
       <div className="flex flex-col gap-6">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Check your email</CardTitle>
+            <CardTitle className="text-xl">{t("checkEmailTitle")}</CardTitle>
             <CardDescription>{registrationMessage}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href={APP_AUTH_ROUTES.login}>Back to sign in</Link>
+              <Link href={APP_AUTH_ROUTES.login}>{t("backToSignIn")}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -128,11 +135,9 @@ export function RegisterForm() {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Create your account</CardTitle>
+          <CardTitle className="text-xl">{t("title")}</CardTitle>
           <CardDescription>
-            {step === "account"
-              ? "Start with your sign-in details"
-              : "Complete your public profile"}
+            {step === "account" ? t("subtitleAccount") : t("subtitleProfile")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -161,7 +166,7 @@ export function RegisterForm() {
                   disabled={isSubmitting}
                   className="w-full"
                 >
-                  {getRegisterSubmitLabel(step, isSubmitting)}
+                  {submitLabel}
                 </Button>
                 {step === "profile" ? (
                   <Button
@@ -170,18 +175,18 @@ export function RegisterForm() {
                     disabled={isSubmitting}
                     onClick={() => setStep("account")}
                   >
-                    Back
+                    {t("back")}
                   </Button>
                 ) : null}
               </div>
 
               <p className="text-center text-sm text-muted-foreground">
-                Already have an account?{" "}
+                {t("alreadyHaveAccount")}{" "}
                 <Link
                   href={APP_AUTH_ROUTES.login}
                   className="font-medium text-foreground underline-offset-4 hover:underline"
                 >
-                  Sign in
+                  {t("signIn")}
                 </Link>
               </p>
             </form>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form"
 
@@ -6,16 +7,16 @@ export const metadata: Metadata = {
   title: "Reset your password",
 }
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  const t = await getTranslations("auth.forgot")
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Forgot your password?
+          {t("headerTitle")}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Enter your email and we&apos;ll get you back in.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("headerSubtitle")}</p>
       </header>
       <ForgotPasswordForm />
     </div>

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState, type SubmitEvent } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,7 @@ export function LoginForm() {
   const { login } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const t = useTranslations("auth.login")
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -54,9 +56,9 @@ export function LoginForm() {
     try {
       await resendVerificationEmail(email)
       setResentEmail(email)
-      toast.success("Verification email sent — check your inbox.")
+      toast.success(t("resendSent"))
     } catch {
-      toast.error("Could not send the email. Please try again.")
+      toast.error(t("resendError"))
     } finally {
       setIsResending(false)
     }
@@ -67,13 +69,13 @@ export function LoginForm() {
     setResentEmail(null)
     try {
       const user = await login(values)
-      toast.success("Signed in successfully")
+      toast.success(t("signedInToast"))
       router.replace(
         getPostAuthRedirectPath(searchParams.get("next"), user.role)
       )
       router.refresh()
     } catch (error) {
-      const message = getAuthErrorMessage(error, "Unable to sign in.")
+      const message = getAuthErrorMessage(error, t("unableToSignIn"))
       form.setError("root", { message })
       toast.error(message)
     }
@@ -88,32 +90,30 @@ export function LoginForm() {
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>
-            Sign in with your email and password
-          </CardDescription>
+          <CardTitle className="text-xl">{t("title")}</CardTitle>
+          <CardDescription>{t("subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form noValidate onSubmit={handleFormSubmit} className="grid gap-6">
               <TextField<LoginFormValues>
                 name="email"
-                label="Email"
+                label={t("emailLabel")}
                 type="email"
                 autoComplete="email"
-                placeholder="you@example.com"
+                placeholder={t("emailPlaceholder")}
               />
 
               <PasswordField<LoginFormValues>
                 name="password"
-                label="Password"
+                label={t("passwordLabel")}
                 autoComplete="current-password"
                 labelAction={
                   <Link
                     href={APP_AUTH_ROUTES.forgotPassword}
                     className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                   >
-                    Forgot password?
+                    {t("forgotPassword")}
                   </Link>
                 }
               />
@@ -122,7 +122,7 @@ export function LoginForm() {
                 <div role="alert" className="grid gap-2">
                   <p className="text-sm font-medium text-destructive">
                     {serverError === EMAIL_NOT_VERIFIED_ERROR
-                      ? "Your email address is not verified. Please check your inbox."
+                      ? t("emailNotVerified")
                       : serverError}
                   </p>
                   {serverError === EMAIL_NOT_VERIFIED_ERROR && !resentEmail ? (
@@ -133,28 +133,28 @@ export function LoginForm() {
                       disabled={isResending}
                       onClick={handleResend}
                     >
-                      {isResending ? "Sending..." : "Resend verification email"}
+                      {isResending ? t("resending") : t("resend")}
                     </Button>
                   ) : null}
                   {resentEmail ? (
                     <p className="text-xs text-muted-foreground">
-                      A new link was sent to {resentEmail}.
+                      {t("resentTo", { email: resentEmail })}
                     </p>
                   ) : null}
                 </div>
               ) : null}
 
               <Button type="submit" disabled={isSubmitting} className="w-full">
-                {isSubmitting ? "Signing in..." : "Sign in"}
+                {isSubmitting ? t("submitting") : t("submit")}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                New here?{" "}
+                {t("newHere")}{" "}
                 <Link
                   href={APP_AUTH_ROUTES.register}
                   className="font-medium text-foreground underline-offset-4 hover:underline"
                 >
-                  Create an account
+                  {t("createAccount")}
                 </Link>
               </p>
             </form>
@@ -162,12 +162,12 @@ export function LoginForm() {
         </CardContent>
       </Card>
       <p className="px-6 text-center text-xs text-balance text-muted-foreground">
-        By continuing, you agree to our{" "}
+        {t("termsPreamble")}{" "}
         <Link
           href={APP_LEGAL_ROUTES.terms}
           className="underline underline-offset-4"
         >
-          Terms
+          {t("terms")}
         </Link>
         .
       </p>

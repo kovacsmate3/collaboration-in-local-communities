@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useState, type SubmitEvent } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { PasswordField } from "@/components/forms/password-field"
@@ -25,6 +26,7 @@ import {
 } from "@/lib/auth/schemas"
 
 export function ResetPasswordForm() {
+  const t = useTranslations("auth.reset")
   const searchParams = useSearchParams()
   const userId = searchParams.get("userId")
   const token = searchParams.get("token")
@@ -43,19 +45,17 @@ export function ResetPasswordForm() {
     return (
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Invalid reset link</CardTitle>
-          <CardDescription>
-            This password reset link is incomplete or has expired.
-          </CardDescription>
+          <CardTitle className="text-xl">{t("invalidLinkTitle")}</CardTitle>
+          <CardDescription>{t("invalidLinkSubtitle")}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           <Button asChild variant="outline" className="w-full">
             <Link href={APP_AUTH_ROUTES.forgotPassword}>
-              Request a new link
+              {t("requestNewLink")}
             </Link>
           </Button>
           <Button asChild variant="ghost" className="w-full">
-            <Link href={APP_AUTH_ROUTES.login}>Back to sign in</Link>
+            <Link href={APP_AUTH_ROUTES.login}>{t("backToSignIn")}</Link>
           </Button>
         </CardContent>
       </Card>
@@ -66,15 +66,12 @@ export function ResetPasswordForm() {
     return (
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Password updated</CardTitle>
-          <CardDescription>
-            Your password has been reset. You can now sign in with your new
-            password.
-          </CardDescription>
+          <CardTitle className="text-xl">{t("successTitle")}</CardTitle>
+          <CardDescription>{t("successSubtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Button asChild className="w-full">
-            <Link href={APP_AUTH_ROUTES.login}>Sign in</Link>
+            <Link href={APP_AUTH_ROUTES.login}>{t("signIn")}</Link>
           </Button>
         </CardContent>
       </Card>
@@ -97,15 +94,14 @@ export function ResetPasswordForm() {
       })
     } catch {
       form.setError("root", {
-        message:
-          "Unable to send the request. Please check your connection and try again.",
+        message: t("networkError"),
       })
       return
     }
 
     if (response.ok) {
       setSucceeded(true)
-      toast.success("Password updated successfully.")
+      toast.success(t("successToast"))
       return
     }
 
@@ -125,19 +121,18 @@ export function ResetPasswordForm() {
           (msgs) => msgs.length > 0
         )?.[0]
         form.setError("newPassword", {
-          message: firstError ?? "The password does not meet the requirements.",
+          message: firstError ?? t("invalidPasswordError"),
         })
       } else {
         form.setError("root", {
-          message:
-            "This link is invalid or has expired. Please request a new one.",
+          message: t("linkExpiredError"),
         })
       }
       return
     }
 
     form.setError("root", {
-      message: "This link is invalid or has expired. Please request a new one.",
+      message: t("linkExpiredError"),
     })
   }
 
@@ -150,13 +145,13 @@ export function ResetPasswordForm() {
       <form noValidate onSubmit={handleFormSubmit} className="grid gap-6">
         <PasswordField<ResetPasswordFormValues>
           name="newPassword"
-          label="New password"
+          label={t("newPasswordLabel")}
           autoComplete="new-password"
         />
 
         <PasswordField<ResetPasswordFormValues>
           name="confirmPassword"
-          label="Confirm new password"
+          label={t("confirmPasswordLabel")}
           autoComplete="new-password"
         />
 
@@ -167,14 +162,14 @@ export function ResetPasswordForm() {
             </p>
             <Button asChild variant="outline" size="sm">
               <Link href={APP_AUTH_ROUTES.forgotPassword}>
-                Request a new link
+                {t("requestNewLink")}
               </Link>
             </Button>
           </div>
         ) : null}
 
         <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? "Updating..." : "Update password"}
+          {isSubmitting ? t("submitting") : t("submit")}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
@@ -182,7 +177,7 @@ export function ResetPasswordForm() {
             href={APP_AUTH_ROUTES.login}
             className="font-medium text-foreground hover:underline"
           >
-            Back to sign in
+            {t("backToSignIn")}
           </Link>
         </p>
       </form>
