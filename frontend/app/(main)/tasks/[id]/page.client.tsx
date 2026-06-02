@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ApplicationControls } from "@/components/tasks/application-controls"
 import { ApproveCompletionButton } from "@/components/tasks/approve-completion-button"
+import { CancelApplicationButton } from "@/components/tasks/cancel-application-button"
 import { CancelTaskButton } from "@/components/tasks/cancel-task-button"
 import { CategoryBadge } from "@/components/tasks/category-badge"
 import { CompensationBadge } from "@/components/tasks/compensation-badge"
@@ -117,6 +118,9 @@ function TaskActions({ task }: { task: ApiTask }) {
   const { data: conversations = [], isLoading: isLoadingConversations } =
     useConversations(canOpenInProgressChat)
   const currentApplication = myApplications.find((a) => a.taskId === task.id)
+  const acceptedApplication =
+    applications.find((application) => application.status === "Accepted") ??
+    (currentApplication?.status === "Accepted" ? currentApplication : undefined)
 
   function handleCancel() {
     updateTask(
@@ -195,6 +199,12 @@ function TaskActions({ task }: { task: ApiTask }) {
         ) : null}
         {task.acceptedHelperProfileId === user?.profileId ? (
           <SubmitCompletionButton taskId={task.id} />
+        ) : null}
+        {acceptedApplication ? (
+          <CancelApplicationButton
+            taskId={task.id}
+            applicationId={acceptedApplication.id}
+          />
         ) : null}
         {isSeeker ? (
           <CancelTaskButton onCancel={handleCancel} isPending={isCancelling} />

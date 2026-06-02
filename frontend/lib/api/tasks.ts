@@ -254,6 +254,8 @@ export function useWithdrawTaskApplication(taskId: string) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: taskKeys.myApplications() })
       void qc.invalidateQueries({ queryKey: taskKeys.applications(taskId) })
+      void qc.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
+      void qc.invalidateQueries({ queryKey: taskKeys.lists() })
     },
   })
 }
