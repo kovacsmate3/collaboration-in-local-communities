@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ApplicationControls } from "@/components/tasks/application-controls"
 import { ApproveCompletionButton } from "@/components/tasks/approve-completion-button"
+import { CancelTaskButton } from "@/components/tasks/cancel-task-button"
 import { CategoryBadge } from "@/components/tasks/category-badge"
 import { CompensationBadge } from "@/components/tasks/compensation-badge"
 import { ReviewDialog } from "@/components/tasks/review-dialog"
@@ -163,13 +164,10 @@ function TaskActions({ task }: { task: ApiTask }) {
               <Button variant="outline" asChild>
                 <Link href={`/tasks/${task.id}/edit`}>Edit task</Link>
               </Button>
-              <Button
-                variant="ghost"
-                disabled={isCancelling}
-                onClick={handleCancel}
-              >
-                {isCancelling ? "Cancelling…" : "Cancel task"}
-              </Button>
+              <CancelTaskButton
+                onCancel={handleCancel}
+                isPending={isCancelling}
+              />
             </>
           )}
         </div>
@@ -199,13 +197,7 @@ function TaskActions({ task }: { task: ApiTask }) {
           <SubmitCompletionButton taskId={task.id} />
         ) : null}
         {isSeeker ? (
-          <Button
-            variant="ghost"
-            disabled={isCancelling}
-            onClick={handleCancel}
-          >
-            {isCancelling ? "Cancelling…" : "Cancel task"}
-          </Button>
+          <CancelTaskButton onCancel={handleCancel} isPending={isCancelling} />
         ) : null}
       </div>
     )
