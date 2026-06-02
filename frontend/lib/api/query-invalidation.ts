@@ -28,6 +28,7 @@ export function invalidateCategoryData(qc: QueryClient) {
   invalidate(qc, cacheRoots.adminCategories)
   invalidate(qc, cacheRoots.categories)
   invalidate(qc, cacheRoots.tasks)
+  invalidateProfileData(qc)
   invalidateAdminAnalytics(qc)
   invalidateAdminAuditLog(qc)
 }
