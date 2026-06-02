@@ -9,6 +9,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api/client"
+import { invalidateSkillData } from "@/lib/api/query-invalidation"
 
 // ── Types (mirror AdminSkillsController DTOs) ─────────────────────────────────
 
@@ -76,7 +77,7 @@ function usePatchSkill(action: string) {
   return useMutation({
     mutationFn: (id: string) =>
       apiClient.patch<AdminSkillResponse>(`/admin/skills/${id}`, { action }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: skillKeys.lists() }),
+    onSuccess: () => invalidateSkillData(qc),
   })
 }
 
@@ -104,6 +105,6 @@ export function useDeleteSkill() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/admin/skills/${id}`),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: skillKeys.lists() }),
+    onSuccess: () => invalidateSkillData(qc),
   })
 }
