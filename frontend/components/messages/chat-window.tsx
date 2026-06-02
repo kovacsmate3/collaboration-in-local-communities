@@ -104,7 +104,7 @@ export function ChatWindow({
         </Link>
         <Link
           href={`/tasks/${taskId}`}
-          className="truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+          className="min-w-0 truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
         >
           {taskTitle}
         </Link>
