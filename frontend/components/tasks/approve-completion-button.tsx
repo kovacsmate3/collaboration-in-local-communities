@@ -50,8 +50,8 @@ export function ApproveCompletionButton({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Go back</AlertDialogCancel>
-          <AlertDialogAction onClick={handleApprove}>
-            Approve completion
+          <AlertDialogAction disabled={isPending} onClick={handleApprove}>
+            {isPending ? "Approving…" : "Approve completion"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

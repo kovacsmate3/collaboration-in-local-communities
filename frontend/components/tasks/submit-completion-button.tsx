@@ -50,8 +50,8 @@ export function SubmitCompletionButton({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Go back</AlertDialogCancel>
-          <AlertDialogAction onClick={handleSubmit}>
-            Mark as done
+          <AlertDialogAction disabled={isPending} onClick={handleSubmit}>
+            {isPending ? "Submitting…" : "Mark as done"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

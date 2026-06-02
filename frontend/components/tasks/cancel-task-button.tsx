@@ -39,7 +39,9 @@ export function CancelTaskButton({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Go back</AlertDialogCancel>
-          <AlertDialogAction onClick={onCancel}>Cancel task</AlertDialogAction>
+          <AlertDialogAction disabled={isPending} onClick={onCancel}>
+            {isPending ? "Cancelling…" : "Cancel task"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
