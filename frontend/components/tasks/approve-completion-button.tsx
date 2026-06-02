@@ -2,6 +2,17 @@
 
 import { toast } from "sonner"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { useApproveTaskCompletion } from "@/lib/api/tasks"
 
@@ -9,10 +20,6 @@ interface ApproveCompletionButtonProps {
   taskId: string
 }
 
-/**
- * "Approve completion" button shown to the seeker while the task is
- * PendingApproval. Approving transitions the task to Completed.
- */
 export function ApproveCompletionButton({
   taskId,
 }: ApproveCompletionButtonProps) {
@@ -27,8 +34,27 @@ export function ApproveCompletionButton({
   }
 
   return (
-    <Button disabled={isPending} onClick={handleApprove}>
-      {isPending ? "Approving…" : "Approve completion"}
-    </Button>
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button disabled={isPending}>
+          {isPending ? "Approving…" : "Approve completion"}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Approve task completion?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will mark the task as complete and release the helper&apos;s
+            reward. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Go back</AlertDialogCancel>
+          <AlertDialogAction disabled={isPending} onClick={handleApprove}>
+            {isPending ? "Approving…" : "Approve completion"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

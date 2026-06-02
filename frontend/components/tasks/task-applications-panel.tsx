@@ -3,6 +3,17 @@
 import Link from "next/link"
 import { toast } from "sonner"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { UserAvatar } from "@/components/shared/user-avatar"
@@ -87,13 +98,36 @@ export function TaskApplicationsPanel({
                 ) : null}
                 {application.status === "Pending" ? (
                   <>
-                    <Button
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() => handleAction(application.id, "accept")}
-                    >
-                      Accept
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" disabled={isPending}>
+                          Accept
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            Accept this application?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {application.helperDisplayName} will be assigned to
+                            this task and it will move to In Progress. Other
+                            pending applications will be closed.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Go back</AlertDialogCancel>
+                          <AlertDialogAction
+                            disabled={isPending}
+                            onClick={() =>
+                              handleAction(application.id, "accept")
+                            }
+                          >
+                            {isPending ? "Accepting…" : "Accept"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <Button
                       size="sm"
                       variant="ghost"
