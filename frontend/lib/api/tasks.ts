@@ -146,7 +146,10 @@ export function useTask(id: string) {
     // Polling fallback so a task's status (Open → InProgress → PendingApproval
     // → Completed) converges for the other party on hosts where SignalR/cache
     // invalidation across users doesn't propagate immediately on deploy.
-    refetchInterval: 10_000,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status === "Completed" || status === "Cancelled" ? false : 10_000
+    },
   })
 }
 
