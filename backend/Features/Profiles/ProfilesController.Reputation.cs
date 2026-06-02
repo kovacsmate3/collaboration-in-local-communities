@@ -33,9 +33,14 @@ public sealed partial class ProfilesController
         Guid profileId,
         CancellationToken cancellationToken)
     {
+        // Only reviews earned as a task's accepted helper feed the reputation
+        // score; reviews received as a seeker (task-giver) are excluded here so
+        // the trend matches the headline score on the profile responses.
         var reviewEventDaysQuery = db.Reviews
             .AsNoTracking()
-            .Where(review => review.RevieweeProfileId == profileId)
+            .Where(review =>
+                review.RevieweeProfileId == profileId
+                && review.Task.AcceptedHelperProfileId == profileId)
             .Select(review => new
             {
                 review.CreatedAt.Year,
@@ -43,11 +48,14 @@ public sealed partial class ProfilesController
                 review.CreatedAt.Day
             });
 
+        // Only tasks completed as the helper count toward the score's
+        // completed-task component, consistent with how CompletedTaskCount is
+        // maintained on the profile and with excluding seeker-side reviews.
         var completedTaskEventDaysQuery = db.Tasks
             .AsNoTracking()
             .Where(task =>
                 task.Status == DomainTaskStatus.Completed
-                && (task.SeekerProfileId == profileId || task.AcceptedHelperProfileId == profileId))
+                && task.AcceptedHelperProfileId == profileId)
             .Select(task => new
             {
                 (task.CompletedAt ?? task.UpdatedAt).Year,
@@ -88,6 +96,7 @@ public sealed partial class ProfilesController
             .AsNoTracking()
             .Where(review =>
                 review.RevieweeProfileId == profileId
+                && review.Task.AcceptedHelperProfileId == profileId
                 && review.CreatedAt < earliestTrendStartUtc)
             .GroupBy(_ => 1)
             .Select(group => new
@@ -101,7 +110,7 @@ public sealed partial class ProfilesController
             .AsNoTracking()
             .Where(task =>
                 task.Status == DomainTaskStatus.Completed
-                && (task.SeekerProfileId == profileId || task.AcceptedHelperProfileId == profileId)
+                && task.AcceptedHelperProfileId == profileId
                 && (task.CompletedAt ?? task.UpdatedAt) < earliestTrendStartUtc)
             .CountAsync(cancellationToken);
 
@@ -109,6 +118,7 @@ public sealed partial class ProfilesController
             .AsNoTracking()
             .Where(review =>
                 review.RevieweeProfileId == profileId
+                && review.Task.AcceptedHelperProfileId == profileId
                 && review.CreatedAt >= earliestTrendStartUtc)
             .GroupBy(review => new
             {
@@ -130,7 +140,7 @@ public sealed partial class ProfilesController
             .AsNoTracking()
             .Where(task =>
                 task.Status == DomainTaskStatus.Completed
-                && (task.SeekerProfileId == profileId || task.AcceptedHelperProfileId == profileId)
+                && task.AcceptedHelperProfileId == profileId
                 && (task.CompletedAt ?? task.UpdatedAt) >= earliestTrendStartUtc)
             .GroupBy(task => new
             {

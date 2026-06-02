@@ -154,6 +154,18 @@ public sealed class TaskCompletionController(
         task.CompletedAt = now;
         task.UpdatedAt = now;
 
+        // Credit the helper — the party who actually performed the work — with a
+        // completed task so it feeds their reputation score. The seeker is not
+        // credited: posting a task is not "work done" for reputation purposes,
+        // mirroring how seeker-received reviews are excluded from the score.
+        // This approval path runs at most once per task (any later call sees a
+        // Completed status and 409s above), so the counter cannot double-count.
+        if (task.AcceptedHelperProfile is not null)
+        {
+            task.AcceptedHelperProfile.CompletedTaskCount += 1;
+            task.AcceptedHelperProfile.UpdatedAt = now;
+        }
+
         var seekerAlreadyConfirmed = await db.TaskCompletionConfirmations.AnyAsync(
             confirmation => confirmation.TaskId == task.Id && confirmation.ProfileId == profile.Id,
             cancellationToken);
