@@ -1,12 +1,7 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-# Retry on transient registry/network failures (e.g. ECONNRESET).
-RUN NPM_CONFIG_FETCH_RETRIES=5 \
-    NPM_CONFIG_FETCH_RETRY_FACTOR=2 \
-    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
-    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=120000 \
-    npm ci
+RUN npm ci
 
 FROM node:24-alpine AS builder
 WORKDIR /app
