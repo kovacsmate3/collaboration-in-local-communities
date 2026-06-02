@@ -66,6 +66,8 @@ export interface UpdateTaskInput {
   compensationType?: string
   compensationAmount?: number
   locationText?: string
+  latitude?: number
+  longitude?: number
   status?: string
   cancellationReason?: string
 }

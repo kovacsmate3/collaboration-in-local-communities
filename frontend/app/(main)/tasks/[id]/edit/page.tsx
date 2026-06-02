@@ -41,7 +41,11 @@ export default function EditTaskPage() {
           title: task.title,
           description: task.description,
           categoryId: task.categoryId,
-          location: { locationText: task.locationText ?? "" },
+          location: {
+            locationText: task.locationText ?? "",
+            latitude: task.latitude ?? undefined,
+            longitude: task.longitude ?? undefined,
+          },
           compensationType: task.compensationType as CompensationType,
           compensationAmount: task.compensationAmount?.toString() ?? "",
         }}
