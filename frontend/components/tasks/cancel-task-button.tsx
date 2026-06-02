@@ -18,7 +18,10 @@ interface CancelTaskButtonProps {
   isPending: boolean
 }
 
-export function CancelTaskButton({ onCancel, isPending }: CancelTaskButtonProps) {
+export function CancelTaskButton({
+  onCancel,
+  isPending,
+}: CancelTaskButtonProps) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
