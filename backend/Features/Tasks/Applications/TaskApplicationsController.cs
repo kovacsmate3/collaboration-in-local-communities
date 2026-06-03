@@ -1,6 +1,7 @@
 using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
+using Backend.Domain.Tasks;
 using Backend.Features.Conversations;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -289,12 +290,12 @@ public sealed partial class TaskApplicationsController(
 
         if (isAccept)
         {
-            if (task.Status != DomainTaskStatus.Open)
+            if (!TaskStatusTransitions.CanTransition(task.Status, DomainTaskStatus.InProgress))
             {
                 return Problem(
-                    title: "Task is not open",
+                    title: "Invalid task status transition",
                     detail: "An application can only be accepted when the task has Open status.",
-                    statusCode: StatusCodes.Status409Conflict);
+                    statusCode: StatusCodes.Status400BadRequest);
             }
 
             if (application.Status != TaskApplicationStatus.Pending)

@@ -1,6 +1,7 @@
 using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
+using Backend.Domain.Tasks;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Validation;
 using Microsoft.AspNetCore.Authorization;
@@ -323,7 +324,26 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             return Forbid();
         }
 
-        if (task.Status is DomainTaskStatus.Completed or DomainTaskStatus.Cancelled)
+        // A status change request is only ever a cancellation (enforced below).
+        // Validate the transition against the FSM up front so an invalid
+        // transition fails with 400 before any field-level edits are applied.
+        if (request.Status is not null)
+        {
+            if (!string.Equals(request.Status, nameof(DomainTaskStatus.Cancelled), StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(nameof(request.Status), "Status can only be changed to 'Cancelled'.");
+                return ValidationProblem(ModelState);
+            }
+
+            if (!TaskStatusTransitions.CanTransition(task.Status, DomainTaskStatus.Cancelled))
+            {
+                return Problem(
+                    title: "Invalid task status transition",
+                    detail: $"A task with status '{task.Status}' cannot be transitioned to 'Cancelled'.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+        }
+        else if (task.Status is DomainTaskStatus.Completed or DomainTaskStatus.Cancelled)
         {
             return Problem(
                 title: "Task cannot be modified",
@@ -427,12 +447,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         if (request.Status is not null)
         {
-            if (!string.Equals(request.Status, nameof(DomainTaskStatus.Cancelled), StringComparison.OrdinalIgnoreCase))
-            {
-                ModelState.AddModelError(nameof(request.Status), "Status can only be changed to 'Cancelled'.");
-                return ValidationProblem(ModelState);
-            }
-
+            // Target status and transition validity already verified above.
             var oldStatus = task.Status;
             var cancelledAt = DateTimeOffset.UtcNow;
             var cancellationReason = StringUtilities.Normalize(request.CancellationReason);
