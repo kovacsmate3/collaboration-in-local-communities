@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { apiClient } from "@/lib/api/client"
+import {
+  invalidateProfileData,
+  invalidateSkillData,
+} from "@/lib/api/query-invalidation"
 import { COMPLETED_TASK_WEIGHT, REVIEW_QUALITY_WEIGHT } from "@/lib/reputation"
 import type {
   Reputation,
@@ -180,7 +184,7 @@ export function useUpdateOwnProfile() {
       apiClient.put<OwnProfileResponse>("/profiles/me", data),
     onSuccess: (profile) => {
       qc.setQueryData(profileKeys.me(), profile)
-      void qc.invalidateQueries({ queryKey: profileKeys.all })
+      invalidateProfileData(qc)
     },
   })
 }
@@ -202,7 +206,7 @@ export function useUploadProfilePhoto() {
         profileKeys.me(),
         (prev) => (prev ? { ...prev, photoUrl: data.photoUrl } : prev)
       )
-      void qc.invalidateQueries({ queryKey: profileKeys.all })
+      invalidateProfileData(qc)
     },
   })
 }
@@ -217,7 +221,7 @@ export function useDeleteProfilePhoto() {
         profileKeys.me(),
         (prev) => (prev ? { ...prev, photoUrl: null } : prev)
       )
-      void qc.invalidateQueries({ queryKey: profileKeys.all })
+      invalidateProfileData(qc)
     },
   })
 }
@@ -300,6 +304,7 @@ export function useCreateSkill() {
       apiClient.post<SkillResponse>("/skills", data),
     onSuccess: (skill) => {
       qc.setQueryData(profileKeys.skill(skill.id), skill)
+      invalidateSkillData(qc)
     },
   })
 }

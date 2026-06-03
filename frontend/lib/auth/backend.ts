@@ -316,6 +316,18 @@ export function createForwardedResponse(
   headers.delete("set-cookie")
   headers.delete("transfer-encoding")
 
+  // Authenticated API data must never be cached by the browser, a CDN, or
+  // Vercel's edge. Without this, GET responses that lack an explicit
+  // Cache-Control can be served stale from the browser's heuristic cache on
+  // deployed environments, so a freshly POSTed/PATCHed record only shows up
+  // after a hard refresh even though React Query already re-fetched it. Strip
+  // any validators the backend may have set and force no-store.
+  headers.delete("etag")
+  headers.delete("last-modified")
+  headers.delete("expires")
+  headers.set("cache-control", "no-store, must-revalidate")
+  headers.set("pragma", "no-cache")
+
   return new NextResponse(backendResponse.body, {
     status: backendResponse.status,
     statusText: backendResponse.statusText,
