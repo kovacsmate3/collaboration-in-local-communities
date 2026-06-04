@@ -107,6 +107,87 @@ public sealed class TaskApplicationsControllerTests
         Assert.Contains(db.AuditEvents, e => e.EventType == "task_application.withdrawn");
     }
 
+    [Fact]
+    public async Task WithdrawAsync_PendingApplicationBySeeker_ReturnsConflict()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db, cancellationToken);
+        var application = await SeedApplicationAsync(db, scenario, cancellationToken);
+        var controller = CreateController(db, scenario.SeekerUserId);
+
+        var result = await controller.WithdrawAsync(
+            scenario.TaskId,
+            application.Id,
+            cancellationToken);
+
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status409Conflict, problem.StatusCode);
+        var details = Assert.IsType<ProblemDetails>(problem.Value);
+        Assert.Equal("Pending application cannot be cancelled by seeker", details.Title);
+        Assert.Equal(TaskApplicationStatus.Pending, application.Status);
+        Assert.Empty(db.ActivityEvents);
+        Assert.Empty(db.AuditEvents);
+    }
+
+    [Fact]
+    public async Task WithdrawAsync_AcceptedApplicationByHelper_ReopensTask()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db, cancellationToken);
+        var application = await SeedAcceptedApplicationAsync(db, scenario, cancellationToken);
+        var controller = CreateController(db, scenario.HelperUserId);
+
+        var result = await controller.WithdrawAsync(
+            scenario.TaskId,
+            application.Id,
+            cancellationToken);
+
+        Assert.IsType<NoContentResult>(result);
+        var task = await db.Tasks.SingleAsync(t => t.Id == scenario.TaskId, cancellationToken);
+        Assert.Equal(DomainTaskStatus.Open, task.Status);
+        Assert.Null(task.AcceptedHelperProfileId);
+        Assert.Null(task.AcceptedAt);
+        Assert.Equal(TaskApplicationStatus.Withdrawn, application.Status);
+        Assert.Contains(
+            db.TaskStatusHistory,
+            h => h.TaskId == scenario.TaskId
+                && h.OldStatus == DomainTaskStatus.InProgress
+                && h.NewStatus == DomainTaskStatus.Open
+                && h.ChangedByProfileId == scenario.HelperProfileId);
+        Assert.Contains(db.AuditEvents, e => e.EventType == "task_application.withdrawn");
+    }
+
+    [Fact]
+    public async Task WithdrawAsync_AcceptedApplicationBySeeker_ReopensTask()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db, cancellationToken);
+        var application = await SeedAcceptedApplicationAsync(db, scenario, cancellationToken);
+        var controller = CreateController(db, scenario.SeekerUserId);
+
+        var result = await controller.WithdrawAsync(
+            scenario.TaskId,
+            application.Id,
+            cancellationToken);
+
+        Assert.IsType<NoContentResult>(result);
+        var task = await db.Tasks.SingleAsync(t => t.Id == scenario.TaskId, cancellationToken);
+        Assert.Equal(DomainTaskStatus.Open, task.Status);
+        Assert.Null(task.AcceptedHelperProfileId);
+        Assert.Null(task.AcceptedAt);
+        Assert.Equal(TaskApplicationStatus.Withdrawn, application.Status);
+        Assert.Contains(
+            db.TaskStatusHistory,
+            h => h.TaskId == scenario.TaskId
+                && h.OldStatus == DomainTaskStatus.InProgress
+                && h.NewStatus == DomainTaskStatus.Open
+                && h.ChangedByProfileId == scenario.SeekerProfileId);
+        Assert.Contains(db.AuditEvents, e => e.EventType == "task_application.withdrawn");
+    }
+
     private static async Task<TestScenario> SeedScenarioAsync(
         AppDbContext db,
         CancellationToken cancellationToken)
@@ -161,7 +242,7 @@ public sealed class TaskApplicationsControllerTests
         });
 
         await db.SaveChangesAsync(cancellationToken);
-        return new TestScenario(taskId, seekerUserId, helperUserId, helperProfileId);
+        return new TestScenario(taskId, seekerUserId, seekerProfileId, helperUserId, helperProfileId);
     }
 
     private static async Task<TaskApplication> SeedApplicationAsync(
@@ -179,6 +260,25 @@ public sealed class TaskApplicationsControllerTests
             UpdatedAt = DateTimeOffset.UtcNow
         };
         db.TaskApplications.Add(application);
+        await db.SaveChangesAsync(cancellationToken);
+        return application;
+    }
+
+    private static async Task<TaskApplication> SeedAcceptedApplicationAsync(
+        AppDbContext db,
+        TestScenario scenario,
+        CancellationToken cancellationToken)
+    {
+        var application = await SeedApplicationAsync(db, scenario, cancellationToken);
+        application.Status = TaskApplicationStatus.Accepted;
+        application.UpdatedAt = DateTimeOffset.UtcNow;
+
+        var task = await db.Tasks.SingleAsync(t => t.Id == scenario.TaskId, cancellationToken);
+        task.Status = DomainTaskStatus.InProgress;
+        task.AcceptedHelperProfileId = scenario.HelperProfileId;
+        task.AcceptedAt = DateTimeOffset.UtcNow;
+        task.UpdatedAt = DateTimeOffset.UtcNow;
+
         await db.SaveChangesAsync(cancellationToken);
         return application;
     }
@@ -212,6 +312,7 @@ public sealed class TaskApplicationsControllerTests
     private sealed record TestScenario(
         Guid TaskId,
         Guid SeekerUserId,
+        Guid SeekerProfileId,
         Guid HelperUserId,
         Guid HelperProfileId);
 }
