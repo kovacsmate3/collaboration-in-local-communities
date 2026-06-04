@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Backend.Application.TaskCompletion;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
+using Backend.Domain.Tasks;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -42,15 +43,15 @@ public sealed class TaskCompletionController(
             return Forbid();
         }
 
-        if (task.Status != DomainTaskStatus.InProgress)
+        if (!TaskStatusTransitions.CanTransition(task.Status, DomainTaskStatus.PendingApproval))
         {
             var submitDetail = task.Status == DomainTaskStatus.PendingApproval
                 ? "This task is already awaiting the seeker's approval."
                 : "Only in-progress tasks can be marked as done.";
             return Problem(
-                title: "Task cannot be marked as done",
+                title: "Invalid task status transition",
                 detail: submitDetail,
-                statusCode: StatusCodes.Status409Conflict);
+                statusCode: StatusCodes.Status400BadRequest);
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -128,15 +129,15 @@ public sealed class TaskCompletionController(
             return Forbid();
         }
 
-        if (task.Status != DomainTaskStatus.PendingApproval)
+        if (!TaskStatusTransitions.CanTransition(task.Status, DomainTaskStatus.Completed))
         {
             var approveDetail = task.Status == DomainTaskStatus.Completed
                 ? "This task has already been marked as completed."
                 : "Only tasks awaiting approval can be approved.";
             return Problem(
-                title: "Task cannot be approved",
+                title: "Invalid task status transition",
                 detail: approveDetail,
-                statusCode: StatusCodes.Status409Conflict);
+                statusCode: StatusCodes.Status400BadRequest);
         }
 
         if (task.AcceptedHelperProfileId is null)

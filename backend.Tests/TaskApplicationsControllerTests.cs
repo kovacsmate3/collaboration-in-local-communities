@@ -108,6 +108,33 @@ public sealed class TaskApplicationsControllerTests
     }
 
     [Fact]
+    public async Task PatchAsync_Accept_RejectsTransitionWhenTaskNotOpen_With400()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db, cancellationToken);
+        var application = await SeedApplicationAsync(db, scenario, cancellationToken);
+
+        var task = await db.Tasks.FirstAsync(t => t.Id == scenario.TaskId, cancellationToken);
+        task.Status = DomainTaskStatus.InProgress;
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateController(db, scenario.SeekerUserId);
+
+        var result = await controller.PatchAsync(
+            scenario.TaskId,
+            application.Id,
+            new PatchApplicationRequest("accept"),
+            cancellationToken);
+
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
+
+        var reloaded = await db.TaskApplications.AsNoTracking().FirstAsync(a => a.Id == application.Id, cancellationToken);
+        Assert.Equal(TaskApplicationStatus.Pending, reloaded.Status);
+    }
+
+    [Fact]
     public async Task WithdrawAsync_PendingApplicationBySeeker_ReturnsConflict()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

@@ -755,6 +755,107 @@ public sealed class TasksControllerTests
         Assert.Contains("ORDER BY", sql);
     }
 
+    [Fact]
+    public async Task UpdateAsync_CancelsActiveTask_PersistsCancellation()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var userId = Guid.NewGuid();
+        var taskId = await SeedOwnedTaskAsync(db, userId, Backend.Domain.Enums.TaskStatus.Open, cancellationToken);
+
+        var controller = CreateTasksController(db, userId);
+
+        var result = await controller.UpdateAsync(
+            taskId,
+            new UpdateTaskRequest(null, null, null, null, null, null, null, null, "Cancelled", "Changed my mind."),
+            cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<TaskResponse>(ok.Value);
+        Assert.Equal(nameof(Backend.Domain.Enums.TaskStatus.Cancelled), response.Status);
+
+        var reloaded = await db.Tasks.AsNoTracking().FirstAsync(t => t.Id == taskId, cancellationToken);
+        Assert.Equal(Backend.Domain.Enums.TaskStatus.Cancelled, reloaded.Status);
+        Assert.NotNull(reloaded.CancelledAt);
+
+        var history = Assert.Single(db.TaskStatusHistory);
+        Assert.Equal(Backend.Domain.Enums.TaskStatus.Open, history.OldStatus);
+        Assert.Equal(Backend.Domain.Enums.TaskStatus.Cancelled, history.NewStatus);
+    }
+
+    [Theory]
+    [InlineData(Backend.Domain.Enums.TaskStatus.Completed)]
+    [InlineData(Backend.Domain.Enums.TaskStatus.Cancelled)]
+    public async Task UpdateAsync_RejectsCancellationOfTerminalTask_With400(
+        Backend.Domain.Enums.TaskStatus terminalStatus)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var userId = Guid.NewGuid();
+        var taskId = await SeedOwnedTaskAsync(db, userId, terminalStatus, cancellationToken);
+
+        var controller = CreateTasksController(db, userId);
+
+        var result = await controller.UpdateAsync(
+            taskId,
+            new UpdateTaskRequest(null, null, null, null, null, null, null, null, "Cancelled", null),
+            cancellationToken);
+
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
+
+        var reloaded = await db.Tasks.AsNoTracking().FirstAsync(t => t.Id == taskId, cancellationToken);
+        Assert.Equal(terminalStatus, reloaded.Status);
+        Assert.Empty(db.TaskStatusHistory);
+    }
+
+    private static async Task<Guid> SeedOwnedTaskAsync(
+        AppDbContext db,
+        Guid userId,
+        Backend.Domain.Enums.TaskStatus status,
+        CancellationToken cancellationToken)
+    {
+        var profileId = Guid.NewGuid();
+        var categoryId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        db.Profiles.Add(new UserProfile
+        {
+            Id = profileId,
+            UserId = userId,
+            DisplayName = "Task seeker",
+            CreatedAt = now,
+            UpdatedAt = now
+        });
+        db.Categories.Add(new Category
+        {
+            Id = categoryId,
+            Code = "help",
+            Name = "Help",
+            Icon = Category.DefaultIcon,
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now
+        });
+
+        var taskId = Guid.NewGuid();
+        db.Tasks.Add(new CommunityTask
+        {
+            Id = taskId,
+            SeekerProfileId = profileId,
+            CategoryId = categoryId,
+            Title = "Carry boxes",
+            Description = "Need help carrying boxes.",
+            CompensationType = CompensationType.Voluntary,
+            Status = status,
+            CreatedAt = now,
+            UpdatedAt = now
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+        return taskId;
+    }
+
     private static CommunityTask CreateTask(
         Guid profileId,
         Guid categoryId,
