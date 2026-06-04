@@ -108,6 +108,29 @@ public sealed class TaskApplicationsControllerTests
     }
 
     [Fact]
+    public async Task WithdrawAsync_PendingApplicationBySeeker_ReturnsConflict()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db, cancellationToken);
+        var application = await SeedApplicationAsync(db, scenario, cancellationToken);
+        var controller = CreateController(db, scenario.SeekerUserId);
+
+        var result = await controller.WithdrawAsync(
+            scenario.TaskId,
+            application.Id,
+            cancellationToken);
+
+        var problem = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status409Conflict, problem.StatusCode);
+        var details = Assert.IsType<ProblemDetails>(problem.Value);
+        Assert.Equal("Pending application cannot be cancelled by seeker", details.Title);
+        Assert.Equal(TaskApplicationStatus.Pending, application.Status);
+        Assert.Empty(db.ActivityEvents);
+        Assert.Empty(db.AuditEvents);
+    }
+
+    [Fact]
     public async Task WithdrawAsync_AcceptedApplicationByHelper_ReopensTask()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
