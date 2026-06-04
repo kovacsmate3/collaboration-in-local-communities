@@ -84,11 +84,14 @@ jobs:
 
       - name: Install Playwright browsers
         working-directory: e2e
-        # Follows Playwright's recommended CI pattern — no manual cache step
-        # (their docs explicitly advise against caching browsers since cache
-        # restore time is comparable to download time, and OS deps can't be
-        # cached). The job's 30-min cap keeps a stuck install bounded.
-        run: npx playwright install --with-deps chromium
+        # `--no-shell` skips the Chromium Headless Shell that Playwright 1.49+
+        # downloads by default. Our suite drives the full Chromium project
+        # (Desktop Chrome) so the shell isn't needed, and the silent second
+        # download has been hanging the job to the 30-min timeout despite the
+        # main Chromium binary downloading cleanly.
+        # No manual cache step — Playwright's docs advise against it (cache
+        # restore time ≈ download time; OS deps can't be cached).
+        run: npx playwright install --with-deps --no-shell chromium
 
       # ----- Wait for backing services to be ready ---------------------------
       - name: Wait for Postgres
