@@ -512,6 +512,234 @@ public sealed class TasksControllerTests
     }
 
     [Fact]
+    public async Task ListAsync_FiltersByStatus()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var (profileId, categoryId, now) = await SeedSinglePosterAsync(db, cancellationToken);
+
+        db.Tasks.AddRange(
+            CreateTask(profileId, categoryId, "Open task", now.AddMinutes(1), status: Backend.Domain.Enums.TaskStatus.Open),
+            CreateTask(profileId, categoryId, "In progress task", now.AddMinutes(2), status: Backend.Domain.Enums.TaskStatus.InProgress),
+            CreateTask(profileId, categoryId, "Completed task", now.AddMinutes(3), status: Backend.Domain.Enums.TaskStatus.Completed));
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new TasksController(db);
+
+        var result = await controller.ListAsync(
+            status: "InProgress",
+            categoryId: null,
+            compensationType: null,
+            createdAfter: null,
+            latitude: null,
+            longitude: null,
+            radiusMeters: null,
+            cancellationToken: cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var tasks = Assert.IsAssignableFrom<IEnumerable<TaskResponse>>(ok.Value).ToArray();
+
+        var task = Assert.Single(tasks);
+        Assert.Equal("In progress task", task.Title);
+        Assert.Equal(nameof(Backend.Domain.Enums.TaskStatus.InProgress), task.Status);
+    }
+
+    [Fact]
+    public async Task ListAsync_RejectsInvalidStatus()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var controller = new TasksController(db);
+
+        var result = await controller.ListAsync(
+            status: "not-a-real-status",
+            categoryId: null,
+            compensationType: null,
+            createdAfter: null,
+            latitude: null,
+            longitude: null,
+            radiusMeters: null,
+            cancellationToken: cancellationToken);
+
+        var badRequest = Assert.IsType<ObjectResult>(result);
+        var problem = Assert.IsType<ValidationProblemDetails>(badRequest.Value);
+        Assert.Contains("status", problem.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task ListAsync_FiltersByCategory()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var profileId = Guid.NewGuid();
+        var gardeningId = Guid.NewGuid();
+        var movingId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        db.Profiles.Add(new UserProfile
+        {
+            Id = profileId,
+            UserId = Guid.NewGuid(),
+            DisplayName = "Task seeker",
+            CreatedAt = now,
+            UpdatedAt = now
+        });
+        db.Categories.AddRange(
+            new Category
+            {
+                Id = gardeningId,
+                Code = "gardening",
+                Name = "Gardening",
+                Icon = Category.DefaultIcon,
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now
+            },
+            new Category
+            {
+                Id = movingId,
+                Code = "moving",
+                Name = "Moving",
+                Icon = Category.DefaultIcon,
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now
+            });
+        db.Tasks.AddRange(
+            CreateTask(profileId, gardeningId, "Weed the beds", now.AddMinutes(1)),
+            CreateTask(profileId, movingId, "Carry the couch", now.AddMinutes(2)),
+            CreateTask(profileId, gardeningId, "Mow the lawn", now.AddMinutes(3)));
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new TasksController(db);
+
+        var result = await controller.ListAsync(
+            status: null,
+            categoryId: gardeningId,
+            compensationType: null,
+            createdAfter: null,
+            latitude: null,
+            longitude: null,
+            radiusMeters: null,
+            cancellationToken: cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var tasks = Assert.IsAssignableFrom<IEnumerable<TaskResponse>>(ok.Value).ToArray();
+
+        Assert.Equal(2, tasks.Length);
+        Assert.Equal(["Mow the lawn", "Weed the beds"], tasks.Select(task => task.Title));
+        Assert.All(tasks, task => Assert.Equal(gardeningId, task.CategoryId));
+    }
+
+    [Fact]
+    public async Task ListAsync_CombinesStatusCategoryAndCompensationFilters()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var profileId = Guid.NewGuid();
+        var gardeningId = Guid.NewGuid();
+        var movingId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        db.Profiles.Add(new UserProfile
+        {
+            Id = profileId,
+            UserId = Guid.NewGuid(),
+            DisplayName = "Task seeker",
+            CreatedAt = now,
+            UpdatedAt = now
+        });
+        db.Categories.AddRange(
+            new Category
+            {
+                Id = gardeningId,
+                Code = "gardening",
+                Name = "Gardening",
+                Icon = Category.DefaultIcon,
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now
+            },
+            new Category
+            {
+                Id = movingId,
+                Code = "moving",
+                Name = "Moving",
+                Icon = Category.DefaultIcon,
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now
+            });
+
+        // Only one task matches all three filters: Gardening + Open + Paid.
+        // Every other task differs in exactly one dimension and must be excluded.
+        var match = CreateTask(profileId, gardeningId, "Gardening open paid", now.AddMinutes(1),
+            status: Backend.Domain.Enums.TaskStatus.Open, compensation: CompensationType.Paid, amount: 4000m);
+        db.Tasks.AddRange(
+            match,
+            CreateTask(profileId, movingId, "Moving open paid", now.AddMinutes(2),
+                status: Backend.Domain.Enums.TaskStatus.Open, compensation: CompensationType.Paid, amount: 4000m),
+            CreateTask(profileId, gardeningId, "Gardening completed paid", now.AddMinutes(3),
+                status: Backend.Domain.Enums.TaskStatus.Completed, compensation: CompensationType.Paid, amount: 4000m),
+            CreateTask(profileId, gardeningId, "Gardening open voluntary", now.AddMinutes(4),
+                status: Backend.Domain.Enums.TaskStatus.Open, compensation: CompensationType.Voluntary));
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new TasksController(db);
+
+        var result = await controller.ListAsync(
+            status: "Open",
+            categoryId: gardeningId,
+            compensationType: "Paid",
+            createdAfter: null,
+            latitude: null,
+            longitude: null,
+            radiusMeters: null,
+            cancellationToken: cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var tasks = Assert.IsAssignableFrom<IEnumerable<TaskResponse>>(ok.Value).ToArray();
+
+        var task = Assert.Single(tasks);
+        Assert.Equal(match.Id, task.Id);
+        Assert.Equal("Gardening open paid", task.Title);
+    }
+
+    [Fact]
+    public async Task ListAsync_FiltersByBarterCompensationType()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var (profileId, categoryId, now) = await SeedSinglePosterAsync(db, cancellationToken);
+
+        // Barter is its own bucket and must not pull in Points or Voluntary tasks.
+        db.Tasks.AddRange(
+            CreateTask(profileId, categoryId, "Barter task", now.AddMinutes(1), compensation: CompensationType.Barter),
+            CreateTask(profileId, categoryId, "Points task", now.AddMinutes(2), compensation: CompensationType.Points),
+            CreateTask(profileId, categoryId, "Voluntary task", now.AddMinutes(3), compensation: CompensationType.Voluntary));
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = new TasksController(db);
+
+        var result = await controller.ListAsync(
+            status: null,
+            categoryId: null,
+            compensationType: "Barter",
+            createdAfter: null,
+            latitude: null,
+            longitude: null,
+            radiusMeters: null,
+            cancellationToken: cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var tasks = Assert.IsAssignableFrom<IEnumerable<TaskResponse>>(ok.Value).ToArray();
+
+        var task = Assert.Single(tasks);
+        Assert.Equal("Barter task", task.Title);
+        Assert.Equal(nameof(CompensationType.Barter), task.CompensationType);
+    }
+
+    [Fact]
     public void ProximityQuery_TranslatesToPostgisDWithinAndDistanceOrdering()
     {
         using var db = CreateNpgsqlDbContext();
@@ -626,6 +854,28 @@ public sealed class TasksControllerTests
 
         await db.SaveChangesAsync(cancellationToken);
         return taskId;
+    private static CommunityTask CreateTask(
+        Guid profileId,
+        Guid categoryId,
+        string title,
+        DateTimeOffset createdAt,
+        Backend.Domain.Enums.TaskStatus status = Backend.Domain.Enums.TaskStatus.Open,
+        CompensationType compensation = CompensationType.Voluntary,
+        decimal? amount = null)
+    {
+        return new CommunityTask
+        {
+            Id = Guid.NewGuid(),
+            SeekerProfileId = profileId,
+            CategoryId = categoryId,
+            Title = title,
+            Description = "Need help with a task.",
+            CompensationType = compensation,
+            CompensationAmount = amount,
+            Status = status,
+            CreatedAt = createdAt,
+            UpdatedAt = createdAt
+        };
     }
 
     private static async Task<(Guid ProfileId, Guid CategoryId, DateTimeOffset Now)> SeedSinglePosterAsync(
