@@ -64,7 +64,12 @@ export function useConversations(enabled = true) {
     queryKey: conversationKeys.list,
     queryFn: () => apiClient.get<ApiConversationPreview[]>("/conversations"),
     enabled,
-    staleTime: 60_000,
+    staleTime: 15_000,
+    // Polling fallback so the inbox stays live even where the SignalR
+    // WebSocket cannot be proxied (e.g. Vercel rewrites). When the hub is
+    // connected this is just a cheap safety net; when it isn't, this is what
+    // keeps unread badges and last-message previews moving.
+    refetchInterval: 15_000,
   })
 }
 
@@ -83,6 +88,11 @@ export function useConversationMessages(id: string) {
     getPreviousPageParam: (firstPage) =>
       firstPage.hasMore ? firstPage.messages[0]?.sentAt : undefined,
     enabled: Boolean(id),
+    // Polling fallback for the open conversation. SignalR (when connected)
+    // delivers messages instantly; this guarantees the other party's messages
+    // still arrive within a few seconds on hosts where the hub's WebSocket is
+    // blocked. Refetching the latest page picks up any new messages.
+    refetchInterval: 5_000,
   })
 }
 

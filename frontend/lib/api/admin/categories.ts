@@ -10,6 +10,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api/client"
+import { invalidateCategoryData } from "@/lib/api/query-invalidation"
 
 // ── Types (mirror AdminCategoriesController DTOs) ────────────────────────────
 
@@ -79,7 +80,7 @@ export function useCreateCategory() {
     mutationFn: (data: CreateCategoryRequest) =>
       apiClient.post<AdminCategoryResponse>("/admin/categories", data),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: categoryKeys.lists() })
+      invalidateCategoryData(qc)
     },
   })
 }
@@ -94,7 +95,7 @@ export function useUpdateCategory() {
     mutationFn: ({ id, data }: { id: string; data: UpdateCategoryRequest }) =>
       apiClient.put<AdminCategoryResponse>(`/admin/categories/${id}`, data),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: categoryKeys.lists() })
+      invalidateCategoryData(qc)
     },
   })
 }
@@ -112,7 +113,7 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/admin/categories/${id}`),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: categoryKeys.lists() })
+      invalidateCategoryData(qc)
     },
   })
 }
@@ -128,7 +129,7 @@ export function useDeactivateCategory() {
     mutationFn: (id: string) =>
       apiClient.post<void>(`/admin/categories/${id}/deactivate`, {}),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: categoryKeys.lists() })
+      invalidateCategoryData(qc)
     },
   })
 }
@@ -144,7 +145,7 @@ export function useActivateCategory() {
     mutationFn: (id: string) =>
       apiClient.post<void>(`/admin/categories/${id}/activate`, {}),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: categoryKeys.lists() })
+      invalidateCategoryData(qc)
     },
   })
 }
