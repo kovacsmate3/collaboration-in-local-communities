@@ -854,6 +854,8 @@ public sealed class TasksControllerTests
 
         await db.SaveChangesAsync(cancellationToken);
         return taskId;
+    }
+
     private static CommunityTask CreateTask(
         Guid profileId,
         Guid categoryId,
