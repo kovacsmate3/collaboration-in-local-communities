@@ -93,7 +93,11 @@ jobs:
 
       - name: Install Playwright browsers
         working-directory: e2e
-        run: npx playwright install --with-deps chromium
+        # Drop `--with-deps`: the ubuntu-latest runner already ships with the
+        # system libraries Chromium needs, and the apt step has been hanging
+        # the job to the 30-min timeout. Bound the binary install with a
+        # generous timeout as a defence in depth.
+        run: timeout 300 npx playwright install chromium
 
       # ----- Wait for backing services to be ready ---------------------------
       - name: Wait for Postgres
