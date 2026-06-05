@@ -2,7 +2,16 @@
   "common": {
     "openUserMenu": "Felhasználói menü megnyitása",
     "primaryNav": "Főmenü",
-    "signedOutToast": "Kijelentkezve"
+    "signedOutToast": "Kijelentkezve",
+    "tagline": "Helyi segítség, megbízható közösségben."
+  },
+  "landing": {
+    "signIn": "Bejelentkezés",
+    "getStarted": "Kezdjük",
+    "heroHeading": "Valódi segítség valódi szomszédoktól, zsúfolt csoportos chat nélkül.",
+    "heroBody": "Tegyél közzé egy apróbb feladatot, vagy nyújts segítő kezet a közelben. Hírnév, átlátható ellentételezés és igazolt profilok – strukturált bizalom a mindennapi mikro-együttműködéshez.",
+    "createAccount": "Fiók létrehozása",
+    "browseFeed": "Hírfolyam böngészése"
   },
   "nav": {
     "feed": "Hírfolyam",
@@ -242,7 +251,21 @@
       "cancelled": "Visszavonva"
     },
     "compensation": {
+      "paid": "Fizetett + pont",
+      "points": "Csak pont",
+      "voluntary": "Csak pont",
+      "barter": "Csere + pont",
       "paidPlusPoints": "{amount} + pont"
+    },
+    "categories": {
+      "moving": "Költözés",
+      "tutoring": "Korrepetálás",
+      "household": "Háztartás",
+      "petcare": "Állatgondozás",
+      "tools": "Szerszámkölcsönzés",
+      "tech": "Tech segítség",
+      "errands": "Ügyintézés",
+      "other": "Egyéb"
     },
     "card": {
       "applicationStatus": "Jelentkezés: {status}"
@@ -265,7 +288,13 @@
       "within": "{km} km-en belül",
       "recencyAria": "Szűrés időszak szerint",
       "recencyPlaceholder": "Időszak",
-      "addLocationHint": "Adj meg egy helyszínt a profilodban a távolság szerinti szűréshez."
+      "addLocationHint": "Adj meg egy helyszínt a profilodban a távolság szerinti szűréshez.",
+      "recencyOptions": {
+        "any": "Bármikor",
+        "24h": "Elmúlt 24 óra",
+        "7d": "Elmúlt 7 nap",
+        "30d": "Elmúlt 30 nap"
+      }
     },
     "detail": {
       "loading": "Feladat betöltése…",

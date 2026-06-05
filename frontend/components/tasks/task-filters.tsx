@@ -41,7 +41,7 @@ export interface TaskFiltersState {
   /** Backend category id (GUID) or `"all"` for no category filter. */
   category: string
   compensation: CompensationType | "all"
-  recency: (typeof RECENCY_OPTIONS)[number]["value"]
+  recency: (typeof RECENCY_OPTIONS)[number]
   /** Selected radius bucket. `"any"` disables the proximity filter. */
   radius: RadiusOptionValue
 }
@@ -80,6 +80,7 @@ export function TaskFilters({
   hasOrigin,
 }: TaskFiltersProps) {
   const t = useTranslations("tasks.filters")
+  const tCompensation = useTranslations("tasks.compensation")
   const update = (patch: Partial<TaskFiltersState>) =>
     onChange({ ...value, ...patch })
 
@@ -130,9 +131,9 @@ export function TaskFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("anyReward")}</SelectItem>
-            {COMPENSATION_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
+            {COMPENSATION_OPTIONS.map((value) => (
+              <SelectItem key={value} value={value}>
+                {tCompensation(value)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -173,9 +174,9 @@ export function TaskFilters({
             <SelectValue placeholder={t("recencyPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            {RECENCY_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+            {RECENCY_OPTIONS.map((value) => (
+              <SelectItem key={value} value={value}>
+                {t(`recencyOptions.${value}`)}
               </SelectItem>
             ))}
           </SelectContent>

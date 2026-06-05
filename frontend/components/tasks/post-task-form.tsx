@@ -57,6 +57,7 @@ export function PostTaskForm({
   initialValues,
 }: PostTaskFormProps = {}) {
   const t = useTranslations("tasks.post")
+  const tCompensation = useTranslations("tasks.compensation")
   const isEditing = Boolean(taskId)
   const { user } = useAuth()
   const router = useRouter()
@@ -291,17 +292,16 @@ export function PostTaskForm({
           }
           className="grid gap-2 sm:grid-cols-3"
         >
-          {COMPENSATION_OPTIONS.map((option) => (
+          {COMPENSATION_OPTIONS.map((value) => (
             <Label
-              key={option.value}
-              htmlFor={`comp-${option.value}`}
+              key={value}
+              htmlFor={`comp-${value}`}
               className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background p-3 hover:bg-muted"
             >
-              <RadioGroupItem
-                id={`comp-${option.value}`}
-                value={option.value}
-              />
-              <span className="text-sm font-medium">{option.label}</span>
+              <RadioGroupItem id={`comp-${value}`} value={value} />
+              <span className="text-sm font-medium">
+                {tCompensation(value)}
+              </span>
             </Label>
           ))}
         </RadioGroup>

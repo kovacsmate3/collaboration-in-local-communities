@@ -8,7 +8,6 @@ import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
 import { CategoryBadge } from "@/components/tasks/category-badge"
 import { EmptyState } from "@/components/shared/empty-state"
 import { formatRelativeTime } from "@/lib/format"
-import { TASK_CATEGORIES } from "@/lib/constants"
 import type { ProfileTaskHistoryItem } from "@/lib/api/profile"
 
 interface TaskHistoryProps {
@@ -24,6 +23,7 @@ interface TaskHistoryProps {
  */
 export function TaskHistory({ tasks }: TaskHistoryProps) {
   const t = useTranslations("profile.taskHistory")
+  const tCategories = useTranslations("tasks.categories")
 
   if (tasks.length === 0) {
     return <EmptyState title={t("emptyTitle")} description={t("emptyBody")} />
@@ -47,7 +47,7 @@ export function TaskHistory({ tasks }: TaskHistoryProps) {
               <span className="truncate text-sm font-medium">{task.title}</span>
               <div className="flex items-center gap-2">
                 <CategoryBadge
-                  label={TASK_CATEGORIES[task.category]?.label ?? task.category}
+                  label={tCategories(task.category)}
                   icon={task.icon}
                 />
                 <span className="text-xs text-muted-foreground">

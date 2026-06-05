@@ -1,7 +1,8 @@
 import Link from "next/link"
+import { getTranslations } from "next-intl/server"
 
 import { Button } from "@/components/ui/button"
-import { APP_NAME, APP_TAGLINE } from "@/lib/constants"
+import { APP_NAME } from "@/lib/constants"
 
 /**
  * Public landing page. Kept lightweight on purpose: the design choice
@@ -10,7 +11,9 @@ import { APP_NAME, APP_TAGLINE } from "@/lib/constants"
  * Marketing-grade content (sections, screenshots, etc.) can be added
  * later without affecting the rest of the app.
  */
-export default function HomePage() {
+export default async function HomePage() {
+  const t = await getTranslations("landing")
+  const tCommon = await getTranslations("common")
   return (
     <main className="flex min-h-svh flex-col">
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -19,10 +22,10 @@ export default function HomePage() {
         </span>
         <nav className="flex items-center gap-2">
           <Button asChild variant="ghost" size="sm">
-            <Link href="/login">Sign in</Link>
+            <Link href="/login">{t("signIn")}</Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/register">Get started</Link>
+            <Link href="/register">{t("getStarted")}</Link>
           </Button>
         </nav>
       </header>
@@ -30,22 +33,20 @@ export default function HomePage() {
       <section className="flex flex-1 items-center px-6 py-16">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 text-center">
           <p className="text-sm font-medium tracking-[0.2em] text-muted-foreground uppercase">
-            {APP_TAGLINE}
+            {tCommon("tagline")}
           </p>
           <h1 className="text-4xl leading-tight font-semibold tracking-tight text-balance sm:text-5xl">
-            Real help from real neighbours, without the noisy group chats.
+            {t("heroHeading")}
           </h1>
           <p className="mx-auto max-w-xl text-base text-balance text-muted-foreground">
-            Post a small task or lend a hand nearby. Reputation, transparent
-            compensation, and verified profiles - structured trust for everyday
-            micro-cooperation.
+            {t("heroBody")}
           </p>
           <div className="mx-auto flex flex-wrap items-center justify-center gap-2">
             <Button asChild size="lg">
-              <Link href="/register">Create an account</Link>
+              <Link href="/register">{t("createAccount")}</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/feed">Browse the feed</Link>
+              <Link href="/feed">{t("browseFeed")}</Link>
             </Button>
           </div>
         </div>

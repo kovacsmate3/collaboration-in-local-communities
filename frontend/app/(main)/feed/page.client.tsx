@@ -21,7 +21,7 @@ import { useInfiniteTaskList } from "@/lib/api/tasks"
 import type { ApiTask, TaskListFilters } from "@/lib/api/tasks"
 import { RECENCY_OPTIONS } from "@/lib/constants"
 
-type RecencyValue = (typeof RECENCY_OPTIONS)[number]["value"]
+type RecencyValue = (typeof RECENCY_OPTIONS)[number]
 
 /**
  * Canonical task-discovery feed. Replaces the former Seeker (#37) and
@@ -259,8 +259,8 @@ function readFiltersFromUrl(
         : "all"
 
   const rawRecency = searchParams.get(SEARCH_PARAM_KEYS.recency) ?? "any"
-  const recency: RecencyValue = RECENCY_OPTIONS.some(
-    (o) => o.value === rawRecency
+  const recency: RecencyValue = (RECENCY_OPTIONS as readonly string[]).includes(
+    rawRecency
   )
     ? (rawRecency as RecencyValue)
     : "any"

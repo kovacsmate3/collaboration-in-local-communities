@@ -2,7 +2,16 @@
   "common": {
     "openUserMenu": "Open user menu",
     "primaryNav": "Primary",
-    "signedOutToast": "Signed out"
+    "signedOutToast": "Signed out",
+    "tagline": "Local help, structured trust."
+  },
+  "landing": {
+    "signIn": "Sign in",
+    "getStarted": "Get started",
+    "heroHeading": "Real help from real neighbours, without the noisy group chats.",
+    "heroBody": "Post a small task or lend a hand nearby. Reputation, transparent compensation, and verified profiles — structured trust for everyday micro-cooperation.",
+    "createAccount": "Create an account",
+    "browseFeed": "Browse the feed"
   },
   "nav": {
     "feed": "Feed",
@@ -242,7 +251,21 @@
       "cancelled": "Cancelled"
     },
     "compensation": {
+      "paid": "Paid + points",
+      "points": "Points only",
+      "voluntary": "Points only",
+      "barter": "Barter + points",
       "paidPlusPoints": "{amount} + points"
+    },
+    "categories": {
+      "moving": "Moving",
+      "tutoring": "Tutoring",
+      "household": "Household",
+      "petcare": "Pet care",
+      "tools": "Tool lending",
+      "tech": "Tech help",
+      "errands": "Errands",
+      "other": "Other"
     },
     "card": {
       "applicationStatus": "Application {status}"
@@ -265,7 +288,13 @@
       "within": "Within {km} km",
       "recencyAria": "Filter by recency",
       "recencyPlaceholder": "Recency",
-      "addLocationHint": "Add a location to your profile to filter by distance."
+      "addLocationHint": "Add a location to your profile to filter by distance.",
+      "recencyOptions": {
+        "any": "Any time",
+        "24h": "Last 24 hours",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days"
+      }
     },
     "detail": {
       "loading": "Loading task…",

@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
 import { NextIntlClientProvider } from "next-intl"
-import { getLocale, getMessages } from "next-intl/server"
+import { getLocale, getMessages, getTranslations } from "next-intl/server"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -9,14 +9,17 @@ import { QueryProvider } from "@/components/providers/query-provider"
 import { AuthProvider } from "@/lib/auth-context"
 import { RegisterDraftProvider } from "@/lib/register-draft"
 import { Toaster } from "@/components/ui/sonner"
-import { APP_NAME, APP_TAGLINE } from "@/lib/constants"
+import { APP_NAME } from "@/lib/constants"
 
-export const metadata: Metadata = {
-  title: {
-    default: APP_NAME,
-    template: `%s | ${APP_NAME}`,
-  },
-  description: APP_TAGLINE,
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("common")
+  return {
+    title: {
+      default: APP_NAME,
+      template: `%s | ${APP_NAME}`,
+    },
+    description: t("tagline"),
+  }
 }
 
 export default async function RootLayout({

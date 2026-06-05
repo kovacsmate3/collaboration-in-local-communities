@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl"
 
 import { Badge } from "@/components/ui/badge"
-import { COMPENSATION_LABELS } from "@/lib/constants"
 import { formatCurrency } from "@/lib/format"
 import type { CompensationType } from "@/lib/types"
 
@@ -49,7 +48,7 @@ export function CompensationBadge({
       ? t("paidPlusPoints", {
           amount: formatCurrency(compensationAmount, "HUF"),
         })
-      : COMPENSATION_LABELS[type]
+      : t(type)
 
   return <Badge variant={variant}>{label}</Badge>
 }
