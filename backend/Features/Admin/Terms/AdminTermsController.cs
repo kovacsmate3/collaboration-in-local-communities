@@ -3,9 +3,11 @@ using System.Text.Json;
 using Backend.Domain.Entities;
 using Backend.Features.Terms;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Admin.Terms;
@@ -13,6 +15,7 @@ namespace Backend.Features.Admin.Terms;
 [ApiController]
 [Route("api/admin/terms")]
 [Authorize(Roles = "Admin")]
+[EnableRateLimiting(RateLimitingExtensions.AdminPolicy)]
 public sealed class AdminTermsController(AppDbContext db) : ControllerBase
 {
     [HttpGet]
