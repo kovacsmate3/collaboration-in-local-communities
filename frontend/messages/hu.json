@@ -13,6 +13,56 @@
     "createAccount": "Fiók létrehozása",
     "browseFeed": "Hírfolyam böngészése"
   },
+  "editor": {
+    "toolbarAria": "Formázási beállítások",
+    "placeholder": "Írj valamit…",
+    "bold": "Félkövér",
+    "italic": "Dőlt",
+    "strikethrough": "Áthúzott",
+    "bulletList": "Felsorolás",
+    "numberedList": "Számozott lista",
+    "blockquote": "Idézet"
+  },
+  "locationInput": {
+    "placeholder": "Város, kerület vagy utca",
+    "search": "Keresés",
+    "searching": "Keresés…",
+    "useMyLocation": "Jelenlegi helyzet használata",
+    "locating": "Meghatározás…",
+    "attribution": "Címadatok © OpenStreetMap közreműködői.",
+    "errorMinChars": "Adj meg legalább 3 karaktert.",
+    "errorLookupUnavailable": "A címkeresés jelenleg nem érhető el.",
+    "errorNoResults": "Nem található megfelelő cím.",
+    "errorBrowserUnsupported": "A böngésződ nem támogatja a helymeghatározást.",
+    "errorReadFailed": "Nem sikerült beolvasni a jelenlegi helyzetedet.",
+    "errorReverseFallback": "A cím neve nem érhető el; a koordinátákat mentettük."
+  },
+  "legal": {
+    "termsTitleFallback": "Aktuális feltételek",
+    "versionLabel": "{version} verzió",
+    "termsNotAvailableToast": "A feltételek jelenleg nem elérhetők. Próbáld újra később.",
+    "termsAcceptedToast": "Feltételek elfogadva",
+    "recordFailedToast": "Nem sikerült rögzíteni az elfogadást. Próbáld újra.",
+    "panel": {
+      "heading": "Fogadd el a felhasználási feltételeket a folytatáshoz",
+      "body": "A fiókodhoz szükséges egy elfogadási rekord az aktuális feltételekhez, mielőtt tovább tudnál lépni az alkalmazásba.",
+      "accepting": "Elfogadás…",
+      "acceptAndContinue": "Elfogadás és folytatás",
+      "useAnotherAccount": "Másik fiók használata"
+    },
+    "backLink": {
+      "fallback": "Vissza",
+      "toApp": "Vissza az alkalmazásba",
+      "toRegister": "Vissza a regisztrációhoz"
+    },
+    "gate": {
+      "title": "Fogadd el a felhasználási feltételeket",
+      "description": "Kérjük, fogadd el az aktuális feltételeket, mielőtt folytatnád az alkalmazás használatát. Előbb át is nézheted őket, ha alaposabban szeretnéd megismerni.",
+      "reviewTerms": "Feltételek megtekintése",
+      "accept": "Elfogadás",
+      "accepting": "Elfogadás…"
+    }
+  },
   "nav": {
     "feed": "Hírfolyam",
     "myTasks": "Feladataim",

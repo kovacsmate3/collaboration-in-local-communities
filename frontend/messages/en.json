@@ -13,6 +13,56 @@
     "createAccount": "Create an account",
     "browseFeed": "Browse the feed"
   },
+  "editor": {
+    "toolbarAria": "Formatting options",
+    "placeholder": "Write something…",
+    "bold": "Bold",
+    "italic": "Italic",
+    "strikethrough": "Strikethrough",
+    "bulletList": "Bullet list",
+    "numberedList": "Numbered list",
+    "blockquote": "Blockquote"
+  },
+  "locationInput": {
+    "placeholder": "City, neighbourhood, or street address",
+    "search": "Search",
+    "searching": "Searching…",
+    "useMyLocation": "Use my location",
+    "locating": "Locating…",
+    "attribution": "Address data © OpenStreetMap contributors.",
+    "errorMinChars": "Enter at least 3 characters.",
+    "errorLookupUnavailable": "Address lookup is unavailable.",
+    "errorNoResults": "No matching addresses found.",
+    "errorBrowserUnsupported": "Your browser does not support location lookup.",
+    "errorReadFailed": "Unable to read your current location.",
+    "errorReverseFallback": "Address name unavailable; coordinates were saved."
+  },
+  "legal": {
+    "termsTitleFallback": "Current terms",
+    "versionLabel": "version {version}",
+    "termsNotAvailableToast": "Terms are not available right now. Please try again later.",
+    "termsAcceptedToast": "Terms accepted",
+    "recordFailedToast": "Unable to record your acceptance. Please try again.",
+    "panel": {
+      "heading": "Accept Terms & Conditions to continue",
+      "body": "Your account needs an acceptance record for the current terms before you can continue into the app.",
+      "accepting": "Accepting…",
+      "acceptAndContinue": "Accept and continue",
+      "useAnotherAccount": "Use another account"
+    },
+    "backLink": {
+      "fallback": "Back",
+      "toApp": "Back to app",
+      "toRegister": "Back to registration"
+    },
+    "gate": {
+      "title": "Accept Terms & Conditions",
+      "description": "Please accept the current terms before continuing to use the app. You can review them first if you need a closer look.",
+      "reviewTerms": "Review terms",
+      "accept": "Accept",
+      "accepting": "Accepting…"
+    }
+  },
   "nav": {
     "feed": "Feed",
     "myTasks": "My tasks",

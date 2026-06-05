@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Placeholder from "@tiptap/extension-placeholder"
+import { useTranslations } from "next-intl"
 
 import { cn } from "@/lib/utils"
 
@@ -18,15 +19,20 @@ interface RichTextEditorProps {
 export function RichTextEditor({
   value,
   onChange,
-  placeholder = "Write something…",
+  placeholder,
   className,
   maxLength,
 }: RichTextEditorProps) {
+  const t = useTranslations("editor")
+  const resolvedPlaceholder = placeholder ?? t("placeholder")
   const charCount = value.length
   const isEditorUpdateRef = useRef(false)
 
   const editor = useEditor({
-    extensions: [StarterKit, Placeholder.configure({ placeholder })],
+    extensions: [
+      StarterKit,
+      Placeholder.configure({ placeholder: resolvedPlaceholder }),
+    ],
     content: value || "<p></p>",
     onUpdate({ editor: e }) {
       isEditorUpdateRef.current = true
@@ -54,26 +60,26 @@ export function RichTextEditor({
       <div
         className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/40 p-1"
         role="toolbar"
-        aria-label="Formatting options"
+        aria-label={t("toolbarAria")}
       >
         <ToolbarButton
           onClick={() => editor?.chain().focus().toggleBold().run()}
           active={editor?.isActive("bold") ?? false}
-          title="Bold"
+          title={t("bold")}
         >
           <span className="font-bold">B</span>
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor?.chain().focus().toggleItalic().run()}
           active={editor?.isActive("italic") ?? false}
-          title="Italic"
+          title={t("italic")}
         >
           <span className="italic">I</span>
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor?.chain().focus().toggleStrike().run()}
           active={editor?.isActive("strike") ?? false}
-          title="Strikethrough"
+          title={t("strikethrough")}
         >
           <span className="line-through">S</span>
         </ToolbarButton>
@@ -83,21 +89,21 @@ export function RichTextEditor({
         <ToolbarButton
           onClick={() => editor?.chain().focus().toggleBulletList().run()}
           active={editor?.isActive("bulletList") ?? false}
-          title="Bullet list"
+          title={t("bulletList")}
         >
           ≡
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor?.chain().focus().toggleOrderedList().run()}
           active={editor?.isActive("orderedList") ?? false}
-          title="Numbered list"
+          title={t("numberedList")}
         >
           1.
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor?.chain().focus().toggleBlockquote().run()}
           active={editor?.isActive("blockquote") ?? false}
-          title="Blockquote"
+          title={t("blockquote")}
         >
           &ldquo;
         </ToolbarButton>
