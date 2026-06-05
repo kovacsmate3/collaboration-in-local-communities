@@ -6,7 +6,7 @@ on:
 
 jobs:
   playwright:
-    name: Playwright · register + login
+    name: Playwright · e2e
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
