@@ -7,6 +7,7 @@ import { Sent02Icon } from "@hugeicons/core-free-icons"
 import type { SubmitEvent } from "react"
 
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,6 +38,7 @@ export function ChatWindow({
   fetchPreviousPage,
   isFetchingPreviousPage,
 }: ChatWindowProps) {
+  const t = useTranslations("messages.window")
   const { user } = useAuth()
   const [draft, setDraft] = React.useState("")
   const bottomRef = React.useRef<HTMLDivElement>(null)
@@ -52,8 +54,8 @@ export function ChatWindow({
     patchApplication(
       { applicationId: conversation.pendingApplicationId, action: "accept" },
       {
-        onSuccess: () => toast.success("Application accepted."),
-        onError: () => toast.error("Could not accept the application."),
+        onSuccess: () => toast.success(t("acceptToast")),
+        onError: () => toast.error(t("acceptError")),
       }
     )
   }
@@ -63,8 +65,8 @@ export function ChatWindow({
     patchApplication(
       { applicationId: conversation.pendingApplicationId, action: "reject" },
       {
-        onSuccess: () => toast.success("Application rejected."),
-        onError: () => toast.error("Could not reject the application."),
+        onSuccess: () => toast.success(t("rejectToast")),
+        onError: () => toast.error(t("rejectError")),
       }
     )
   }
@@ -110,15 +112,16 @@ export function ChatWindow({
       {conversation.pendingApplicationId ? (
         <div className="flex items-center gap-3 border-b border-border bg-muted/40 px-4 py-2.5">
           <p className="flex-1 text-sm text-muted-foreground">
-            {conversation.otherParticipant.displayName} applied to help with
-            this task.
+            {t("applicationNotice", {
+              name: conversation.otherParticipant.displayName,
+            })}
           </p>
           <Button
             size="sm"
             disabled={isPatchingApplication}
             onClick={handleAccept}
           >
-            Accept
+            {t("accept")}
           </Button>
           <Button
             size="sm"
@@ -126,7 +129,7 @@ export function ChatWindow({
             disabled={isPatchingApplication}
             onClick={handleReject}
           >
-            Decline
+            {t("decline")}
           </Button>
         </div>
       ) : null}
@@ -141,13 +144,13 @@ export function ChatWindow({
                 onClick={fetchPreviousPage}
                 disabled={isFetchingPreviousPage}
               >
-                {isFetchingPreviousPage ? "Loading…" : "Load older messages"}
+                {isFetchingPreviousPage ? t("loadingOlder") : t("loadOlder")}
               </Button>
             </div>
           )}
           {messages.length === 0 ? (
             <p className="text-center text-xs text-muted-foreground">
-              No messages yet. Say hello!
+              {t("emptyState")}
             </p>
           ) : null}
           {messages.map((m) => (
@@ -165,14 +168,14 @@ export function ChatWindow({
           ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Message…"
-          aria-label="Message"
+          placeholder={t("inputPlaceholder")}
+          aria-label={t("inputAria")}
         />
         <Button
           type="submit"
           size="icon"
           disabled={isPending || !draft.trim()}
-          aria-label="Send"
+          aria-label={t("sendAria")}
         >
           <HugeiconsIcon icon={Sent02Icon} />
         </Button>

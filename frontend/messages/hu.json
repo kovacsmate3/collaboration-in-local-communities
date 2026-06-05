@@ -418,5 +418,33 @@
       "updateErrorDefault": "Nem sikerült frissíteni a feladatot.",
       "postErrorDefault": "Nem sikerült közzétenni a feladatot."
     }
+  },
+  "messages": {
+    "page": {
+      "title": "Üzenetek",
+      "description": "A feladatokról szóló beszélgetéseid.",
+      "loading": "Betöltés…",
+      "loadError": "Nem sikerült betölteni a beszélgetéseket. Próbáld meg újra."
+    },
+    "list": {
+      "emptyTitle": "Még nincs beszélgetés",
+      "emptyBody": "Indíts beszélgetést bármelyik feladatból, hogy elkezdj csevegni.",
+      "unread": "Olvasatlan"
+    },
+    "window": {
+      "applicationNotice": "{name} jelentkezett, hogy segítsen a feladatban.",
+      "accept": "Elfogadás",
+      "decline": "Elutasítás",
+      "loadingOlder": "Betöltés…",
+      "loadOlder": "Korábbi üzenetek betöltése",
+      "emptyState": "Még nincs üzenet. Köszönj!",
+      "inputPlaceholder": "Üzenet…",
+      "inputAria": "Üzenet",
+      "sendAria": "Küldés",
+      "acceptToast": "Jelentkezés elfogadva.",
+      "acceptError": "Nem sikerült elfogadni a jelentkezést.",
+      "rejectToast": "Jelentkezés elutasítva.",
+      "rejectError": "Nem sikerült elutasítani a jelentkezést."
+    }
   }
 }

@@ -418,5 +418,33 @@
       "updateErrorDefault": "Could not update the task.",
       "postErrorDefault": "Could not post the task."
     }
+  },
+  "messages": {
+    "page": {
+      "title": "Messages",
+      "description": "Your conversations about tasks.",
+      "loading": "Loading…",
+      "loadError": "Could not load conversations. Please try again."
+    },
+    "list": {
+      "emptyTitle": "No conversations yet",
+      "emptyBody": "Start a conversation from any task to begin chatting.",
+      "unread": "Unread"
+    },
+    "window": {
+      "applicationNotice": "{name} applied to help with this task.",
+      "accept": "Accept",
+      "decline": "Decline",
+      "loadingOlder": "Loading…",
+      "loadOlder": "Load older messages",
+      "emptyState": "No messages yet. Say hello!",
+      "inputPlaceholder": "Message…",
+      "inputAria": "Message",
+      "sendAria": "Send",
+      "acceptToast": "Application accepted.",
+      "acceptError": "Could not accept the application.",
+      "rejectToast": "Application rejected.",
+      "rejectError": "Could not reject the application."
+    }
   }
 }
