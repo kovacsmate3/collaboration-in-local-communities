@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -27,6 +28,7 @@ export function TaskApplicationsPanel({
   isLoading,
   taskId,
 }: TaskApplicationsPanelProps) {
+  const t = useTranslations("tasks.applications")
   const { mutate: patchApplication, isPending } =
     usePatchTaskApplication(taskId)
 
@@ -36,11 +38,9 @@ export function TaskApplicationsPanel({
       {
         onSuccess: () =>
           toast.success(
-            action === "accept"
-              ? "Application accepted."
-              : "Application rejected."
+            action === "accept" ? t("acceptedToast") : t("rejectedToast")
           ),
-        onError: () => toast.error("Could not update the application."),
+        onError: () => toast.error(t("updateErrorToast")),
       }
     )
   }
@@ -48,13 +48,13 @@ export function TaskApplicationsPanel({
   return (
     <section className="rounded-lg border bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium">Applications</h2>
+        <h2 className="text-sm font-medium">{t("title")}</h2>
         <Badge variant="muted">{isLoading ? "…" : applications.length}</Badge>
       </div>
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading applications…</p>
+        <p className="text-sm text-muted-foreground">{t("loading")}</p>
       ) : applications.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No applications yet.</p>
+        <p className="text-sm text-muted-foreground">{t("empty")}</p>
       ) : (
         <div className="divide-y">
           {applications.map((application) => (
@@ -81,7 +81,7 @@ export function TaskApplicationsPanel({
                 {application.conversationId ? (
                   <Button size="sm" variant="outline" asChild>
                     <Link href={`/messages/${application.conversationId}`}>
-                      View chat
+                      {t("viewChat")}
                     </Link>
                   </Button>
                 ) : null}
@@ -92,7 +92,7 @@ export function TaskApplicationsPanel({
                       disabled={isPending}
                       onClick={() => handleAction(application.id, "accept")}
                     >
-                      Accept
+                      {t("accept")}
                     </Button>
                     <Button
                       size="sm"
@@ -100,7 +100,7 @@ export function TaskApplicationsPanel({
                       disabled={isPending}
                       onClick={() => handleAction(application.id, "reject")}
                     >
-                      Reject
+                      {t("reject")}
                     </Button>
                   </>
                 ) : null}

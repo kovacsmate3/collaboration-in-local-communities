@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -39,6 +40,7 @@ export function ApplicationControls({
   application,
   isLoadingApplication = false,
 }: ApplicationControlsProps) {
+  const t = useTranslations("tasks.application")
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [message, setMessage] = React.useState("")
@@ -58,10 +60,10 @@ export function ApplicationControls({
           if (app.conversationId) {
             router.push(`/messages/${app.conversationId}`)
           } else {
-            toast.success("Application sent.")
+            toast.success(t("sentToast"))
           }
         },
-        onError: () => toast.error("Could not apply to this task."),
+        onError: () => toast.error(t("applyErrorToast")),
       }
     )
   }
@@ -70,25 +72,25 @@ export function ApplicationControls({
     if (!application) return
 
     withdraw(application.id, {
-      onSuccess: () => toast.success("Application withdrawn."),
-      onError: () => toast.error("Could not withdraw the application."),
+      onSuccess: () => toast.success(t("withdrewToast")),
+      onError: () => toast.error(t("withdrawErrorToast")),
     })
   }
 
   if (!application && isLoadingApplication) {
-    return <Button disabled>Apply to help</Button>
+    return <Button disabled>{t("applyToHelp")}</Button>
   }
 
   if (application?.status === "Pending") {
     return (
       <>
         <Button variant="outline" disabled>
-          Application pending
+          {t("applicationPending")}
         </Button>
         {application.conversationId ? (
           <Button variant="outline" asChild>
             <Link href={`/messages/${application.conversationId}`}>
-              View conversation
+              {t("viewConversation")}
             </Link>
           </Button>
         ) : null}
@@ -97,7 +99,7 @@ export function ApplicationControls({
           disabled={isWithdrawing}
           onClick={handleWithdraw}
         >
-          {isWithdrawing ? "Withdrawing…" : "Withdraw"}
+          {isWithdrawing ? t("withdrawing") : t("withdraw")}
         </Button>
       </>
     )
@@ -107,12 +109,12 @@ export function ApplicationControls({
     return (
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline" className="h-9 rounded-md px-3">
-          Application {application.status.toLowerCase()}
+          {t("statusBadge", { status: application.status.toLowerCase() })}
         </Badge>
         {application.conversationId ? (
           <Button variant="outline" size="sm" asChild>
             <Link href={`/messages/${application.conversationId}`}>
-              View conversation
+              {t("viewConversation")}
             </Link>
           </Button>
         ) : null}
@@ -123,23 +125,20 @@ export function ApplicationControls({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Apply to help</Button>
+        <Button>{t("applyToHelp")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <form onSubmit={handleApply}>
           <DialogHeader>
-            <DialogTitle>Apply to help</DialogTitle>
-            <DialogDescription>
-              Send a short note to the seeker with your availability or relevant
-              experience.
-            </DialogDescription>
+            <DialogTitle>{t("dialogTitle")}</DialogTitle>
+            <DialogDescription>{t("dialogDescription")}</DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Textarea
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               maxLength={1000}
-              placeholder="I can help this afternoon and have a small hand cart."
+              placeholder={t("messagePlaceholder")}
               rows={5}
             />
           </div>
@@ -149,10 +148,10 @@ export function ApplicationControls({
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Cancel
+              {t("dialogCancel")}
             </Button>
             <Button type="submit" disabled={isApplying}>
-              {isApplying ? "Sending…" : "Send application"}
+              {isApplying ? t("sending") : t("send")}
             </Button>
           </DialogFooter>
         </form>
