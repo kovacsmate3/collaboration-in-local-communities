@@ -1,10 +1,12 @@
 using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Backend.Infrastructure.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Admin.Categories;
@@ -12,6 +14,7 @@ namespace Backend.Features.Admin.Categories;
 [Authorize(Roles = "Admin")]
 [ApiController]
 [Route("api/admin/categories")]
+[EnableRateLimiting(RateLimitingExtensions.AdminPolicy)]
 public sealed partial class AdminCategoriesController(
     AppDbContext db,
     IOutputCacheStore outputCacheStore)

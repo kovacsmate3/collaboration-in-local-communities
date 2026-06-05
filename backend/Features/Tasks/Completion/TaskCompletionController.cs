@@ -4,8 +4,10 @@ using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Domain.Tasks;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
@@ -14,6 +16,7 @@ namespace Backend.Features.Tasks.Completion;
 [ApiController]
 [Route("api/tasks/{taskId:guid}")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
 public sealed class TaskCompletionController(
     AppDbContext db,
     ITaskCompletionRewardService rewardService) : ControllerBase

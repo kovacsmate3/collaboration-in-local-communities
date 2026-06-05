@@ -15,6 +15,7 @@ namespace Backend.Features.Profiles;
 [ApiController]
 [Route("api/profiles")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksReadPolicy)]
 public sealed partial class ProfilesController(AppDbContext db, IBlobStorageService blobStorage, ILogger<ProfilesController> logger) : ControllerBase
 {
     /// <summary>

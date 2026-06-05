@@ -4,8 +4,10 @@ using Backend.Domain.Enums;
 using Backend.Domain.Tasks;
 using Backend.Features.Conversations;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
@@ -15,12 +17,14 @@ namespace Backend.Features.Tasks.Applications;
 [ApiController]
 [Route("api/tasks/{taskId:guid}/applications")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksReadPolicy)]
 public sealed partial class TaskApplicationsController(
     AppDbContext db,
     CosmosMessageService cosmosMessages,
     IHubContext<ChatHub> chatHub) : ControllerBase
 {
     [HttpPost]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> ApplyAsync(
         Guid taskId,
         ApplyToTaskRequest request,
@@ -242,6 +246,7 @@ public sealed partial class TaskApplicationsController(
     }
 
     [HttpPatch("{appId:guid}")]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> PatchAsync(
         Guid taskId,
         Guid appId,
@@ -481,6 +486,7 @@ public sealed partial class TaskApplicationsController(
     }
 
     [HttpDelete("{appId:guid}")]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> WithdrawAsync(
         Guid taskId,
         Guid appId,
