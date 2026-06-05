@@ -39,9 +39,12 @@ test.describe("Task discovery", () => {
     await page.getByLabel("Task title").fill(taskTitle)
 
     // The description field is a Tiptap rich-text editor (no native input).
-    // Focus the contenteditable region and type — Tiptap handles real key
-    // events, so this drives the underlying form state via its input handler.
-    const editor = page.locator('[contenteditable="true"]').first()
+    // Target the ProseMirror surface that Tiptap always renders — more stable
+    // than `[contenteditable]`, which would silently start matching the wrong
+    // element if another contenteditable joined the page. Focus it and type:
+    // Tiptap handles real key events, so this drives the form state via its
+    // input handler.
+    const editor = page.locator(".ProseMirror[contenteditable='true']")
     await editor.click()
     await editor.pressSequentially(description)
 

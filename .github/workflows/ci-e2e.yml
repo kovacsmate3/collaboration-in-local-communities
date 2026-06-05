@@ -24,9 +24,10 @@ jobs:
       CosmosDb__AccountEndpoint: "https://localhost:8081/"
       CosmosDb__AccountKey: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
 
-      # Auth signing key fallback. appsettings.Development.json provides one too;
+      # The backend reads its JWT signing key from Auth:SigningKey (env-var form
+      # Auth__SigningKey); appsettings.Development.json supplies one too, but
       # this guarantees the >=32-byte minimum even if config is overridden.
-      AUTH_SIGNING_KEY: "ci-e2e-only-auth-signing-key-32-byte-minimum"
+      Auth__SigningKey: "ci-e2e-only-auth-signing-key-32-byte-minimum"
 
       # SendGrid options are validated at startup (ValidateOnStart) and require a
       # non-empty ApiKey, so the backend won't boot without one. The suite never
