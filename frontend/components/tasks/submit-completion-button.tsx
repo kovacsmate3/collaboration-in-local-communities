@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -16,19 +17,20 @@ interface SubmitCompletionButtonProps {
 export function SubmitCompletionButton({
   taskId,
 }: SubmitCompletionButtonProps) {
+  const t = useTranslations("tasks.completion")
   const { mutate: submitCompletion, isPending } =
     useSubmitTaskCompletion(taskId)
 
   function handleSubmit() {
     submitCompletion(undefined, {
-      onSuccess: () => toast.success("Marked as done. Awaiting approval."),
-      onError: () => toast.error("Could not mark this task as done."),
+      onSuccess: () => toast.success(t("markedDoneToast")),
+      onError: () => toast.error(t("markDoneErrorToast")),
     })
   }
 
   return (
     <Button disabled={isPending} onClick={handleSubmit}>
-      {isPending ? "Submitting…" : "Mark as done"}
+      {isPending ? t("markingDone") : t("markAsDone")}
     </Button>
   )
 }

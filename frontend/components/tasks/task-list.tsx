@@ -1,4 +1,7 @@
+"use client"
+
 import { InboxIcon } from "@hugeicons/core-free-icons"
+import { useTranslations } from "next-intl"
 
 import { TaskCard } from "@/components/tasks/task-card"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -20,16 +23,17 @@ interface TaskListProps {
 
 export function TaskList({
   tasks,
-  emptyTitle = "No tasks yet",
+  emptyTitle,
   emptyDescription,
   hideStatus,
   layout = "stack",
 }: TaskListProps) {
+  const t = useTranslations("tasks.list")
   if (tasks.length === 0) {
     return (
       <EmptyState
         icon={InboxIcon}
-        title={emptyTitle}
+        title={emptyTitle ?? t("emptyTitle")}
         description={emptyDescription}
       />
     )

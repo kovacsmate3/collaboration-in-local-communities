@@ -114,5 +114,113 @@
       "unableToCreate": "Nem sikerült létrehozni a fiókot.",
       "backToSignIn": "Vissza a bejelentkezéshez"
     }
+  },
+  "tasks": {
+    "status": {
+      "open": "Nyitott",
+      "inProgress": "Folyamatban",
+      "pendingApproval": "Jóváhagyásra vár",
+      "completed": "Befejezve",
+      "reviewed": "Értékelve",
+      "cancelled": "Visszavonva"
+    },
+    "compensation": {
+      "paidPlusPoints": "{amount} + pont"
+    },
+    "card": {
+      "applicationStatus": "Jelentkezés: {status}"
+    },
+    "list": {
+      "emptyTitle": "Még nincsenek feladatok"
+    },
+    "filters": {
+      "searchAria": "Keresés feladatok, készségek és helyszínek között",
+      "searchPlaceholder": "Keresés feladatok, készségek, helyszínek…",
+      "categoryAria": "Szűrés kategória szerint",
+      "categoryPlaceholder": "Kategória",
+      "allCategories": "Minden kategória",
+      "rewardAria": "Szűrés jutalom szerint",
+      "rewardPlaceholder": "Jutalom",
+      "anyReward": "Bármilyen jutalom",
+      "distanceAria": "Szűrés távolság szerint",
+      "distancePlaceholder": "Távolság",
+      "anyDistance": "Bármilyen távolság",
+      "within": "{km} km-en belül",
+      "recencyAria": "Szűrés időszak szerint",
+      "recencyPlaceholder": "Időszak",
+      "addLocationHint": "Adj meg egy helyszínt a profilodban a távolság szerinti szűréshez."
+    },
+    "detail": {
+      "loading": "Feladat betöltése…",
+      "posted": "{relative} ezelőtt közzétéve",
+      "description": "Leírás",
+      "postedBy": "Közzétette",
+      "editTask": "Feladat szerkesztése",
+      "cancelTask": "Feladat visszavonása",
+      "cancellingTask": "Visszavonás…",
+      "openChat": "Csevegés megnyitása",
+      "openingChat": "Megnyitás…",
+      "cancelledToast": "Feladat visszavonva.",
+      "cancelErrorToast": "Nem sikerült visszavonni a feladatot.",
+      "openChatErrorToast": "Nem sikerült megnyitni a csevegést.",
+      "helperMarkedDone": "{helper} elkészültnek jelölte ezt a feladatot. Hagyd jóvá a befejezéshez.",
+      "defaultHelper": "A segítő",
+      "waitingApproval": "Várakozás a feladó jóváhagyására."
+    },
+    "review": {
+      "openButton": "Értékelés írása",
+      "dialogTitle": "Értékelés írása",
+      "dialogDescription": "Milyen volt {name} segítségével dolgozni?",
+      "ratingAria": "Értékelés",
+      "starsAria": "{count, plural, =1 {# csillag} other {# csillag}}",
+      "commentPlaceholder": "Oszd meg, mi ment jól vagy mit lehetne jobban csinálni…",
+      "cancel": "Mégse",
+      "submit": "Értékelés beküldése",
+      "submitting": "Beküldés…",
+      "selectStarError": "Kérjük, válassz csillagot az értékeléshez.",
+      "submittedToast": "Értékelés beküldve!",
+      "submitErrorToast": "Nem sikerült beküldeni az értékelést. Próbáld újra.",
+      "alreadyReviewedToast": "Már értékelted ezt a feladatot.",
+      "thanks": "Értékelés beküldve – köszönjük!"
+    },
+    "completion": {
+      "markAsDone": "Kész jelölése",
+      "markingDone": "Beküldés…",
+      "markedDoneToast": "Késznek jelölve. Jóváhagyásra vár.",
+      "markDoneErrorToast": "Nem sikerült késznek jelölni a feladatot.",
+      "approveCompletion": "Befejezés jóváhagyása",
+      "approving": "Jóváhagyás…",
+      "approvedToast": "Feladat befejezve.",
+      "approveErrorToast": "Nem sikerült jóváhagyni a befejezést."
+    },
+    "application": {
+      "applyToHelp": "Jelentkezés segítésre",
+      "applicationPending": "Jelentkezés függőben",
+      "viewConversation": "Beszélgetés megtekintése",
+      "withdraw": "Visszavonás",
+      "withdrawing": "Visszavonás…",
+      "statusBadge": "Jelentkezés: {status}",
+      "withdrewToast": "Jelentkezés visszavonva.",
+      "withdrawErrorToast": "Nem sikerült visszavonni a jelentkezést.",
+      "sentToast": "Jelentkezés elküldve.",
+      "applyErrorToast": "Nem sikerült jelentkezni erre a feladatra.",
+      "dialogTitle": "Jelentkezés segítésre",
+      "dialogDescription": "Küldj egy rövid üzenetet a feladónak az elérhetőségedről vagy a tapasztalataidról.",
+      "messagePlaceholder": "Délután ráérek, és van egy kis kocsim is.",
+      "dialogCancel": "Mégse",
+      "send": "Jelentkezés elküldése",
+      "sending": "Küldés…"
+    },
+    "applications": {
+      "title": "Jelentkezések",
+      "loading": "Jelentkezések betöltése…",
+      "empty": "Még nincsenek jelentkezések.",
+      "viewChat": "Csevegés megtekintése",
+      "accept": "Elfogadás",
+      "reject": "Elutasítás",
+      "acceptedToast": "Jelentkezés elfogadva.",
+      "rejectedToast": "Jelentkezés elutasítva.",
+      "updateErrorToast": "Nem sikerült frissíteni a jelentkezést."
+    }
   }
 }

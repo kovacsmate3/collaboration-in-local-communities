@@ -1,6 +1,9 @@
+"use client"
+
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Location01Icon } from "@hugeicons/core-free-icons"
+import { useTranslations } from "next-intl"
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -25,6 +28,7 @@ export function TaskCard({
   applicationStatus,
   className,
 }: TaskCardProps) {
+  const t = useTranslations("tasks.card")
   return (
     <Card className={cn("transition-colors hover:border-ring/40", className)}>
       <Link
@@ -45,7 +49,9 @@ export function TaskCard({
                   applicationStatus === "Rejected" ? "destructive" : "outline"
                 }
               >
-                Application {applicationStatus.toLowerCase()}
+                {t("applicationStatus", {
+                  status: applicationStatus.toLowerCase(),
+                })}
               </Badge>
             ) : null}
             <span className="ml-auto text-xs text-muted-foreground">

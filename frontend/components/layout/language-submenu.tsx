@@ -7,31 +7,30 @@ import { GlobalIcon } from "@hugeicons/core-free-icons"
 import { useLocale, useTranslations } from "next-intl"
 
 import { setLocale } from "@/app/actions/set-locale"
-import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
   DEFAULT_LOCALE,
   LOCALES,
   LOCALE_LABELS,
-  LOCALE_SHORT_LABELS,
   isSupportedLocale,
   type Locale,
 } from "@/i18n/config"
 
 /**
- * Dropdown that switches the UI language. Persists the choice in the
- * NEXT_LOCALE cookie via a server action so the next server render
- * picks up the new locale immediately, then refreshes the route tree
- * so already-rendered content re-fetches its translations.
+ * Language picker nested inside the user dropdown.
  *
- * Visible on every page so anonymous users (auth flow) can switch too.
+ * Lives next to Profile / Settings / Logout — keeps the app header
+ * uncluttered while keeping the choice one click deep for authenticated
+ * users. Anonymous users on the auth pages still get a stand-alone
+ * `LanguageSwitcher` (see the auth layout) because they have no user menu
+ * to nest inside.
  */
-export function LanguageSwitcher() {
+export function LanguageSubmenu() {
   const router = useRouter()
   const t = useTranslations("languageSwitcher")
   const rawLocale = useLocale()
@@ -49,23 +48,15 @@ export function LanguageSwitcher() {
   }
 
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          disabled={isPending}
-          aria-label={t("label")}
-          className="gap-1.5 px-2"
-        >
-          <HugeiconsIcon icon={GlobalIcon} className="size-4" />
-          <span className="text-xs font-medium">
-            {LOCALE_SHORT_LABELS[currentLocale]}
-          </span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger disabled={isPending}>
+        <HugeiconsIcon icon={GlobalIcon} className="size-4" />
+        <span>{t("label")}</span>
+        <span className="ml-auto text-xs text-muted-foreground">
+          {LOCALE_LABELS[currentLocale]}
+        </span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent>
         {LOCALES.map((locale) => {
           const isCurrent = locale === currentLocale
           return (
@@ -86,7 +77,7 @@ export function LanguageSwitcher() {
             </DropdownMenuItem>
           )
         })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
   )
 }

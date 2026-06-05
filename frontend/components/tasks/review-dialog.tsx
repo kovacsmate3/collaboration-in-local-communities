@@ -3,6 +3,7 @@
 import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { StarIcon } from "@hugeicons/core-free-icons"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -35,6 +36,7 @@ export function ReviewDialog({
   revieweeProfileId,
   revieweeName,
 }: ReviewDialogProps) {
+  const t = useTranslations("tasks.review")
   const [open, setOpen] = React.useState(false)
   const [rating, setRating] = React.useState(0)
   const [hovered, setHovered] = React.useState(0)
@@ -49,9 +51,7 @@ export function ReviewDialog({
   if (submitted || alreadyReviewed) {
     return (
       <p className="text-sm text-muted-foreground">
-        {alreadyReviewed
-          ? "You've already reviewed this task."
-          : "Review submitted — thank you!"}
+        {alreadyReviewed ? t("alreadyReviewedToast") : t("thanks")}
       </p>
     )
   }
@@ -59,7 +59,7 @@ export function ReviewDialog({
   function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     if (rating === 0) {
-      toast.error("Please select a star rating.")
+      toast.error(t("selectStarError"))
       return
     }
 
@@ -69,7 +69,7 @@ export function ReviewDialog({
         onSuccess: () => {
           setOpen(false)
           setSubmitted(true)
-          toast.success("Review submitted!")
+          toast.success(t("submittedToast"))
         },
         onError: (err: unknown) => {
           // 409 from the backend means the same reviewer already posted
@@ -78,10 +78,10 @@ export function ReviewDialog({
           if (err instanceof ApiError && err.status === 409) {
             setOpen(false)
             setAlreadyReviewed(true)
-            toast.error("You've already reviewed this task.")
+            toast.error(t("alreadyReviewedToast"))
             return
           }
-          toast.error("Could not submit the review. Please try again.")
+          toast.error(t("submitErrorToast"))
         },
       }
     )
@@ -92,27 +92,31 @@ export function ReviewDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Leave a review</Button>
+        <Button>{t("openButton")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Leave a review</DialogTitle>
+            <DialogTitle>{t("dialogTitle")}</DialogTitle>
             <DialogDescription>
-              How was your experience working with {revieweeName}?
+              {t("dialogDescription", { name: revieweeName })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-4">
             {/* Star rating picker */}
-            <div className="flex gap-1" role="radiogroup" aria-label="Rating">
+            <div
+              className="flex gap-1"
+              role="radiogroup"
+              aria-label={t("ratingAria")}
+            >
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
                   role="radio"
                   aria-checked={rating === star}
-                  aria-label={`${star} star${star !== 1 ? "s" : ""}`}
+                  aria-label={t("starsAria", { count: star })}
                   className="rounded p-0.5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                   onMouseEnter={() => setHovered(star)}
                   onMouseLeave={() => setHovered(0)}
@@ -134,7 +138,7 @@ export function ReviewDialog({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               maxLength={2000}
-              placeholder="Share what went well or what could be improved…"
+              placeholder={t("commentPlaceholder")}
               rows={4}
             />
           </div>
@@ -145,10 +149,10 @@ export function ReviewDialog({
               variant="outline"
               onClick={() => setOpen(false)}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={isPending || rating === 0}>
-              {isPending ? "Submitting…" : "Submit review"}
+              {isPending ? t("submitting") : t("submit")}
             </Button>
           </DialogFooter>
         </form>

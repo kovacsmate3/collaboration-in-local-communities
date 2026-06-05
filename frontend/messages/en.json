@@ -114,5 +114,113 @@
       "unableToCreate": "Unable to create account.",
       "backToSignIn": "Back to sign in"
     }
+  },
+  "tasks": {
+    "status": {
+      "open": "Open",
+      "inProgress": "In progress",
+      "pendingApproval": "Awaiting approval",
+      "completed": "Completed",
+      "reviewed": "Reviewed",
+      "cancelled": "Cancelled"
+    },
+    "compensation": {
+      "paidPlusPoints": "{amount} + points"
+    },
+    "card": {
+      "applicationStatus": "Application {status}"
+    },
+    "list": {
+      "emptyTitle": "No tasks yet"
+    },
+    "filters": {
+      "searchAria": "Search tasks, skills, locations",
+      "searchPlaceholder": "Search tasks, skills, locations…",
+      "categoryAria": "Filter by category",
+      "categoryPlaceholder": "Category",
+      "allCategories": "All categories",
+      "rewardAria": "Filter by reward",
+      "rewardPlaceholder": "Reward",
+      "anyReward": "Any reward",
+      "distanceAria": "Filter by distance",
+      "distancePlaceholder": "Distance",
+      "anyDistance": "Any distance",
+      "within": "Within {km} km",
+      "recencyAria": "Filter by recency",
+      "recencyPlaceholder": "Recency",
+      "addLocationHint": "Add a location to your profile to filter by distance."
+    },
+    "detail": {
+      "loading": "Loading task…",
+      "posted": "Posted {relative}",
+      "description": "Description",
+      "postedBy": "Posted by",
+      "editTask": "Edit task",
+      "cancelTask": "Cancel task",
+      "cancellingTask": "Cancelling…",
+      "openChat": "Open chat",
+      "openingChat": "Opening…",
+      "cancelledToast": "Task cancelled.",
+      "cancelErrorToast": "Could not cancel the task.",
+      "openChatErrorToast": "Could not open chat.",
+      "helperMarkedDone": "{helper} marked this task as done. Approve to complete it.",
+      "defaultHelper": "The helper",
+      "waitingApproval": "Waiting for the seeker to approve completion."
+    },
+    "review": {
+      "openButton": "Leave a review",
+      "dialogTitle": "Leave a review",
+      "dialogDescription": "How was your experience working with {name}?",
+      "ratingAria": "Rating",
+      "starsAria": "{count, plural, =1 {# star} other {# stars}}",
+      "commentPlaceholder": "Share what went well or what could be improved…",
+      "cancel": "Cancel",
+      "submit": "Submit review",
+      "submitting": "Submitting…",
+      "selectStarError": "Please select a star rating.",
+      "submittedToast": "Review submitted!",
+      "submitErrorToast": "Could not submit the review. Please try again.",
+      "alreadyReviewedToast": "You've already reviewed this task.",
+      "thanks": "Review submitted — thank you!"
+    },
+    "completion": {
+      "markAsDone": "Mark as done",
+      "markingDone": "Submitting…",
+      "markedDoneToast": "Marked as done. Awaiting approval.",
+      "markDoneErrorToast": "Could not mark this task as done.",
+      "approveCompletion": "Approve completion",
+      "approving": "Approving…",
+      "approvedToast": "Task completed.",
+      "approveErrorToast": "Could not approve completion."
+    },
+    "application": {
+      "applyToHelp": "Apply to help",
+      "applicationPending": "Application pending",
+      "viewConversation": "View conversation",
+      "withdraw": "Withdraw",
+      "withdrawing": "Withdrawing…",
+      "statusBadge": "Application {status}",
+      "withdrewToast": "Application withdrawn.",
+      "withdrawErrorToast": "Could not withdraw the application.",
+      "sentToast": "Application sent.",
+      "applyErrorToast": "Could not apply to this task.",
+      "dialogTitle": "Apply to help",
+      "dialogDescription": "Send a short note to the seeker with your availability or relevant experience.",
+      "messagePlaceholder": "I can help this afternoon and have a small hand cart.",
+      "dialogCancel": "Cancel",
+      "send": "Send application",
+      "sending": "Sending…"
+    },
+    "applications": {
+      "title": "Applications",
+      "loading": "Loading applications…",
+      "empty": "No applications yet.",
+      "viewChat": "View chat",
+      "accept": "Accept",
+      "reject": "Reject",
+      "acceptedToast": "Application accepted.",
+      "rejectedToast": "Application rejected.",
+      "updateErrorToast": "Could not update the application."
+    }
   }
 }

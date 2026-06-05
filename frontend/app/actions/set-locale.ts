@@ -3,8 +3,8 @@
 import { cookies } from "next/headers"
 
 import {
-  LOCALE_COOKIE_MAX_AGE_SECONDS,
   LOCALE_COOKIE_NAME,
+  LOCALE_COOKIE_OPTIONS,
   isSupportedLocale,
 } from "@/i18n/config"
 
@@ -14,7 +14,9 @@ import {
  * Reasons for a server action instead of a client-set document.cookie:
  *   - the server reads this cookie during the very next render to pick
  *     the right messages, so it must be set before the refresh fires
- *   - keeps the cookie attributes (Path, MaxAge, SameSite) in one place
+ *   - centralizes locale persistence on the server (cookie name + shape
+ *     are shared via i18n/config so request.ts and this action stay in
+ *     sync)
  *
  * Throws on an unsupported locale rather than silently accepting it,
  * so a bad client value surfaces in the network panel during development
@@ -26,9 +28,5 @@ export async function setLocale(locale: string): Promise<void> {
   }
 
   const cookieStore = await cookies()
-  cookieStore.set(LOCALE_COOKIE_NAME, locale, {
-    path: "/",
-    maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS,
-    sameSite: "lax",
-  })
+  cookieStore.set(LOCALE_COOKIE_NAME, locale, LOCALE_COOKIE_OPTIONS)
 }

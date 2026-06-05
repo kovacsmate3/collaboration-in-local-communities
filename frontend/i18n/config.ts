@@ -22,6 +22,17 @@ export const LOCALE_COOKIE_NAME = "NEXT_LOCALE"
 export const LOCALE_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365
 
 /**
+ * Cookie attributes used by the server action that persists the locale
+ * choice. Kept here so request.ts and set-locale.ts share the same
+ * single source of truth — changing them in one place is enough.
+ */
+export const LOCALE_COOKIE_OPTIONS = {
+  path: "/",
+  maxAge: LOCALE_COOKIE_MAX_AGE_SECONDS,
+  sameSite: "lax" as const,
+}
+
+/**
  * Human-readable, native-spelling labels for the switcher. Hungarian
  * users see "Magyar", not "Hungarian", which is the expected affordance
  * for language pickers.

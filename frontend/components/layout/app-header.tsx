@@ -1,7 +1,6 @@
 import Link from "next/link"
 
 import { AdminHeaderLink } from "@/components/layout/admin-header-link"
-import { LanguageSwitcher } from "@/components/layout/language-switcher"
 import { MainNav } from "@/components/layout/main-nav"
 import { UserMenu } from "@/components/layout/user-menu"
 import { APP_NAME } from "@/lib/constants"
@@ -33,7 +32,6 @@ export function AppHeader() {
 
         <div className="col-start-3 row-start-1 flex items-center gap-2 justify-self-end">
           <AdminHeaderLink />
-          <LanguageSwitcher />
           <UserMenu />
         </div>
       </div>

@@ -26,9 +26,14 @@ export function VerifyEmailForm() {
   const [status, setStatus] = React.useState<Status>(
     hasParams ? "loading" : "error"
   )
-  const [errorMessage, setErrorMessage] = React.useState(
-    hasParams ? t("expired") : t("incomplete")
-  )
+  // Only stores a server-provided override; the default error text is
+  // derived from t() at render time so a locale switch (which re-renders
+  // via router.refresh()) doesn't leave a stale string behind.
+  const [overrideErrorMessage, setOverrideErrorMessage] = React.useState<
+    string | null
+  >(null)
+  const errorMessage =
+    overrideErrorMessage ?? (hasParams ? t("expired") : t("incomplete"))
 
   React.useEffect(() => {
     if (!userId || !token) return
@@ -50,16 +55,16 @@ export function VerifyEmailForm() {
 
         try {
           const body: unknown = await response.json()
-          if (typeof body === "string") setErrorMessage(body)
+          if (typeof body === "string") setOverrideErrorMessage(body)
         } catch {
-          // keep default message
+          // keep default (derived from t() at render time)
         }
         setStatus("error")
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return
         console.error("Email confirmation failed", error)
-        setErrorMessage(t("unknownError"))
+        setOverrideErrorMessage(t("unknownError"))
         setStatus("error")
       })
 

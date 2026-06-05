@@ -43,7 +43,7 @@ export function MobileNav() {
                 aria-label={
                   item.href === "/messages" && unreadCount > 0
                     ? t("messagesUnreadAria", { label, count: unreadCount })
-                    : undefined
+                    : label
                 }
                 className={cn(
                   "flex flex-col items-center gap-1 px-2 py-2 text-[0.65rem] font-medium transition-colors",
