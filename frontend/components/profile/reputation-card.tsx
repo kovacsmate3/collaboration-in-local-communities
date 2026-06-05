@@ -11,6 +11,7 @@ import {
   StarIcon,
   TaskDone01Icon,
 } from "@hugeicons/core-free-icons"
+import { useTranslations } from "next-intl"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -25,6 +26,7 @@ import { RatingStars } from "@/components/shared/rating-stars"
 import {
   COMPLETED_TASK_WEIGHT,
   REVIEW_QUALITY_WEIGHT,
+  type ReputationTier,
   nextTierForScore,
   reputationScoreBreakdown,
   tierForScore,
@@ -71,6 +73,7 @@ export function ReputationCard({
   showOwnerCtas = false,
   className,
 }: ReputationCardProps) {
+  const t = useTranslations("profile.reputation")
   const breakdown = reputationScoreBreakdown({
     score,
     averageRating,
@@ -88,18 +91,18 @@ export function ReputationCard({
     <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-sm tracking-wide text-muted-foreground uppercase">
-          Reputation
+          {t("title")}
         </CardTitle>
         <Badge variant={isEmpty ? "muted" : "warning"} className="gap-1">
           <HugeiconsIcon icon={Award01Icon} />
-          {tier.label}
+          {t(`tiers.${tier.id}` as const)}
         </Badge>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Stat
             icon={Award01Icon}
-            label="Score"
+            label={t("score")}
             value={
               <span className="font-heading text-2xl font-semibold tracking-tight tabular-nums">
                 {breakdown.total.toLocaleString()}
@@ -119,7 +122,7 @@ export function ReputationCard({
           />
           <Stat
             icon={StarIcon}
-            label="Average rating"
+            label={t("averageRating")}
             value={
               <RatingStars
                 size="md"
@@ -129,27 +132,24 @@ export function ReputationCard({
             }
             hint={
               breakdown.reviewCount > 0
-                ? `${breakdown.averageRating.toFixed(1)} from ${formatCount(
-                    breakdown.reviewCount,
-                    "review",
-                    "reviews"
-                  )}`
-                : "No reviews yet"
+                ? t("averageRatingHint", {
+                    rating: breakdown.averageRating.toFixed(1),
+                    count: breakdown.reviewCount,
+                  })
+                : t("noReviewsYet")
             }
           />
           <Stat
             icon={TaskDone01Icon}
-            label="Completed tasks"
+            label={t("completedTasks")}
             value={
               <span className="font-heading text-2xl font-semibold tracking-tight tabular-nums">
                 {breakdown.completedTaskCount.toLocaleString()}
               </span>
             }
-            hint={
-              breakdown.completedTaskCount === 1
-                ? "task completed"
-                : "tasks completed"
-            }
+            hint={t("completedTasksHint", {
+              count: breakdown.completedTaskCount,
+            })}
           />
         </div>
 
@@ -158,7 +158,7 @@ export function ReputationCard({
         {nextTier ? (
           <NextTierProgress
             currentScore={breakdown.total}
-            nextTierLabel={nextTier.label}
+            nextTierId={nextTier.id}
             nextTierMin={nextTier.minScore}
           />
         ) : null}
@@ -219,6 +219,7 @@ function ScoreBreakdownTooltip({
   reviewCount,
   total,
 }: ScoreBreakdownTooltipProps) {
+  const t = useTranslations("profile.reputation")
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
@@ -226,14 +227,14 @@ function ScoreBreakdownTooltip({
           <button
             type="button"
             className="inline-flex items-center gap-1 rounded-sm text-xs text-muted-foreground underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            aria-label="How is the reputation score calculated?"
+            aria-label={t("calculatedAria")}
           >
             <HugeiconsIcon
               icon={InformationCircleIcon}
               className="size-3.5"
               strokeWidth={1.5}
             />
-            How is this calculated?
+            {t("calculatedLabel")}
           </button>
         </TooltipTrigger>
         <TooltipContent
@@ -241,10 +242,12 @@ function ScoreBreakdownTooltip({
           align="start"
           className="max-w-xs px-3 py-2 text-left"
         >
-          <p className="font-semibold">Reputation score</p>
+          <p className="font-semibold">{t("tooltipTitle")}</p>
           <p className="mt-1 text-muted-foreground">
-            Each completed task is worth {COMPLETED_TASK_WEIGHT} points; each
-            review multiplies your average rating by {REVIEW_QUALITY_WEIGHT}.
+            {t("tooltipBody", {
+              taskWeight: COMPLETED_TASK_WEIGHT,
+              reviewWeight: REVIEW_QUALITY_WEIGHT,
+            })}
           </p>
           <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 tabular-nums">
             <dt>
@@ -257,7 +260,7 @@ function ScoreBreakdownTooltip({
             </dt>
             <dd className="text-right">{reviewComponent}</dd>
             <dt className="border-t border-border/50 pt-1 font-semibold">
-              Total
+              {t("tooltipTotal")}
             </dt>
             <dd className="border-t border-border/50 pt-1 text-right font-semibold">
               {total}
@@ -271,15 +274,17 @@ function ScoreBreakdownTooltip({
 
 interface NextTierProgressProps {
   currentScore: number
-  nextTierLabel: string
+  nextTierId: ReputationTier
   nextTierMin: number
 }
 
 function NextTierProgress({
   currentScore,
-  nextTierLabel,
+  nextTierId,
   nextTierMin,
 }: NextTierProgressProps) {
+  const t = useTranslations("profile.reputation")
+  const nextTierLabel = t(`tiers.${nextTierId}` as const)
   const ratio =
     nextTierMin > 0 ? Math.min(1, Math.max(0, currentScore / nextTierMin)) : 1
   const pct = Math.round(ratio * 100)
@@ -290,8 +295,11 @@ function NextTierProgress({
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
           {remaining > 0
-            ? `${remaining.toLocaleString()} points to ${nextTierLabel}`
-            : `Ready for ${nextTierLabel}`}
+            ? t("nextTierProgress", {
+                remaining: remaining.toLocaleString(),
+                tier: nextTierLabel,
+              })
+            : t("nextTierReady", { tier: nextTierLabel })}
         </span>
         <span className="tabular-nums">{pct}%</span>
       </div>
@@ -301,7 +309,7 @@ function NextTierProgress({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
-        aria-label={`Progress to ${nextTierLabel} tier`}
+        aria-label={t("nextTierAria", { tier: nextTierLabel })}
       >
         <div
           className="h-full rounded-full bg-reputation transition-[width]"
@@ -313,6 +321,7 @@ function NextTierProgress({
 }
 
 function TrendPanel({ trend }: { trend: readonly ReputationTrendPoint[] }) {
+  const t = useTranslations("profile.reputation")
   const points = normalizeTrend(trend)
 
   if (points.length === 0) {
@@ -328,7 +337,7 @@ function TrendPanel({ trend }: { trend: readonly ReputationTrendPoint[] }) {
       ? `+${delta.toLocaleString()}`
       : delta < 0
         ? `-${Math.abs(delta).toLocaleString()}`
-        : "No change"
+        : t("trendNoChange")
 
   return (
     <div className="grid gap-3 rounded-lg border border-border bg-muted/20 p-3 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-center">
@@ -344,12 +353,17 @@ function TrendPanel({ trend }: { trend: readonly ReputationTrendPoint[] }) {
           />
         </div>
         <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">Trend</p>
+          <p className="text-xs text-muted-foreground">{t("trendLabel")}</p>
           <p className="font-heading text-lg font-semibold tracking-tight tabular-nums">
             {deltaLabel}
           </p>
           <p className="text-xs text-muted-foreground">
-            {formatTrendSpan(first.date, last.date)}
+            {first.date === last.date
+              ? t("trendSinceDate", { date: formatShortDate(first.date) })
+              : t("trendDateRange", {
+                  start: formatShortDate(first.date),
+                  end: formatShortDate(last.date),
+                })}
           </p>
         </div>
       </div>
@@ -359,6 +373,7 @@ function TrendPanel({ trend }: { trend: readonly ReputationTrendPoint[] }) {
 }
 
 function Sparkline({ points }: { points: readonly ReputationTrendPoint[] }) {
+  const t = useTranslations("profile.reputation")
   const width = 176
   const height = 56
   const padding = 4
@@ -395,9 +410,10 @@ function Sparkline({ points }: { points: readonly ReputationTrendPoint[] }) {
   return (
     <svg
       role="img"
-      aria-label={`Reputation trend from ${formatShortDate(
-        points[0].date
-      )} to ${formatShortDate(points[points.length - 1].date)}`}
+      aria-label={t("trendAria", {
+        start: formatShortDate(points[0].date),
+        end: formatShortDate(points[points.length - 1].date),
+      })}
       viewBox={`0 0 ${width} ${height}`}
       className="h-14 w-full text-reputation"
     >
@@ -427,19 +443,18 @@ function Sparkline({ points }: { points: readonly ReputationTrendPoint[] }) {
 }
 
 function EmptyState({ showOwnerCtas }: { showOwnerCtas: boolean }) {
+  const t = useTranslations("profile.reputation")
   return (
     <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-sm">
-      <p className="font-medium">No reputation yet</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Complete tasks and collect reviews to start building reputation.
-      </p>
+      <p className="font-medium">{t("emptyTitle")}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{t("emptyBody")}</p>
       {showOwnerCtas ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button asChild size="sm">
-            <Link href="/feed">Find a task to help with</Link>
+            <Link href="/feed">{t("findTask")}</Link>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <Link href="/post-task">Post your first task</Link>
+            <Link href="/post-task">{t("postFirstTask")}</Link>
           </Button>
         </div>
       ) : null}
@@ -470,14 +485,6 @@ function normalizeTrend(
     .sort((a, b) => a.date.localeCompare(b.date))
 }
 
-function formatTrendSpan(startDate: string, endDate: string) {
-  if (startDate === endDate) {
-    return `Since ${formatShortDate(startDate)}`
-  }
-
-  return `${formatShortDate(startDate)} - ${formatShortDate(endDate)}`
-}
-
 function formatShortDate(date: string) {
   const parsed = new Date(`${date}T00:00:00Z`)
 
@@ -489,9 +496,4 @@ function formatShortDate(date: string) {
     day: "numeric",
     month: "short",
   }).format(parsed)
-}
-
-function formatCount(value: number, singular: string, plural: string) {
-  const label = value === 1 ? singular : plural
-  return `${value.toLocaleString()} ${label}`
 }

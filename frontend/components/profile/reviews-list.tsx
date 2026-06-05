@@ -1,3 +1,7 @@
+"use client"
+
+import { useTranslations } from "next-intl"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { RatingStars } from "@/components/shared/rating-stars"
@@ -29,13 +33,10 @@ export function ReviewsList({
   onPageChange,
   isFetching,
 }: ReviewsListProps) {
+  const t = useTranslations("profile.reviews")
+
   if (reviews.length === 0) {
-    return (
-      <EmptyState
-        title="No reviews yet"
-        description="Reviews will appear here once tasks are completed."
-      />
-    )
+    return <EmptyState title={t("emptyTitle")} description={t("emptyBody")} />
   }
 
   const showPager =
@@ -87,10 +88,10 @@ export function ReviewsList({
             disabled={page <= 1 || isFetching}
             onClick={() => onPageChange(page - 1)}
           >
-            Previous
+            {t("previous")}
           </Button>
           <span className="text-xs text-muted-foreground">
-            Page {page} of {totalPages}
+            {t("pageOf", { page, total: totalPages })}
           </span>
           <Button
             type="button"
@@ -99,7 +100,7 @@ export function ReviewsList({
             disabled={page >= totalPages || isFetching}
             onClick={() => onPageChange(page + 1)}
           >
-            Next
+            {t("next")}
           </Button>
         </div>
       ) : null}

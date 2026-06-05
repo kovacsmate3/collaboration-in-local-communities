@@ -115,6 +115,79 @@
       "backToSignIn": "Back to sign in"
     }
   },
+  "profile": {
+    "header": {
+      "verified": "Verified"
+    },
+    "page": {
+      "loadErrorTitle": "Profile unavailable",
+      "loadErrorBody": "The profile could not be loaded. It may have been removed or you may not have access to it.",
+      "editProfile": "Edit profile",
+      "message": "Message",
+      "reviewsTab": "Reviews ({count})",
+      "historyTab": "History ({count})",
+      "reviewsUnavailable": "Reviews unavailable",
+      "taskHistoryUnavailable": "Task history unavailable",
+      "tabErrorBody": "This profile section could not be loaded. Please try again shortly."
+    },
+    "editPage": {
+      "title": "Edit profile",
+      "description": "Update your details, skills, and what you'd like to share publicly."
+    },
+    "reviews": {
+      "emptyTitle": "No reviews yet",
+      "emptyBody": "Reviews will appear here once tasks are completed.",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {total}"
+    },
+    "taskHistory": {
+      "title": "Task history",
+      "emptyTitle": "No task history yet",
+      "emptyBody": "Completed and ongoing tasks will appear here."
+    },
+    "emailBanner": {
+      "title": "Your email is not verified",
+      "bodyUnverified": "Verify {email} to unlock posting tasks and other features.",
+      "bodySent": "A new verification link was sent to {email}. Check your inbox.",
+      "resend": "Resend verification email",
+      "sending": "Sending…",
+      "sentToast": "Verification email sent — check your inbox.",
+      "sendError": "Could not send the email. Please try again."
+    },
+    "reputation": {
+      "title": "Reputation",
+      "tiers": {
+        "newcomer": "Newcomer",
+        "bronze": "Bronze",
+        "silver": "Silver",
+        "gold": "Gold"
+      },
+      "score": "Score",
+      "averageRating": "Average rating",
+      "completedTasks": "Completed tasks",
+      "completedTasksHint": "{count, plural, =1 {task completed} other {tasks completed}}",
+      "averageRatingHint": "{rating} from {count, plural, =1 {# review} other {# reviews}}",
+      "noReviewsYet": "No reviews yet",
+      "calculatedLabel": "How is this calculated?",
+      "calculatedAria": "How is the reputation score calculated?",
+      "tooltipTitle": "Reputation score",
+      "tooltipBody": "Each completed task is worth {taskWeight} points; each review multiplies your average rating by {reviewWeight}.",
+      "tooltipTotal": "Total",
+      "trendLabel": "Trend",
+      "trendNoChange": "No change",
+      "trendSinceDate": "Since {date}",
+      "trendDateRange": "{start} – {end}",
+      "trendAria": "Reputation trend from {start} to {end}",
+      "nextTierProgress": "{remaining} points to {tier}",
+      "nextTierReady": "Ready for {tier}",
+      "nextTierAria": "Progress to {tier} tier",
+      "emptyTitle": "No reputation yet",
+      "emptyBody": "Complete tasks and collect reviews to start building reputation.",
+      "findTask": "Find a task to help with",
+      "postFirstTask": "Post your first task"
+    }
+  },
   "tasks": {
     "status": {
       "open": "Open",
@@ -221,6 +294,50 @@
       "acceptedToast": "Application accepted.",
       "rejectedToast": "Application rejected.",
       "updateErrorToast": "Could not update the application."
+    },
+    "feed": {
+      "title": "Local tasks",
+      "description": "Open requests in your community. Need a hand? Post a task in seconds.",
+      "postTask": "Post a task",
+      "loadingTasks": "Loading tasks…",
+      "loadError": "Could not load tasks. Please try again.",
+      "emptyFilteredTitle": "No tasks match your filters",
+      "emptyFilteredBody": "Try widening the category, reward, distance, or recency range.",
+      "emptyTitle": "No open requests right now",
+      "emptyBody": "Be the first to post one — your neighbours might be ready to help.",
+      "loadingMore": "Loading more tasks…",
+      "loadMore": "Load more",
+      "caughtUp": "You are all caught up."
+    },
+    "myTasks": {
+      "title": "My tasks",
+      "description": "Track everything you've posted or accepted, from open to completed.",
+      "postTask": "Post a task",
+      "tabPosted": "Posted",
+      "tabAccepted": "Accepted",
+      "tabApplied": "Applied",
+      "loadError": "Could not load tasks. Please try again.",
+      "loading": "Loading…",
+      "emptyPostedTitle": "You haven't posted anything yet",
+      "emptyPostedBody": "Post your first request and get help from the community.",
+      "emptyAcceptedTitle": "No accepted tasks",
+      "emptyAcceptedBody": "Browse the feed and accept a task to see it here.",
+      "emptyAppliedTitle": "No applications yet",
+      "emptyAppliedBody": "Apply to open tasks from the feed to track them here."
+    },
+    "notFound": {
+      "heading": "This task is no longer available",
+      "body": "It may have been removed or the link may be incorrect.",
+      "back": "Back to my tasks"
+    },
+    "postPage": {
+      "title": "Post a task",
+      "description": "Describe what you need help with. Clear titles and locations get answered fastest."
+    },
+    "editPage": {
+      "loading": "Loading…",
+      "title": "Edit task",
+      "description": "Update the details of your task."
     },
     "post": {
       "emailGateTitle": "Email verification required",

@@ -1,4 +1,7 @@
+"use client"
+
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
@@ -20,20 +23,17 @@ interface TaskHistoryProps {
  * cards are not navigable.
  */
 export function TaskHistory({ tasks }: TaskHistoryProps) {
+  const t = useTranslations("profile.taskHistory")
+
   if (tasks.length === 0) {
-    return (
-      <EmptyState
-        title="No task history yet"
-        description="Completed and ongoing tasks will appear here."
-      />
-    )
+    return <EmptyState title={t("emptyTitle")} description={t("emptyBody")} />
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-sm tracking-wide text-muted-foreground uppercase">
-          Task history
+          {t("title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">

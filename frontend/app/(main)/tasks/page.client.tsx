@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { InboxIcon } from "@hugeicons/core-free-icons"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,6 +14,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useMyTaskApplications, useTaskList } from "@/lib/api/tasks"
 
 export function TasksPageClient() {
+  const t = useTranslations("tasks.myTasks")
   const { user } = useAuth()
   const { data: tasks = [], isLoading, isError } = useTaskList()
   const {
@@ -26,14 +28,17 @@ export function TasksPageClient() {
     (t) => t.acceptedHelperProfileId === user?.profileId
   )
 
+  const countOrEllipsis = (loading: boolean, count: number) =>
+    loading ? "…" : String(count)
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="My tasks"
-        description="Track everything you've posted or accepted, from open to completed."
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button asChild>
-            <Link href="/post-task">Post a task</Link>
+            <Link href="/post-task">{t("postTask")}</Link>
           </Button>
         }
       />
@@ -41,52 +46,57 @@ export function TasksPageClient() {
       <Tabs defaultValue="posted">
         <TabsList>
           <TabsTrigger value="posted">
-            Posted ({isLoading ? "…" : posted.length})
+            {t("tabPosted")} ({countOrEllipsis(isLoading, posted.length)})
           </TabsTrigger>
           <TabsTrigger value="accepted">
-            Accepted ({isLoading ? "…" : accepted.length})
+            {t("tabAccepted")} ({countOrEllipsis(isLoading, accepted.length)})
           </TabsTrigger>
           <TabsTrigger value="applied">
-            Applied ({isLoadingApplications ? "…" : applications.length})
+            {t("tabApplied")} (
+            {countOrEllipsis(isLoadingApplications, applications.length)})
           </TabsTrigger>
         </TabsList>
 
         {isError || isApplicationsError ? (
-          <p className="mt-4 text-sm text-destructive">
-            Could not load tasks. Please try again.
-          </p>
+          <p className="mt-4 text-sm text-destructive">{t("loadError")}</p>
         ) : (
           <>
             <TabsContent value="posted">
               {isLoading ? (
-                <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+                <p className="mt-4 text-sm text-muted-foreground">
+                  {t("loading")}
+                </p>
               ) : (
                 <TaskList
                   tasks={posted}
-                  emptyTitle="You haven't posted anything yet"
-                  emptyDescription="Post your first request and get help from the community."
+                  emptyTitle={t("emptyPostedTitle")}
+                  emptyDescription={t("emptyPostedBody")}
                 />
               )}
             </TabsContent>
             <TabsContent value="accepted">
               {isLoading ? (
-                <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+                <p className="mt-4 text-sm text-muted-foreground">
+                  {t("loading")}
+                </p>
               ) : (
                 <TaskList
                   tasks={accepted}
-                  emptyTitle="No accepted tasks"
-                  emptyDescription="Browse the feed and accept a task to see it here."
+                  emptyTitle={t("emptyAcceptedTitle")}
+                  emptyDescription={t("emptyAcceptedBody")}
                 />
               )}
             </TabsContent>
             <TabsContent value="applied">
               {isLoadingApplications ? (
-                <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+                <p className="mt-4 text-sm text-muted-foreground">
+                  {t("loading")}
+                </p>
               ) : applications.length === 0 ? (
                 <EmptyState
                   icon={InboxIcon}
-                  title="No applications yet"
-                  description="Apply to open tasks from the feed to track them here."
+                  title={t("emptyAppliedTitle")}
+                  description={t("emptyAppliedBody")}
                 />
               ) : (
                 <ul className="flex flex-col gap-3">

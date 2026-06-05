@@ -115,6 +115,79 @@
       "backToSignIn": "Vissza a bejelentkezéshez"
     }
   },
+  "profile": {
+    "header": {
+      "verified": "Megerősített"
+    },
+    "page": {
+      "loadErrorTitle": "Profil nem elérhető",
+      "loadErrorBody": "A profil nem tölthető be. Lehet, hogy törölték, vagy nincs hozzáférésed.",
+      "editProfile": "Profil szerkesztése",
+      "message": "Üzenet",
+      "reviewsTab": "Értékelések ({count})",
+      "historyTab": "Előzmények ({count})",
+      "reviewsUnavailable": "Az értékelések nem elérhetők",
+      "taskHistoryUnavailable": "A feladatok előzményei nem elérhetők",
+      "tabErrorBody": "Ez a profilszakasz nem tölthető be. Próbáld újra rövidesen."
+    },
+    "editPage": {
+      "title": "Profil szerkesztése",
+      "description": "Frissítsd az adataidat, készségeidet, és azt, amit nyilvánosan szeretnél megosztani."
+    },
+    "reviews": {
+      "emptyTitle": "Még nincsenek értékelések",
+      "emptyBody": "Az értékelések itt jelennek meg, amint feladatok befejeződnek.",
+      "previous": "Előző",
+      "next": "Következő",
+      "pageOf": "{page}. oldal / {total}"
+    },
+    "taskHistory": {
+      "title": "Feladatok előzményei",
+      "emptyTitle": "Még nincsenek korábbi feladatok",
+      "emptyBody": "A befejezett és folyamatban lévő feladatok itt jelennek meg."
+    },
+    "emailBanner": {
+      "title": "Az e-mail-címed nincs megerősítve",
+      "bodyUnverified": "Erősítsd meg a(z) {email} címet, hogy feladatokat tudj közzétenni és más funkciókat elérj.",
+      "bodySent": "Új megerősítő linket küldtünk a(z) {email} címre. Ellenőrizd a postafiókod.",
+      "resend": "Megerősítő e-mail újraküldése",
+      "sending": "Küldés…",
+      "sentToast": "Megerősítő e-mail elküldve – ellenőrizd a postafiókod.",
+      "sendError": "Nem sikerült elküldeni az e-mailt. Próbáld meg újra."
+    },
+    "reputation": {
+      "title": "Hírnév",
+      "tiers": {
+        "newcomer": "Újonc",
+        "bronze": "Bronz",
+        "silver": "Ezüst",
+        "gold": "Arany"
+      },
+      "score": "Pontszám",
+      "averageRating": "Átlagos értékelés",
+      "completedTasks": "Teljesített feladatok",
+      "completedTasksHint": "{count, plural, =1 {teljesített feladat} other {teljesített feladat}}",
+      "averageRatingHint": "{rating} — {count, plural, =1 {# értékelés alapján} other {# értékelés alapján}}",
+      "noReviewsYet": "Még nincs értékelés",
+      "calculatedLabel": "Hogyan számoljuk?",
+      "calculatedAria": "Hogyan számoljuk a hírnév pontszámot?",
+      "tooltipTitle": "Hírnév pontszám",
+      "tooltipBody": "Minden teljesített feladat {taskWeight} pontot ér; minden értékelés az átlagos pontszámot {reviewWeight}-vel szorozza.",
+      "tooltipTotal": "Összesen",
+      "trendLabel": "Trend",
+      "trendNoChange": "Nincs változás",
+      "trendSinceDate": "{date} óta",
+      "trendDateRange": "{start} – {end}",
+      "trendAria": "Hírnév trend: {start} – {end}",
+      "nextTierProgress": "{remaining} pont a(z) {tier} szintig",
+      "nextTierReady": "Készen áll a(z) {tier} szintre",
+      "nextTierAria": "Haladás a(z) {tier} szintig",
+      "emptyTitle": "Még nincs hírnév",
+      "emptyBody": "Teljesíts feladatokat és gyűjts értékeléseket a hírnév építéséhez.",
+      "findTask": "Találj feladatot, amiben segíthetsz",
+      "postFirstTask": "Tedd közzé az első feladatod"
+    }
+  },
   "tasks": {
     "status": {
       "open": "Nyitott",
@@ -221,6 +294,50 @@
       "acceptedToast": "Jelentkezés elfogadva.",
       "rejectedToast": "Jelentkezés elutasítva.",
       "updateErrorToast": "Nem sikerült frissíteni a jelentkezést."
+    },
+    "feed": {
+      "title": "Helyi feladatok",
+      "description": "Nyitott kérések a közösségedben. Segítségre van szükséged? Tegyél közzé egy feladatot pár másodperc alatt.",
+      "postTask": "Feladat közzététele",
+      "loadingTasks": "Feladatok betöltése…",
+      "loadError": "Nem sikerült betölteni a feladatokat. Próbáld újra.",
+      "emptyFilteredTitle": "Nincs a szűrőidnek megfelelő feladat",
+      "emptyFilteredBody": "Próbáld kibővíteni a kategória, jutalom, távolság vagy időszak szűrőt.",
+      "emptyTitle": "Nincsenek nyitott kérések jelenleg",
+      "emptyBody": "Tedd közzé az elsőt – a szomszédjaid talán szívesen segítenek.",
+      "loadingMore": "További feladatok betöltése…",
+      "loadMore": "Továbbiak betöltése",
+      "caughtUp": "Mindennel naprakész vagy."
+    },
+    "myTasks": {
+      "title": "Feladataim",
+      "description": "Kövesd nyomon az általad közzétett vagy elvállalt feladatokat – nyitottól befejezettig.",
+      "postTask": "Feladat közzététele",
+      "tabPosted": "Közzétett",
+      "tabAccepted": "Elvállalt",
+      "tabApplied": "Jelentkezett",
+      "loadError": "Nem sikerült betölteni a feladatokat. Próbáld újra.",
+      "loading": "Betöltés…",
+      "emptyPostedTitle": "Még nem tettél közzé feladatot",
+      "emptyPostedBody": "Tedd közzé az első kérésed, és kérj segítséget a közösségtől.",
+      "emptyAcceptedTitle": "Nincs elvállalt feladat",
+      "emptyAcceptedBody": "Böngészd a hírfolyamot, és vállalj el egy feladatot, hogy itt megjelenjen.",
+      "emptyAppliedTitle": "Még nem jelentkeztél feladatra",
+      "emptyAppliedBody": "Jelentkezz nyitott feladatokra a hírfolyamból, és itt követheted őket."
+    },
+    "notFound": {
+      "heading": "Ez a feladat már nem elérhető",
+      "body": "Lehet, hogy törölték, vagy a link hibás.",
+      "back": "Vissza a feladataimhoz"
+    },
+    "postPage": {
+      "title": "Feladat közzététele",
+      "description": "Írd le, miben kérsz segítséget. A világos cím és helyszín gyorsabb választ hoz."
+    },
+    "editPage": {
+      "loading": "Betöltés…",
+      "title": "Feladat szerkesztése",
+      "description": "Frissítsd a feladatod adatait."
     },
     "post": {
       "emailGateTitle": "E-mail-cím megerősítése szükséges",
