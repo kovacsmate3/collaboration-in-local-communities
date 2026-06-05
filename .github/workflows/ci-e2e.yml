@@ -40,13 +40,6 @@ jobs:
       # Suite knobs.
       BASE_URL: "http://localhost:3000"
 
-      # Hermetic Playwright install: place browser binaries directly into
-      # e2e/node_modules/playwright-core/.local-browsers instead of the shared
-      # ~/.cache/ms-playwright. The GHA runner's auto-restored caches under
-      # ~/.cache have been leaving the post-download extraction stuck, hanging
-      # the install step until the job times out.
-      PLAYWRIGHT_BROWSERS_PATH: "0"
-
     steps:
       - uses: actions/checkout@v6
 
@@ -88,17 +81,6 @@ jobs:
       - name: Install e2e dependencies
         working-directory: e2e
         run: npm ci
-
-      - name: Install Playwright browsers
-        working-directory: e2e
-        # `--no-shell` skips the Chromium Headless Shell that Playwright 1.49+
-        # downloads by default. Our suite drives the full Chromium project
-        # (Desktop Chrome) so the shell isn't needed, and the silent second
-        # download has been hanging the job to the 30-min timeout despite the
-        # main Chromium binary downloading cleanly.
-        # No manual cache step — Playwright's docs advise against it (cache
-        # restore time ≈ download time; OS deps can't be cached).
-        run: npx playwright install --with-deps --no-shell chromium
 
       # ----- Wait for backing services to be ready ---------------------------
       - name: Wait for Postgres
@@ -148,9 +130,24 @@ jobs:
           '
 
       # ----- Run the suite ---------------------------------------------------
+      # Run inside Microsoft's official Playwright image rather than installing
+      # the browsers on the host: the host install (with or without cache,
+      # --with-deps, --no-shell, PLAYWRIGHT_BROWSERS_PATH=0) has been hanging
+      # silently for the full 30-min job timeout after the Chromium binary
+      # downloads. The image ships Node, browsers, and OS deps pre-installed,
+      # so we only `npm ci` the e2e package inside it and run the suite.
+      # `--network host` keeps the host-side backend (5073) and frontend (3000)
+      # reachable at localhost.
       - name: Run Playwright tests
         working-directory: e2e
-        run: npm test
+        run: |
+          docker run --rm \
+            --network host \
+            -e BASE_URL=${{ env.BASE_URL }} \
+            -v "$PWD:/work" \
+            -w /work \
+            mcr.microsoft.com/playwright:v1.59.1-jammy \
+            sh -c "rm -rf node_modules && npm ci --no-audit --no-fund && npx playwright test"
 
       # ----- Always-on diagnostics on failure --------------------------------
       - name: Upload Playwright report
