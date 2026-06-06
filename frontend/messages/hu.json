@@ -480,7 +480,7 @@
       "locationLabel": "Helyszín",
       "locationPlaceholder": "Kerület, városrész vagy utca",
       "rewardLegend": "Felajánlott jutalom",
-      "amountLabel": "Összeg (HUF)",
+      "amountLabel": "Összeg (Forint)",
       "amountPlaceholder": "pl. 5000",
       "cancel": "Mégse",
       "submitPost": "Feladat közzététele",
