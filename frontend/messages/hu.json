@@ -152,8 +152,8 @@
       "headerSubtitle": "Adj meg egy új jelszót a fiókodhoz.",
       "newPasswordLabel": "Új jelszó",
       "confirmPasswordLabel": "Új jelszó megerősítése",
-      "submit": "Jelszó frissítése",
-      "submitting": "Frissítés…",
+      "submit": "Jelszó lecserélése",
+      "submitting": "Lecserélés…",
       "backToSignIn": "Vissza a bejelentkezéshez",
       "invalidLinkTitle": "Érvénytelen visszaállító link",
       "invalidLinkSubtitle": "Ez a link hiányos vagy lejárt.",
@@ -529,7 +529,7 @@
       "errorAmount": "Adj meg érvényes összeget.",
       "updatedToast": "Feladat szerkesztve!",
       "postedToast": "Feladat közzétéve!",
-      "updateErrorDefault": "Nem szerkeszteni frissíteni a feladatot.",
+      "updateErrorDefault": "Nem sikerült szerkeszteni a feladatot.",
       "postErrorDefault": "Nem sikerült közzétenni a feladatot."
     }
   },
