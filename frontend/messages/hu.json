@@ -416,7 +416,7 @@
       "reject": "Elutasítás",
       "acceptedToast": "Jelentkezés elfogadva.",
       "rejectedToast": "Jelentkezés elutasítva.",
-      "updateErrorToast": "Nem sikerült frissíteni a jelentkezést."
+      "updateErrorToast": "Nem sikerült szerkeszteni a jelentkezést."
     },
     "feed": {
       "title": "Helyi feladatok",
