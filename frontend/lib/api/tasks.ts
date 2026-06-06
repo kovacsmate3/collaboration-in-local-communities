@@ -92,6 +92,12 @@ export interface TaskListFilters {
   radiusMeters?: number
   /** "relevant" orders by proximity to the caller's profile location; omit for newest-first. */
   sort?: "relevant" | "recency"
+  /**
+   * Free-text query; case-insensitive `ILIKE` match against task title and
+   * description on the backend. LIKE wildcards in the input are escaped server-side
+   * so `%` and `_` are treated as literal characters.
+   */
+  q?: string
 }
 
 // ── Query keys ────────────────────────────────────────────────────────────────
@@ -283,6 +289,9 @@ function buildTaskListPath(
     params.set("compensationType", filters.compensationType)
   }
   if (filters.createdAfter) params.set("createdAfter", filters.createdAfter)
+  if (filters.q && filters.q.trim().length > 0) {
+    params.set("q", filters.q.trim())
+  }
   // Proximity is a triplet on the backend (latitude + longitude + radiusMeters).
   // Sending a partial triplet returns a 400, so only forward when all three are
   // present and finite.

@@ -17,20 +17,22 @@ import {
 import { useCategories } from "@/lib/api/categories"
 import { useOwnProfile } from "@/lib/api/profile"
 import { useInfiniteTaskList } from "@/lib/api/tasks"
-import type { ApiTask, TaskListFilters } from "@/lib/api/tasks"
+import type { TaskListFilters } from "@/lib/api/tasks"
 import { RECENCY_OPTIONS } from "@/lib/constants"
 
 type RecencyValue = (typeof RECENCY_OPTIONS)[number]["value"]
+
+const QUERY_DEBOUNCE_MS = 250
 
 /**
  * Canonical task-discovery feed. Replaces the former Seeker (#37) and
  * Helper (#39) feeds: one route, one set of filters, role-neutral copy.
  *
- * Server-side filtering (category, compensation, recency, radius) is
- * forwarded to `GET /api/tasks` so that pagination operates on the
- * already-filtered result set. The free-text query is the only filter
- * still applied client-side on top of the fetched pages. Filter state
- * is mirrored in the URL so refreshes and shares preserve the view.
+ * Server-side filtering (free-text query, category, compensation, recency,
+ * radius) is forwarded to `GET /api/tasks` so that pagination operates on
+ * the already-filtered result set. The query input is debounced so a fast
+ * typist doesn't fire one request per keystroke. Filter state is mirrored
+ * in the URL so refreshes and shares preserve the view.
  */
 export function FeedPageClient() {
   const router = useRouter()
@@ -65,6 +67,17 @@ export function FeedPageClient() {
   // triplet to the backend.
   const effectiveRadius: RadiusOptionValue = hasOrigin ? filters.radius : "any"
 
+  // Debounce the free-text query before it reaches the server. Without this,
+  // every keystroke would invalidate the query cache and trigger a new
+  // /api/tasks request; with it, we wait until the user pauses typing.
+  const [debouncedQuery, setDebouncedQuery] = React.useState(filters.query)
+  React.useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedQuery(filters.query)
+    }, QUERY_DEBOUNCE_MS)
+    return () => clearTimeout(handle)
+  }, [filters.query])
+
   const handleFiltersChange = React.useCallback(
     (next: TaskFiltersState) => {
       const params = serializeFilters(next)
@@ -85,6 +98,10 @@ export function FeedPageClient() {
 
   const serverFilters = React.useMemo<TaskListFilters>(() => {
     const base: TaskListFilters = { status: "Open", sort: "relevant" }
+    const trimmedQuery = debouncedQuery.trim()
+    if (trimmedQuery.length > 0) {
+      base.q = trimmedQuery
+    }
     if (filters.category !== "all") {
       base.categoryId = filters.category
     }
@@ -102,6 +119,7 @@ export function FeedPageClient() {
     }
     return base
   }, [
+    debouncedQuery,
     filters.category,
     filters.compensation,
     filters.recency,
@@ -118,16 +136,7 @@ export function FeedPageClient() {
     isError,
   } = useInfiniteTaskList(serverFilters)
 
-  const rawTasks = React.useMemo(() => data?.pages.flat() ?? [], [data])
-
-  // ── Client-side filters layered on top of the server response ──────────────
-  // Only the free-text query is filtered client-side; all other dimensions are
-  // forwarded to the backend so that infinite-scroll pages are real pages of
-  // already-filtered results.
-  const tasks = React.useMemo(
-    () => applyClientFilters(rawTasks, filters),
-    [rawTasks, filters]
-  )
+  const tasks = React.useMemo(() => data?.pages.flat() ?? [], [data])
 
   // ── Infinite scroll sentinel ───────────────────────────────────────────────
   const sentinelRef = React.useRef<HTMLDivElement | null>(null)
@@ -192,9 +201,8 @@ export function FeedPageClient() {
           />
           {/*
            * Show pagination controls whenever the backend reports more pages,
-           * even if the current visible list is empty after applying the
-           * client-side search. A filtered first page can legitimately be
-           * empty while later pages still contain matching results.
+           * even if the current visible page is empty: the user may have a
+           * pending debounced query that briefly clears the visible set.
            */}
           {tasks.length > 0 || hasNextPage ? (
             <div ref={sentinelRef} className="flex justify-center py-2">
@@ -324,20 +332,4 @@ function recencyToIsoCutoff(recency: RecencyValue): string | null {
   const ms = RECENCY_CUTOFF_MS[recency]
   if (ms === null) return null
   return new Date(Date.now() - ms).toISOString()
-}
-
-// ── Client-side post-fetch filtering ─────────────────────────────────────────
-
-function applyClientFilters(
-  tasks: ApiTask[],
-  filters: TaskFiltersState
-): ApiTask[] {
-  const q = filters.query.trim().toLowerCase()
-  if (!q) return tasks
-
-  return tasks.filter((t) => {
-    const haystack =
-      `${t.title} ${t.description} ${t.locationText ?? ""}`.toLowerCase()
-    return haystack.includes(q)
-  })
 }
