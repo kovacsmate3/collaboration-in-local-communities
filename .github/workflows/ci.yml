@@ -172,12 +172,6 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-          cache: "npm"
-          cache-dependency-path: e2e/package-lock.json
-
       - name: Download backend artifact
         uses: actions/download-artifact@v8
         with:
@@ -193,16 +187,6 @@ jobs:
       # Start Cosmos emulator early — it takes 3-5 minutes on amd64.
       - name: Start backing services
         run: docker compose -f docker-compose.db.yml up -d
-
-      - name: Install e2e dependencies
-        working-directory: e2e
-        run: npm ci
-
-      # Playwright docs explicitly recommend against caching browser binaries
-      # ("restoration time equals download time"). Fresh install every run.
-      - name: Install Playwright browsers
-        working-directory: e2e
-        run: npx playwright install --with-deps chromium
 
       - name: Wait for Postgres
         run: |
@@ -248,9 +232,25 @@ jobs:
             done
           '
 
+      # The whole job can't run inside the Playwright container because we need
+      # dotnet for the backend. Instead we run only the test step inside it via
+      # docker run. --network host lets the container reach the backend (5073)
+      # and frontend (3000) that are already running on the host. The e2e dir is
+      # mounted and npm ci runs inside the container so node_modules match the
+      # container OS. The image tag is derived from the lock file so it stays in
+      # sync when dependabot bumps @playwright/test.
       - name: Run Playwright tests
-        working-directory: e2e
-        run: npx playwright test
+        run: |
+          PLAYWRIGHT_VERSION=$(jq -r '.packages["node_modules/@playwright/test"].version' e2e/package-lock.json)
+          docker run --rm \
+            --network host \
+            --user 1001 \
+            -e BASE_URL \
+            -e CI \
+            -v "${{ github.workspace }}/e2e:/work" \
+            -w /work \
+            "mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-noble" \
+            sh -c "npm ci --no-audit --no-fund && npx playwright test"
 
       # Upload on success and failure, but not on manual cancel.
       - name: Upload Playwright report
