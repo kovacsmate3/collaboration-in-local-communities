@@ -1,6 +1,7 @@
 using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
+using Backend.Domain.Tasks;
 using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Validation;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +19,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 {
     private const int DefaultPageSize = 20;
     private const int MaxPageSize = 100;
+    private const string SortRelevant = "relevant";
 
     [HttpGet]
     public async Task<IActionResult> ListAsync(
@@ -28,6 +30,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         [FromQuery] double? radiusMeters,
         [FromQuery] string? compensationType = null,
         [FromQuery] DateTimeOffset? createdAfter = null,
+        [FromQuery] string? sort = null,
         [FromQuery] int? page = null,
         [FromQuery] int? pageSize = null,
         CancellationToken cancellationToken = default)
@@ -117,13 +120,45 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             query = query.Where(task => task.CreatedAt >= cutoff);
         }
 
-        IQueryable<CommunityTask> orderedQuery;
+        // Apply hard radius filter regardless of sort order.
         if (proximityOrigin is not null)
         {
             var radius = radiusMeters.GetValueOrDefault();
+            query = query.Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius));
+        }
 
+        IQueryable<CommunityTask> orderedQuery;
+        var effectiveSort = sort?.ToLowerInvariant();
+        if (effectiveSort == SortRelevant)
+        {
+            var userId = GetCurrentUserId();
+            var userLocation = userId.HasValue
+                ? (await db.Profiles
+                    .AsNoTracking()
+                    .Select(p => new { p.UserId, p.Location })
+                    .FirstOrDefaultAsync(p => p.UserId == userId.Value, cancellationToken))?.Location
+                : null;
+
+            if (proximityOrigin is not null)
+            {
+                orderedQuery = query
+                    .OrderBy(task => task.Location!.Distance(proximityOrigin))
+                    .ThenByDescending(task => task.CreatedAt);
+            }
+            else if (userLocation is not null)
+            {
+                orderedQuery = query
+                    .OrderBy(task => task.Location != null ? (double?)task.Location.Distance(userLocation) : null)
+                    .ThenByDescending(task => task.CreatedAt);
+            }
+            else
+            {
+                orderedQuery = query.OrderByDescending(task => task.CreatedAt);
+            }
+        }
+        else if (proximityOrigin is not null)
+        {
             orderedQuery = query
-                .Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius))
                 .OrderBy(task => task.Location!.Distance(proximityOrigin))
                 .ThenByDescending(task => task.CreatedAt);
         }
@@ -289,7 +324,26 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             return Forbid();
         }
 
-        if (task.Status is DomainTaskStatus.Completed or DomainTaskStatus.Cancelled)
+        // A status change request is only ever a cancellation (enforced below).
+        // Validate the transition against the FSM up front so an invalid
+        // transition fails with 400 before any field-level edits are applied.
+        if (request.Status is not null)
+        {
+            if (!string.Equals(request.Status, nameof(DomainTaskStatus.Cancelled), StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(nameof(request.Status), "Status can only be changed to 'Cancelled'.");
+                return ValidationProblem(ModelState);
+            }
+
+            if (!TaskStatusTransitions.CanTransition(task.Status, DomainTaskStatus.Cancelled))
+            {
+                return Problem(
+                    title: "Invalid task status transition",
+                    detail: $"A task with status '{task.Status}' cannot be transitioned to 'Cancelled'.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+        }
+        else if (task.Status is DomainTaskStatus.Completed or DomainTaskStatus.Cancelled)
         {
             return Problem(
                 title: "Task cannot be modified",
@@ -393,12 +447,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         if (request.Status is not null)
         {
-            if (!string.Equals(request.Status, nameof(DomainTaskStatus.Cancelled), StringComparison.OrdinalIgnoreCase))
-            {
-                ModelState.AddModelError(nameof(request.Status), "Status can only be changed to 'Cancelled'.");
-                return ValidationProblem(ModelState);
-            }
-
+            // Target status and transition validity already verified above.
             var oldStatus = task.Status;
             var cancelledAt = DateTimeOffset.UtcNow;
             var cancellationReason = StringUtilities.Normalize(request.CancellationReason);

@@ -3,7 +3,8 @@
     "openUserMenu": "Open user menu",
     "primaryNav": "Primary",
     "signedOutToast": "Signed out",
-    "tagline": "Local help, structured trust."
+    "tagline": "Local help, structured trust.",
+    "goBack": "Go back"
   },
   "landing": {
     "signIn": "Sign in",
@@ -388,8 +389,6 @@
       "description": "Description",
       "postedBy": "Posted by",
       "editTask": "Edit task",
-      "cancelTask": "Cancel task",
-      "cancellingTask": "Cancelling…",
       "openChat": "Open chat",
       "openingChat": "Opening…",
       "cancelledToast": "Task cancelled.",
@@ -423,7 +422,11 @@
       "approveCompletion": "Approve completion",
       "approving": "Approving…",
       "approvedToast": "Task completed.",
-      "approveErrorToast": "Could not approve completion."
+      "approveErrorToast": "Could not approve completion.",
+      "approveDialogTitle": "Approve task completion?",
+      "approveDialogBody": "This will mark the task as complete and release the helper's reward. This action cannot be undone.",
+      "submitDialogTitle": "Mark task as done?",
+      "submitDialogBody": "This will notify the seeker that you have finished. They will review and approve before the task is marked as complete."
     },
     "application": {
       "applyToHelp": "Apply to help",
@@ -450,9 +453,26 @@
       "viewChat": "View chat",
       "accept": "Accept",
       "reject": "Reject",
+      "accepting": "Accepting…",
       "acceptedToast": "Application accepted.",
       "rejectedToast": "Application rejected.",
-      "updateErrorToast": "Could not update the application."
+      "updateErrorToast": "Could not update the application.",
+      "acceptDialogTitle": "Accept this application?",
+      "acceptDialogBody": "{name} will be assigned to this task and it will move to In Progress. Other pending applications will be closed."
+    },
+    "cancelTask": {
+      "button": "Cancel task",
+      "pending": "Cancelling…",
+      "dialogTitle": "Cancel this task?",
+      "dialogBody": "This will cancel the task and notify any involved helpers. This action cannot be undone."
+    },
+    "cancelApplication": {
+      "button": "Cancel application",
+      "pending": "Cancelling…",
+      "dialogTitle": "Cancel this application?",
+      "dialogBody": "This will remove the accepted helper and return the task to Open.",
+      "cancelledToast": "Application cancelled.",
+      "cancelErrorToast": "Could not cancel the application."
     },
     "feed": {
       "title": "Local tasks",

@@ -1,6 +1,7 @@
 using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
+using Backend.Domain.Tasks;
 using Backend.Features.Conversations;
 using Backend.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -289,12 +290,12 @@ public sealed partial class TaskApplicationsController(
 
         if (isAccept)
         {
-            if (task.Status != DomainTaskStatus.Open)
+            if (!TaskStatusTransitions.CanTransition(task.Status, DomainTaskStatus.InProgress))
             {
                 return Problem(
-                    title: "Task is not open",
+                    title: "Invalid task status transition",
                     detail: "An application can only be accepted when the task has Open status.",
-                    statusCode: StatusCodes.Status409Conflict);
+                    statusCode: StatusCodes.Status400BadRequest);
             }
 
             if (application.Status != TaskApplicationStatus.Pending)
@@ -491,11 +492,10 @@ public sealed partial class TaskApplicationsController(
             return Unauthorized();
         }
 
-        var taskExists = await db.Tasks
-            .AsNoTracking()
-            .AnyAsync(t => t.Id == taskId, cancellationToken);
+        var task = await db.Tasks
+            .FirstOrDefaultAsync(t => t.Id == taskId, cancellationToken);
 
-        if (!taskExists)
+        if (task is null)
         {
             return NotFound();
         }
@@ -508,17 +508,61 @@ public sealed partial class TaskApplicationsController(
             return NotFound();
         }
 
-        if (application.HelperProfileId != profile.Id)
+        var isHelper = application.HelperProfileId == profile.Id;
+        var isSeeker = task.SeekerProfileId == profile.Id;
+        if (!isHelper && !isSeeker)
         {
             return Forbid();
         }
 
-        if (application.Status != TaskApplicationStatus.Pending)
+        if (application.Status == TaskApplicationStatus.Pending && !isHelper)
         {
             return Problem(
-                title: "Application is not pending",
-                detail: "Only pending applications can be withdrawn.",
+                title: "Pending application cannot be cancelled by seeker",
+                detail: "Seekers can reject pending applications instead of withdrawing them.",
                 statusCode: StatusCodes.Status409Conflict);
+        }
+
+        if (application.Status is not TaskApplicationStatus.Pending and not TaskApplicationStatus.Accepted)
+        {
+            return Problem(
+                title: "Application cannot be cancelled",
+                detail: "Only pending or accepted applications can be cancelled.",
+                statusCode: StatusCodes.Status409Conflict);
+        }
+
+        var wasAccepted = application.Status == TaskApplicationStatus.Accepted;
+
+        if (wasAccepted)
+        {
+            if (task.Status != DomainTaskStatus.InProgress
+                || task.AcceptedHelperProfileId != application.HelperProfileId)
+            {
+                return Problem(
+                    title: "Accepted application is not active",
+                    detail: "Only the active accepted application can reopen the task.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            var oldStatus = task.Status;
+            var reason = isSeeker
+                ? "Accepted application cancelled by seeker."
+                : "Accepted application cancelled by helper.";
+            var now = DateTimeOffset.UtcNow;
+
+            task.Status = DomainTaskStatus.Open;
+            task.AcceptedHelperProfileId = null;
+            task.AcceptedAt = null;
+            task.UpdatedAt = now;
+
+            db.TaskStatusHistory.Add(new TaskStatusHistoryEntry
+            {
+                TaskId = task.Id,
+                OldStatus = oldStatus,
+                NewStatus = DomainTaskStatus.Open,
+                ChangedByProfileId = profile.Id,
+                Reason = reason
+            });
         }
 
         application.Status = TaskApplicationStatus.Withdrawn;
@@ -530,13 +574,27 @@ public sealed partial class TaskApplicationsController(
             ActivityEventType.TaskApplicationWithdrawn,
             nameof(TaskApplication),
             application.Id,
-            new { application.TaskId, application.HelperProfileId });
+            new
+            {
+                application.TaskId,
+                application.HelperProfileId,
+                WasAccepted = wasAccepted,
+                ReopenedTask = wasAccepted && task.Status == DomainTaskStatus.Open,
+                CancelledBy = isSeeker ? "Seeker" : "Helper"
+            });
         db.AddAuditEvent(
             profile.UserId,
             "task_application.withdrawn",
             nameof(TaskApplication),
             application.Id,
-            new { application.TaskId, application.HelperProfileId });
+            new
+            {
+                application.TaskId,
+                application.HelperProfileId,
+                WasAccepted = wasAccepted,
+                ReopenedTask = wasAccepted && task.Status == DomainTaskStatus.Open,
+                CancelledBy = isSeeker ? "Seeker" : "Helper"
+            });
 
         await db.SaveChangesAsync(cancellationToken);
 

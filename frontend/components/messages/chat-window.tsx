@@ -92,21 +92,24 @@ export function ChatWindow({
   return (
     <div className="flex h-full flex-col">
       <header className="flex items-center gap-3 border-b border-border px-4 py-3">
-        <UserAvatar
-          name={otherParticipant.displayName}
-          src={otherParticipant.photoUrl ?? undefined}
-        />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-sm font-medium">
+        <Link
+          href={`/profile/${otherParticipant.profileId}`}
+          className="flex min-w-0 flex-1 items-center gap-3"
+        >
+          <UserAvatar
+            name={otherParticipant.displayName}
+            src={otherParticipant.photoUrl ?? undefined}
+          />
+          <span className="truncate text-sm font-medium hover:underline">
             {otherParticipant.displayName}
           </span>
-          <Link
-            href={`/tasks/${taskId}`}
-            className="truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
-          >
-            {taskTitle}
-          </Link>
-        </div>
+        </Link>
+        <Link
+          href={`/tasks/${taskId}`}
+          className="min-w-0 truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+        >
+          {taskTitle}
+        </Link>
       </header>
 
       {conversation.pendingApplicationId ? (

@@ -5,6 +5,7 @@
 - [`backend/`](./backend) — ASP.NET Core 10 Web API. See [`backend/AGENTS.md`](./backend/AGENTS.md).
 - [`frontend/`](./frontend) — Next.js 16 app. See [`frontend/AGENTS.md`](./frontend/AGENTS.md).
 - [`backend.Tests/`](./backend.Tests) — xUnit v3 tests for the backend.
+- [`e2e/`](./e2e) — Playwright end-to-end tests covering the full stack. See [`e2e/AGENTS.md`](./e2e/AGENTS.md).
 
 When working under `backend/` or `frontend/`, the nested `AGENTS.md` wins — read that one first. This file covers the repo-wide concerns.
 
@@ -54,10 +55,11 @@ Caveats:
 
 ## CI
 
-| Workflow                                                              | Runs                                                                                                |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Workflow                                                                  | Runs                                                                                                |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | [`.github/workflows/ci-backend.yml`](./.github/workflows/ci-backend.yml)   | `dotnet restore` → `dotnet build -c Release` → `dotnet test` → `dotnet format --verify-no-changes` |
 | [`.github/workflows/ci-frontend.yml`](./.github/workflows/ci-frontend.yml) | Node 24: `npm ci` → `npm run lint` → `npm run build`                                                |
+| [`.github/workflows/ci-e2e.yml`](./.github/workflows/ci-e2e.yml)           | Spins up Postgres + Cosmos + backend + frontend, then runs the Playwright suite in `e2e/`.          |
 
 CI is the final word — run the equivalent commands locally before pushing.
 

@@ -3,7 +3,8 @@
     "openUserMenu": "Felhasználói menü megnyitása",
     "primaryNav": "Főmenü",
     "signedOutToast": "Kijelentkezve",
-    "tagline": "Helyi segítség, megbízható közösségben."
+    "tagline": "Helyi segítség, megbízható közösségben.",
+    "goBack": "Vissza"
   },
   "landing": {
     "signIn": "Bejelentkezés",
@@ -388,8 +389,6 @@
       "description": "Leírás",
       "postedBy": "Közzétette",
       "editTask": "Feladat szerkesztése",
-      "cancelTask": "Feladat visszavonása",
-      "cancellingTask": "Visszavonás…",
       "openChat": "Csevegés megnyitása",
       "openingChat": "Megnyitás…",
       "cancelledToast": "Feladat visszavonva.",
@@ -423,7 +422,11 @@
       "approveCompletion": "Befejezés jóváhagyása",
       "approving": "Jóváhagyás…",
       "approvedToast": "Feladat befejezve.",
-      "approveErrorToast": "Nem sikerült jóváhagyni a befejezést."
+      "approveErrorToast": "Nem sikerült jóváhagyni a befejezést.",
+      "approveDialogTitle": "Jóváhagyod a feladat befejezését?",
+      "approveDialogBody": "Ezzel teljesítettnek jelölöd a feladatot, és kifizeted a segítő jutalmát. A művelet nem visszavonható.",
+      "submitDialogTitle": "Megjelölöd a feladatot késznek?",
+      "submitDialogBody": "Ezzel értesíted a keresőt, hogy elkészültél. Át fogja nézni és jóváhagyja, mielőtt a feladat teljesítettnek minősül."
     },
     "application": {
       "applyToHelp": "Jelentkezés segítésre",
@@ -450,9 +453,26 @@
       "viewChat": "Csevegés megtekintése",
       "accept": "Elfogadás",
       "reject": "Elutasítás",
+      "accepting": "Elfogadás…",
       "acceptedToast": "Jelentkezés elfogadva.",
       "rejectedToast": "Jelentkezés elutasítva.",
-      "updateErrorToast": "Nem sikerült szerkeszteni a jelentkezést."
+      "updateErrorToast": "Nem sikerült szerkeszteni a jelentkezést.",
+      "acceptDialogTitle": "Elfogadod ezt a jelentkezést?",
+      "acceptDialogBody": "{name} lesz hozzárendelve a feladathoz, és a státusz „Folyamatban” lesz. A többi függő jelentkezést lezárjuk."
+    },
+    "cancelTask": {
+      "button": "Feladat visszavonása",
+      "pending": "Visszavonás…",
+      "dialogTitle": "Visszavonod ezt a feladatot?",
+      "dialogBody": "Ezzel visszavonod a feladatot, és értesíted az érintett segítőket. A művelet nem visszavonható."
+    },
+    "cancelApplication": {
+      "button": "Jelentkezés visszavonása",
+      "pending": "Visszavonás…",
+      "dialogTitle": "Visszavonod ezt a jelentkezést?",
+      "dialogBody": "Ezzel eltávolítod a kiválasztott segítőt, és a feladat visszakerül „Nyitott” státuszba.",
+      "cancelledToast": "Jelentkezés visszavonva.",
+      "cancelErrorToast": "Nem sikerült visszavonni a jelentkezést."
     },
     "feed": {
       "title": "Helyi feladatok",

@@ -4,6 +4,17 @@ import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { UserAvatar } from "@/components/shared/user-avatar"
@@ -29,6 +40,7 @@ export function TaskApplicationsPanel({
   taskId,
 }: TaskApplicationsPanelProps) {
   const t = useTranslations("tasks.applications")
+  const tCommon = useTranslations("common")
   const { mutate: patchApplication, isPending } =
     usePatchTaskApplication(taskId)
 
@@ -87,13 +99,38 @@ export function TaskApplicationsPanel({
                 ) : null}
                 {application.status === "Pending" ? (
                   <>
-                    <Button
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() => handleAction(application.id, "accept")}
-                    >
-                      {t("accept")}
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" disabled={isPending}>
+                          {t("accept")}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {t("acceptDialogTitle")}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t("acceptDialogBody", {
+                              name: application.helperDisplayName,
+                            })}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {tCommon("goBack")}
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            disabled={isPending}
+                            onClick={() =>
+                              handleAction(application.id, "accept")
+                            }
+                          >
+                            {isPending ? t("accepting") : t("accept")}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <Button
                       size="sm"
                       variant="ghost"

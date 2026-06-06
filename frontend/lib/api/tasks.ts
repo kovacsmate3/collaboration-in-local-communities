@@ -6,7 +6,11 @@ import {
 } from "@tanstack/react-query"
 
 import { apiClient } from "@/lib/api/client"
-import { conversationKeys } from "@/lib/api/conversations"
+import {
+  invalidateConversationData,
+  invalidateTaskData,
+  invalidateTaskParticipantData,
+} from "@/lib/api/query-invalidation"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -66,6 +70,8 @@ export interface UpdateTaskInput {
   compensationType?: string
   compensationAmount?: number
   locationText?: string
+  latitude?: number
+  longitude?: number
   status?: string
   cancellationReason?: string
 }
@@ -84,6 +90,8 @@ export interface TaskListFilters {
   latitude?: number
   longitude?: number
   radiusMeters?: number
+  /** "relevant" orders by proximity to the caller's profile location; omit for newest-first. */
+  sort?: "relevant" | "recency"
 }
 
 // ── Query keys ────────────────────────────────────────────────────────────────
@@ -135,6 +143,13 @@ export function useTask(id: string) {
     queryKey: taskKeys.detail(id),
     queryFn: () => apiClient.get<ApiTask>(`/tasks/${id}`),
     enabled: Boolean(id),
+    // Polling fallback so a task's status (Open → InProgress → PendingApproval
+    // → Completed) converges for the other party on hosts where SignalR/cache
+    // invalidation across users doesn't propagate immediately on deploy.
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      return status === "Completed" || status === "Cancelled" ? false : 10_000
+    },
   })
 }
 
@@ -144,7 +159,7 @@ export function useCreateTask() {
     mutationFn: (data: CreateTaskInput) =>
       apiClient.post<ApiTask>("/tasks", data),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: taskKeys.lists() })
+      invalidateTaskData(qc)
     },
   })
 }
@@ -156,7 +171,7 @@ export function useUpdateTask(id: string) {
       apiClient.patch<ApiTask>(`/tasks/${id}`, data),
     onSuccess: (updated) => {
       qc.setQueryData(taskKeys.detail(id), updated)
-      void qc.invalidateQueries({ queryKey: taskKeys.lists() })
+      invalidateTaskData(qc)
     },
   })
 }
@@ -167,7 +182,10 @@ export function useTaskApplications(taskId: string, enabled = true) {
     queryFn: () =>
       apiClient.get<ApiTaskApplication[]>(`/tasks/${taskId}/applications`),
     enabled: Boolean(taskId) && enabled,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15_000,
+    // New applications from helpers should surface for the seeker without a
+    // hard refresh, so poll while the applications panel is mounted.
+    refetchInterval: 15_000,
   })
 }
 
@@ -176,7 +194,10 @@ export function useMyTaskApplications() {
     queryKey: taskKeys.myApplications(),
     queryFn: () =>
       apiClient.get<ApiMyTaskApplication[]>("/task-applications/me"),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15_000,
+    // Reflect accept/reject decisions made by the seeker on the helper's side
+    // without requiring a manual refresh on deploy.
+    refetchInterval: 15_000,
   })
 }
 
@@ -186,10 +207,8 @@ export function useApplyToTask(taskId: string) {
     mutationFn: (data: ApplyToTaskInput) =>
       apiClient.post<ApiTaskApplication>(`/tasks/${taskId}/applications`, data),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: taskKeys.myApplications() })
-      void qc.invalidateQueries({ queryKey: taskKeys.applications(taskId) })
-      void qc.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
-      void qc.invalidateQueries({ queryKey: conversationKeys.list })
+      invalidateTaskData(qc)
+      invalidateConversationData(qc)
     },
   })
 }
@@ -209,11 +228,8 @@ export function usePatchTaskApplication(taskId: string) {
         { action }
       ),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: taskKeys.applications(taskId) })
-      void qc.invalidateQueries({ queryKey: taskKeys.myApplications() })
-      void qc.invalidateQueries({ queryKey: taskKeys.detail(taskId) })
-      void qc.invalidateQueries({ queryKey: taskKeys.lists() })
-      void qc.invalidateQueries({ queryKey: ["conversations"] })
+      invalidateTaskData(qc)
+      invalidateConversationData(qc)
     },
   })
 }
@@ -225,7 +241,8 @@ export function useSubmitTaskCompletion(taskId: string) {
       apiClient.post<ApiTask>(`/tasks/${taskId}/completion-submission`, {}),
     onSuccess: (updated) => {
       qc.setQueryData(taskKeys.detail(taskId), updated)
-      void qc.invalidateQueries({ queryKey: taskKeys.lists() })
+      invalidateTaskData(qc)
+      invalidateConversationData(qc)
     },
   })
 }
@@ -237,7 +254,8 @@ export function useApproveTaskCompletion(taskId: string) {
       apiClient.post<ApiTask>(`/tasks/${taskId}/completion-approval`, {}),
     onSuccess: (updated) => {
       qc.setQueryData(taskKeys.detail(taskId), updated)
-      void qc.invalidateQueries({ queryKey: taskKeys.lists() })
+      invalidateTaskParticipantData(qc)
+      invalidateConversationData(qc)
     },
   })
 }
@@ -248,8 +266,8 @@ export function useWithdrawTaskApplication(taskId: string) {
     mutationFn: (applicationId: string) =>
       apiClient.delete<void>(`/tasks/${taskId}/applications/${applicationId}`),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: taskKeys.myApplications() })
-      void qc.invalidateQueries({ queryKey: taskKeys.applications(taskId) })
+      invalidateTaskData(qc)
+      invalidateConversationData(qc)
     },
   })
 }
@@ -281,6 +299,7 @@ function buildTaskListPath(
     params.set("longitude", String(filters.longitude))
     params.set("radiusMeters", String(filters.radiusMeters))
   }
+  if (filters.sort) params.set("sort", filters.sort)
   if (pagination) {
     params.set("page", String(pagination.page))
     params.set("pageSize", String(pagination.pageSize))

@@ -24,6 +24,7 @@ import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
 import { resendVerificationEmail } from "@/lib/auth/functions"
 import { useCategories } from "@/lib/api/categories"
+import { useOwnProfile, type OwnProfileResponse } from "@/lib/api/profile"
 import { useCreateTask, useUpdateTask } from "@/lib/api/tasks"
 import { COMPENSATION_OPTIONS } from "@/lib/constants"
 import type { LocationValue } from "@/lib/location"
@@ -63,6 +64,7 @@ export function PostTaskForm({
   const router = useRouter()
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories()
+  const { data: profile } = useOwnProfile(Boolean(user))
   const { mutate: createTask, isPending: isCreating } = useCreateTask()
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask(
     taskId ?? ""
@@ -161,6 +163,8 @@ export function PostTaskForm({
       return
     }
 
+    const location = getSubmissionLocation(form.location, profile)
+
     if (isEditing) {
       updateTask(
         {
@@ -169,7 +173,9 @@ export function PostTaskForm({
           categoryId: form.categoryId,
           compensationType: form.compensationType,
           compensationAmount: amount,
-          locationText: form.location.locationText || undefined,
+          locationText: location.locationText || undefined,
+          latitude: location.latitude,
+          longitude: location.longitude,
         },
         {
           onSuccess: () => {
@@ -193,9 +199,9 @@ export function PostTaskForm({
         categoryId: form.categoryId,
         compensationType: form.compensationType,
         compensationAmount: amount,
-        locationText: form.location.locationText || undefined,
-        latitude: form.location.latitude,
-        longitude: form.location.longitude,
+        locationText: location.locationText || undefined,
+        latitude: location.latitude,
+        longitude: location.longitude,
       },
       {
         onSuccess: (task) => {
@@ -336,6 +342,33 @@ export function PostTaskForm({
       </div>
     </form>
   )
+}
+
+function getSubmissionLocation(
+  location: LocationValue,
+  profile: OwnProfileResponse | undefined
+): LocationValue {
+  const locationText = location.locationText.trim()
+  if (locationText) {
+    return { ...location, locationText }
+  }
+
+  const profileLocationText = profile?.locationText?.trim() ?? ""
+  if (!profileLocationText) {
+    return { locationText: "" }
+  }
+
+  const latitude = toFiniteCoordinate(profile?.latitude)
+  const longitude = toFiniteCoordinate(profile?.longitude)
+  if (latitude === undefined || longitude === undefined) {
+    return { locationText: profileLocationText }
+  }
+
+  return { locationText: profileLocationText, latitude, longitude }
+}
+
+function toFiniteCoordinate(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined
 }
 
 function normalizeCompensationType(value: unknown): CompensationType {
