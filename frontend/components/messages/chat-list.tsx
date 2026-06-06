@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { BubbleChatIcon } from "@hugeicons/core-free-icons"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -17,6 +17,7 @@ interface ChatListProps {
 
 export function ChatList({ conversations, activeId }: ChatListProps) {
   const t = useTranslations("messages.list")
+  const locale = useLocale()
 
   if (conversations.length === 0) {
     return (
@@ -63,7 +64,7 @@ export function ChatList({ conversations, activeId }: ChatListProps) {
                   </div>
                   {c.lastMessageAt ? (
                     <span className="shrink-0 text-xs text-muted-foreground">
-                      {formatRelativeTime(c.lastMessageAt)}
+                      {formatRelativeTime(c.lastMessageAt, locale)}
                     </span>
                   ) : null}
                 </div>

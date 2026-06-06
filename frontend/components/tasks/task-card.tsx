@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Location01Icon } from "@hugeicons/core-free-icons"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -29,6 +29,8 @@ export function TaskCard({
   className,
 }: TaskCardProps) {
   const t = useTranslations("tasks.card")
+  const tStatuses = useTranslations("tasks.applications.statuses")
+  const locale = useLocale()
   return (
     <Card className={cn("transition-colors hover:border-ring/40", className)}>
       <Link
@@ -50,12 +52,12 @@ export function TaskCard({
                 }
               >
                 {t("applicationStatus", {
-                  status: applicationStatus.toLowerCase(),
+                  status: tStatuses(applicationStatus),
                 })}
               </Badge>
             ) : null}
             <span className="ml-auto text-xs text-muted-foreground">
-              {formatRelativeTime(task.createdAt)}
+              {formatRelativeTime(task.createdAt, locale)}
             </span>
           </div>
           <h3 className="text-base leading-snug font-semibold">{task.title}</h3>

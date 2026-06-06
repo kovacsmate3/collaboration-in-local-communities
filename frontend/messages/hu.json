@@ -462,7 +462,13 @@
       "rejectedToast": "Jelentkezés elutasítva.",
       "updateErrorToast": "Nem sikerült szerkeszteni a jelentkezést.",
       "acceptDialogTitle": "Elfogadod ezt a jelentkezést?",
-      "acceptDialogBody": "{name} lesz hozzárendelve a feladathoz, és a státusz „Folyamatban” lesz. A többi függő jelentkezést lezárjuk."
+      "acceptDialogBody": "{name} lesz hozzárendelve a feladathoz, és a státusz „Folyamatban” lesz. A többi függő jelentkezést lezárjuk.",
+      "statuses": {
+        "Pending": "Függőben",
+        "Accepted": "Elfogadva",
+        "Rejected": "Elutasítva",
+        "Withdrawn": "Visszavonva"
+      }
     },
     "cancelTask": {
       "button": "Feladat visszavonása",

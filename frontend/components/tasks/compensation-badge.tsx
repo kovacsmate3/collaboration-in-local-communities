@@ -1,6 +1,6 @@
 "use client"
 
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/format"
@@ -40,13 +40,14 @@ export function CompensationBadge({
   compensationAmount,
 }: CompensationBadgeProps) {
   const t = useTranslations("tasks.compensation")
+  const locale = useLocale()
   const type = normalizeCompensationType(compensationType)
   const variant = VARIANT_BY_TYPE[type]
 
   const label =
     type === "paid" && typeof compensationAmount === "number"
       ? t("paidPlusPoints", {
-          amount: formatCurrency(compensationAmount, "HUF"),
+          amount: formatCurrency(compensationAmount, "HUF", locale),
         })
       : t(type)
 

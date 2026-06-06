@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import {
@@ -40,7 +40,9 @@ export function TaskApplicationsPanel({
   taskId,
 }: TaskApplicationsPanelProps) {
   const t = useTranslations("tasks.applications")
+  const tStatuses = useTranslations("tasks.applications.statuses")
   const tCommon = useTranslations("common")
+  const locale = useLocale()
   const { mutate: patchApplication, isPending } =
     usePatchTaskApplication(taskId)
 
@@ -79,9 +81,9 @@ export function TaskApplicationsPanel({
                 <span className="text-sm font-medium">
                   {application.helperDisplayName}
                 </span>
-                <Badge variant="outline">{application.status}</Badge>
+                <Badge variant="outline">{tStatuses(application.status)}</Badge>
                 <span className="ml-auto text-xs text-muted-foreground">
-                  {formatRelativeTime(application.createdAt)}
+                  {formatRelativeTime(application.createdAt, locale)}
                 </span>
               </div>
               {application.message ? (

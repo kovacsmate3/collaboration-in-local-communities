@@ -41,6 +41,7 @@ export function ApplicationControls({
   isLoadingApplication = false,
 }: ApplicationControlsProps) {
   const t = useTranslations("tasks.application")
+  const tStatuses = useTranslations("tasks.applications.statuses")
   const router = useRouter()
   const [open, setOpen] = React.useState(false)
   const [message, setMessage] = React.useState("")
@@ -109,7 +110,7 @@ export function ApplicationControls({
     return (
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline" className="h-9 rounded-md px-3">
-          {t("statusBadge", { status: application.status.toLowerCase() })}
+          {t("statusBadge", { status: tStatuses(application.status) })}
         </Badge>
         {application.conversationId ? (
           <Button variant="outline" size="sm" asChild>

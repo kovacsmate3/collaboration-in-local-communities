@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
@@ -24,6 +24,7 @@ interface TaskHistoryProps {
 export function TaskHistory({ tasks }: TaskHistoryProps) {
   const t = useTranslations("profile.taskHistory")
   const tCategories = useTranslations("tasks.categories")
+  const locale = useLocale()
 
   if (tasks.length === 0) {
     return <EmptyState title={t("emptyTitle")} description={t("emptyBody")} />
@@ -51,7 +52,7 @@ export function TaskHistory({ tasks }: TaskHistoryProps) {
                   icon={task.icon}
                 />
                 <span className="text-xs text-muted-foreground">
-                  {formatRelativeTime(task.createdAt)}
+                  {formatRelativeTime(task.createdAt, locale)}
                 </span>
               </div>
             </div>

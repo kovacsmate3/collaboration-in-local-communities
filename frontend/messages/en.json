@@ -462,7 +462,13 @@
       "rejectedToast": "Application rejected.",
       "updateErrorToast": "Could not update the application.",
       "acceptDialogTitle": "Accept this application?",
-      "acceptDialogBody": "{name} will be assigned to this task and it will move to In Progress. Other pending applications will be closed."
+      "acceptDialogBody": "{name} will be assigned to this task and it will move to In Progress. Other pending applications will be closed.",
+      "statuses": {
+        "Pending": "Pending",
+        "Accepted": "Accepted",
+        "Rejected": "Rejected",
+        "Withdrawn": "Withdrawn"
+      }
     },
     "cancelTask": {
       "button": "Cancel task",

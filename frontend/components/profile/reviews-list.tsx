@@ -1,6 +1,6 @@
 "use client"
 
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -34,6 +34,7 @@ export function ReviewsList({
   isFetching,
 }: ReviewsListProps) {
   const t = useTranslations("profile.reviews")
+  const locale = useLocale()
 
   if (reviews.length === 0) {
     return <EmptyState title={t("emptyTitle")} description={t("emptyBody")} />
@@ -64,7 +65,7 @@ export function ReviewsList({
                         {review.authorName}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {formatRelativeTime(review.createdAt)}
+                        {formatRelativeTime(review.createdAt, locale)}
                       </span>
                     </div>
                     <RatingStars value={review.rating} />

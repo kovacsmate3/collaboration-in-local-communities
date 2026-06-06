@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { notFound } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Calendar03Icon, Location01Icon } from "@hugeicons/core-free-icons"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -41,6 +41,7 @@ interface TaskDetailPageClientProps {
 
 export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
   const t = useTranslations("tasks.detail")
+  const locale = useLocale()
   const { data: task, isLoading, isError } = useTask(id)
 
   if (isLoading) {
@@ -73,7 +74,9 @@ export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
           ) : null}
           <li className="flex items-center gap-1.5">
             <HugeiconsIcon icon={Calendar03Icon} className="size-4" />
-            {t("posted", { relative: formatRelativeTime(task.createdAt) })}
+            {t("posted", {
+              relative: formatRelativeTime(task.createdAt, locale),
+            })}
           </li>
         </ul>
       </header>
