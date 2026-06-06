@@ -121,7 +121,7 @@
       "submitting": "Frissítés…",
       "backToSignIn": "Vissza a bejelentkezéshez",
       "invalidLinkTitle": "Érvénytelen visszaállító link",
-      "invalidLinkSubtitle": "Ez a jelszó-visszaállító link hiányos vagy lejárt.",
+      "invalidLinkSubtitle": "Ez a link hiányos vagy lejárt.",
       "requestNewLink": "Új link kérése",
       "successTitle": "Jelszó lecserélve",
       "successSubtitle": "A jelszavad visszaállt. Most már bejelentkezhetsz az új jelszavaddal.",
