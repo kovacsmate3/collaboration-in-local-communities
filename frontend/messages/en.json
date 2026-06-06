@@ -349,8 +349,12 @@
       "tutoring": "Tutoring",
       "household": "Household",
       "petcare": "Pet care",
+      "pet_care": "Pet care",
       "tools": "Tool lending",
       "tech": "Tech help",
+      "repairs": "Repairs",
+      "shopping": "Shopping",
+      "cleaning": "Cleaning",
       "errands": "Errands",
       "other": "Other"
     },

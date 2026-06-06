@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { getTranslations } from "next-intl/server"
 
+import { LanguageSwitcher } from "@/components/layout/language-switcher"
 import { Button } from "@/components/ui/button"
 import { APP_NAME } from "@/lib/constants"
 
@@ -21,6 +22,7 @@ export default async function HomePage() {
           {APP_NAME}
         </span>
         <nav className="flex items-center gap-2">
+          <LanguageSwitcher />
           <Button asChild variant="ghost" size="sm">
             <Link href="/login">{t("signIn")}</Link>
           </Button>

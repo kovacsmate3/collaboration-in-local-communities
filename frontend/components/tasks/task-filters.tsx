@@ -81,6 +81,7 @@ export function TaskFilters({
 }: TaskFiltersProps) {
   const t = useTranslations("tasks.filters")
   const tCompensation = useTranslations("tasks.compensation")
+  const tCategories = useTranslations("tasks.categories")
   const update = (patch: Partial<TaskFiltersState>) =>
     onChange({ ...value, ...patch })
 
@@ -114,7 +115,7 @@ export function TaskFilters({
             <SelectItem value="all">{t("allCategories")}</SelectItem>
             {categories.map((c) => (
               <SelectItem key={c.id} value={c.id}>
-                {c.name}
+                {tCategories.has(c.code) ? tCategories(c.code) : c.name}
               </SelectItem>
             ))}
           </SelectContent>

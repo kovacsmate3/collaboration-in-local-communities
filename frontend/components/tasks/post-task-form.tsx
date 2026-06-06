@@ -59,6 +59,7 @@ export function PostTaskForm({
 }: PostTaskFormProps = {}) {
   const t = useTranslations("tasks.post")
   const tCompensation = useTranslations("tasks.compensation")
+  const tCategories = useTranslations("tasks.categories")
   const isEditing = Boolean(taskId)
   const { user } = useAuth()
   const router = useRouter()
@@ -271,7 +272,7 @@ export function PostTaskForm({
             <SelectContent>
               {categories.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
-                  {c.name}
+                  {tCategories.has(c.code) ? tCategories(c.code) : c.name}
                 </SelectItem>
               ))}
             </SelectContent>

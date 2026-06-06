@@ -349,8 +349,12 @@
       "tutoring": "Korrepetálás",
       "household": "Háztartás",
       "petcare": "Állatgondozás",
+      "pet_care": "Állatgondozás",
       "tools": "Szerszámkölcsönzés",
       "tech": "Tech segítség",
+      "repairs": "Javítás",
+      "shopping": "Bevásárlás",
+      "cleaning": "Takarítás",
       "errands": "Ügyintézés",
       "other": "Egyéb"
     },
