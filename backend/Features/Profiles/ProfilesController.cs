@@ -15,6 +15,7 @@ namespace Backend.Features.Profiles;
 [ApiController]
 [Route("api/profiles")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksReadPolicy)]
 public sealed partial class ProfilesController(AppDbContext db, IBlobStorageService blobStorage, ILogger<ProfilesController> logger) : ControllerBase
 {
     /// <summary>
@@ -301,6 +302,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpPut("me")]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> UpdateOwnProfileAsync(
         UpdateOwnProfileRequest request,
         CancellationToken cancellationToken)
@@ -417,6 +419,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpPut("me/privacy")]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> UpdatePrivacySettingsAsync(
         UpdateProfilePrivacySettingsRequest request,
         CancellationToken cancellationToken)
@@ -560,6 +563,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpDelete("me/photo")]
+    [EnableRateLimiting(RateLimitingExtensions.PhotoUploadPolicy)]
     public async Task<IActionResult> DeleteProfilePhotoAsync(CancellationToken cancellationToken)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

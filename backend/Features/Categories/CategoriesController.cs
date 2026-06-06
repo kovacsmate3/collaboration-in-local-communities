@@ -1,11 +1,14 @@
 using Backend.Application.Categories;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Backend.Features.Categories;
 
 [ApiController]
 [Route("api/categories")]
+[EnableRateLimiting(RateLimitingExtensions.TasksReadPolicy)]
 public sealed class CategoriesController(IListCategoriesQuery listCategoriesQuery) : ControllerBase
 {
     [HttpGet]

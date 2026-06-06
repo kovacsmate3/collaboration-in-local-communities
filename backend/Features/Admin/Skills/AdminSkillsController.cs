@@ -1,7 +1,9 @@
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Admin.Skills;
@@ -9,6 +11,7 @@ namespace Backend.Features.Admin.Skills;
 [ApiController]
 [Route("api/admin/skills")]
 [Authorize(Roles = "Admin")]
+[EnableRateLimiting(RateLimitingExtensions.AdminPolicy)]
 public sealed partial class AdminSkillsController(AppDbContext db) : ControllerBase
 {
     private const int DefaultPageSize = 20;

@@ -3,9 +3,11 @@ using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Domain.Tasks;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Backend.Infrastructure.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
@@ -15,6 +17,7 @@ namespace Backend.Features.Tasks;
 [ApiController]
 [Route("api/tasks")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksReadPolicy)]
 public sealed partial class TasksController(AppDbContext db) : ControllerBase
 {
     private const int DefaultPageSize = 20;
@@ -199,6 +202,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> CreateAsync(
         CreateTaskRequest request,
         CancellationToken cancellationToken)
@@ -297,6 +301,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
     }
 
     [HttpPatch("{id:guid}")]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> UpdateAsync(
         Guid id,
         UpdateTaskRequest request,

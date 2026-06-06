@@ -2,9 +2,11 @@ using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Backend.Infrastructure.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Skills;
@@ -12,6 +14,7 @@ namespace Backend.Features.Skills;
 [ApiController]
 [Route("api/skills")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksReadPolicy)]
 public sealed partial class SkillsController(AppDbContext db) : ControllerBase
 {
     private const int MaxSearchResults = 20;
@@ -76,6 +79,7 @@ public sealed partial class SkillsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> CreateAsync(
         CreateSkillRequest request,
         CancellationToken cancellationToken)

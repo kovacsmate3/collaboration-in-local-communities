@@ -1,5 +1,7 @@
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Backend.Features.Locations;
@@ -7,6 +9,7 @@ namespace Backend.Features.Locations;
 [ApiController]
 [Route("api/locations")]
 [AllowAnonymous]
+[EnableRateLimiting(RateLimitingExtensions.LocationsPolicy)]
 public sealed partial class LocationsController(
     IHttpClientFactory httpClientFactory,
     IConfiguration configuration,

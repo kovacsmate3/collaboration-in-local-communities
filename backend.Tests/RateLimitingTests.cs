@@ -17,6 +17,11 @@ public sealed class RateLimitingTests
     [InlineData(RateLimitingExtensions.AuthPolicy, "Auth")]
     [InlineData(RateLimitingExtensions.ConversationsPolicy, "Conversations")]
     [InlineData(RateLimitingExtensions.ReviewsPolicy, "Reviews")]
+    [InlineData(RateLimitingExtensions.PhotoUploadPolicy, "PhotoUpload")]
+    [InlineData(RateLimitingExtensions.TasksReadPolicy, "TasksRead")]
+    [InlineData(RateLimitingExtensions.TasksWritePolicy, "TasksWrite")]
+    [InlineData(RateLimitingExtensions.LocationsPolicy, "Locations")]
+    [InlineData(RateLimitingExtensions.AdminPolicy, "Admin")]
     public async Task ExceedingPermitLimit_Returns429(string policy, string configKey)
     {
         const int permitLimit = 3;

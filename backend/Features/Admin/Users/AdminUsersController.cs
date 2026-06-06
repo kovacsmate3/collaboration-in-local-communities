@@ -2,9 +2,11 @@ using System.Security.Claims;
 using Backend.Domain.Entities;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Admin.Users;
@@ -12,6 +14,7 @@ namespace Backend.Features.Admin.Users;
 [ApiController]
 [Route("api/admin/users")]
 [Authorize(Roles = "Admin")]
+[EnableRateLimiting(RateLimitingExtensions.AdminPolicy)]
 public sealed class AdminUsersController(
     AppDbContext db,
     UserManager<ApplicationUser> userManager) : ControllerBase
