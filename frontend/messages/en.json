@@ -37,6 +37,41 @@
     "errorReadFailed": "Unable to read your current location.",
     "errorReverseFallback": "Address name unavailable; coordinates were saved."
   },
+  "terms": {
+    "pageTitle": "Terms & Conditions",
+    "heading": "Terms & Conditions",
+    "versionLine": "Version {version} — effective {date}",
+    "sections": {
+      "about": {
+        "title": "1. About 2gather",
+        "body": "2gather is a platform that connects neighbours who need help with those willing to offer it. By creating an account you agree to use the service in good faith and in accordance with your local laws."
+      },
+      "account": {
+        "title": "2. Your account",
+        "body": "You are responsible for keeping your credentials secure and for all activity that occurs under your account. Notify us immediately if you suspect unauthorised access."
+      },
+      "acceptableUse": {
+        "title": "3. Acceptable use",
+        "body": "You may not use 2gather to post illegal tasks, harass other users, misrepresent your identity, or scrape the platform without written permission. We reserve the right to suspend accounts that violate these rules."
+      },
+      "payments": {
+        "title": "4. Payments & barter",
+        "body": "2gather facilitates agreements between users but is not a party to them. Any payment or exchange is solely between the Seeker and the Helper. We are not liable for disputes arising from tasks."
+      },
+      "privacy": {
+        "title": "5. Privacy",
+        "body": "We collect only the information needed to operate the service. We do not sell your data. A full privacy policy will be published before the public launch."
+      },
+      "liability": {
+        "title": "6. Limitation of liability",
+        "body": "2gather is provided \"as is\" during this early phase. We make no warranties about uptime or fitness for a particular purpose. Our liability is limited to the maximum extent permitted by applicable law."
+      },
+      "changes": {
+        "title": "7. Changes to these terms",
+        "body": "We may update these terms as the product evolves. Continued use of the platform after changes are posted constitutes acceptance of the revised terms."
+      }
+    }
+  },
   "legal": {
     "termsTitleFallback": "Current terms",
     "versionLabel": "version {version}",

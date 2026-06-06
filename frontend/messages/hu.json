@@ -37,6 +37,41 @@
     "errorReadFailed": "Nem sikerült beolvasni a jelenlegi helyzetedet.",
     "errorReverseFallback": "A cím neve nem érhető el; a koordinátákat mentettük."
   },
+  "terms": {
+    "pageTitle": "Felhasználási feltételek",
+    "heading": "Felhasználási feltételek",
+    "versionLine": "{version} verzió — hatályos: {date}",
+    "sections": {
+      "about": {
+        "title": "1. A 2gather-ről",
+        "body": "A 2gather egy olyan platform, amely a segítségre szoruló szomszédokat összeköti azokkal, akik szívesen segítenek. A fiók létrehozásával vállalod, hogy a szolgáltatást jóhiszeműen és a helyi jogszabályoknak megfelelően használod."
+      },
+      "account": {
+        "title": "2. A fiókod",
+        "body": "Felelős vagy a belépési adataid biztonságáért és minden, a fiókod alatt történő tevékenységért. Ha jogosulatlan hozzáférést gyanítasz, haladéktalanul értesíts minket."
+      },
+      "acceptableUse": {
+        "title": "3. Elfogadható használat",
+        "body": "Nem használhatod a 2gather-t illegális feladatok közzétételére, más felhasználók zaklatására, kilétednek meghamisítására, vagy a platform írásbeli engedély nélküli adatkinyerésére. Fenntartjuk a jogot, hogy felfüggesszük a szabályokat sértő fiókokat."
+      },
+      "payments": {
+        "title": "4. Fizetés és csere",
+        "body": "A 2gather elősegíti a felhasználók közötti megállapodásokat, de nem szerződő fél bennük. Minden fizetés vagy csere kizárólag a Kereső és a Segítő között történik. A feladatokból eredő vitákért nem vállalunk felelősséget."
+      },
+      "privacy": {
+        "title": "5. Adatvédelem",
+        "body": "Csak a szolgáltatás működtetéséhez szükséges adatokat gyűjtjük. Nem értékesítjük az adataidat. A teljes adatvédelmi szabályzatot a nyilvános indulás előtt tesszük közzé."
+      },
+      "liability": {
+        "title": "6. Felelősség korlátozása",
+        "body": "A 2gather ebben a korai szakaszban „úgy, ahogy van” alapon érhető el. Nem vállalunk garanciát a rendelkezésre állásra vagy bármilyen meghatározott célra való alkalmasságra. Felelősségünk az alkalmazandó jogszabályok által megengedett legnagyobb mértékben korlátozott."
+      },
+      "changes": {
+        "title": "7. Ezen feltételek módosítása",
+        "body": "A termék fejlődésével módosíthatjuk ezeket a feltételeket. A platform továbbhasználata a módosítások közzététele után a felülvizsgált feltételek elfogadásának minősül."
+      }
+    }
+  },
   "legal": {
     "termsTitleFallback": "Aktuális feltételek",
     "versionLabel": "{version} verzió",
