@@ -132,6 +132,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         IQueryable<CommunityTask> orderedQuery;
         var effectiveSort = sort?.ToLowerInvariant();
+        List<string>? helperSkillNames = null;
         if (effectiveSort == SortRelevant)
         {
             var userId = GetCurrentUserId();
@@ -141,6 +142,20 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
                     .Select(p => new { p.UserId, p.Location })
                     .FirstOrDefaultAsync(p => p.UserId == userId.Value, cancellationToken))?.Location
                 : null;
+
+            // Helper's approved, active skill names drive the lexical relevance
+            // boost. Pulled once up-front so the in-memory ranking below has
+            // them without doing a per-task lookup.
+            if (userId.HasValue)
+            {
+                helperSkillNames = await db.ProfileSkills
+                    .AsNoTracking()
+                    .Where(ps => ps.Profile.UserId == userId.Value
+                        && ps.Skill.Status == SkillStatus.Approved
+                        && ps.Skill.IsActive)
+                    .Select(ps => ps.Skill.Name)
+                    .ToListAsync(cancellationToken);
+            }
 
             if (proximityOrigin is not null)
             {
@@ -168,6 +183,32 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         else
         {
             orderedQuery = query.OrderByDescending(task => task.CreatedAt);
+        }
+
+        // Skill-relevance re-ranking layered on top of the existing distance/
+        // recency ordering. Done in memory because lexical matching at SQL would
+        // need either dynamically built Expression trees over a variable-length
+        // skill list, or N per-skill OR'd ILike clauses that don't scale with
+        // helper skill counts. The issue's option 1 (lexical) explicitly accepts
+        // this trade-off as the starting point; TF-IDF / BM25 / embeddings are
+        // listed as later upgrades that can re-use the call site below.
+        //
+        // Stability matters here: Enumerable.OrderByDescending is a stable sort,
+        // so ties on skill score preserve the distance-then-recency ordering
+        // produced by orderedQuery.
+        if (effectiveSort == SortRelevant && helperSkillNames is { Count: > 0 })
+        {
+            var rankedTasks = await orderedQuery.ToListAsync(cancellationToken);
+            rankedTasks = rankedTasks
+                .OrderByDescending(task => ComputeSkillMatchScore(task, helperSkillNames))
+                .ToList();
+
+            if (shouldPage)
+            {
+                rankedTasks = rankedTasks.Skip(skip).Take(effectivePageSize).ToList();
+            }
+
+            return Ok(rankedTasks.Select(TaskResponse.FromTask));
         }
 
         if (shouldPage)

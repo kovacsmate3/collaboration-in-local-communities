@@ -18,6 +18,31 @@ public sealed partial class TasksController
         return !int.TryParse(value, out _) && Enum.TryParse(value, ignoreCase: true, out result);
     }
 
+    /// <summary>
+    /// Count of helper skill names found (case-insensitive substring) in the
+    /// task's title or description. Used as the relevance boost in the helper
+    /// feed when sort=relevant.
+    /// </summary>
+    private static int ComputeSkillMatchScore(CommunityTask task, IReadOnlyList<string> skillNames)
+    {
+        var haystack = $"{task.Title} {task.Description}";
+        var score = 0;
+        foreach (var name in skillNames)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            if (haystack.Contains(name, StringComparison.OrdinalIgnoreCase))
+            {
+                score++;
+            }
+        }
+
+        return score;
+    }
+
     private static bool TryParseTaskStatus(string value, out DomainTaskStatus result)
     {
         result = default;
