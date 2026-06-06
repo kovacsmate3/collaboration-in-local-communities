@@ -494,7 +494,7 @@
       "errorAmount": "Adj meg érvényes összeget.",
       "updatedToast": "Feladat frissítve!",
       "postedToast": "Feladat közzétéve!",
-      "updateErrorDefault": "Nem sikerült frissíteni a feladatot.",
+      "updateErrorDefault": "Nem szerkeszteni frissíteni a feladatot.",
       "postErrorDefault": "Nem sikerült közzétenni a feladatot."
     }
   },
