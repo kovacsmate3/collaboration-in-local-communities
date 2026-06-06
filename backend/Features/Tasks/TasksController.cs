@@ -31,6 +31,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         [FromQuery] double? latitude,
         [FromQuery] double? longitude,
         [FromQuery] double? radiusMeters,
+        [FromQuery] string? q = null,
         [FromQuery] string? compensationType = null,
         [FromQuery] DateTimeOffset? createdAfter = null,
         [FromQuery] string? sort = null,
@@ -121,6 +122,23 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         {
             var cutoff = createdAfter.Value;
             query = query.Where(task => task.CreatedAt >= cutoff);
+        }
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            // Escape PostgreSQL LIKE wildcards in the user input so they're
+            // treated as literal characters. The escape char is backslash;
+            // we escape \ first so it doesn't double-process the % and _
+            // we add immediately after.
+            var trimmed = q.Trim();
+            var escaped = trimmed
+                .Replace(@"\", @"\\", StringComparison.Ordinal)
+                .Replace("%", @"\%", StringComparison.Ordinal)
+                .Replace("_", @"\_", StringComparison.Ordinal);
+            var pattern = $"%{escaped}%";
+            query = query.Where(task =>
+                EF.Functions.ILike(task.Title, pattern, @"\")
+                || EF.Functions.ILike(task.Description, pattern, @"\"));
         }
 
         // Apply hard radius filter regardless of sort order.
