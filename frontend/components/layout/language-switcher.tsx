@@ -9,12 +9,6 @@ import { useLocale, useTranslations } from "next-intl"
 import { setLocale } from "@/app/actions/set-locale"
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   DEFAULT_LOCALE,
   LOCALES,
   LOCALE_LABELS,
@@ -24,12 +18,17 @@ import {
 } from "@/i18n/config"
 
 /**
- * Dropdown that switches the UI language. Persists the choice in the
- * NEXT_LOCALE cookie via a server action so the next server render
- * picks up the new locale immediately, then refreshes the route tree
- * so already-rendered content re-fetches its translations.
+ * Single-button language toggle.
  *
- * Visible on every page so anonymous users (auth flow) can switch too.
+ * For the two-locale case (en / hu) a dropdown is overkill — clicking the
+ * button simply flips to the other locale. The current locale's short
+ * label (e.g. "EN" or "HU") sits next to the globe icon so users can see
+ * the active language at a glance. If a third locale is ever introduced,
+ * switch this back to a dropdown.
+ *
+ * Persists the choice in the NEXT_LOCALE cookie via a server action, then
+ * calls `router.refresh()` so server-rendered content re-fetches its
+ * translations in the new locale.
  */
 export function LanguageSwitcher() {
   const router = useRouter()
@@ -40,53 +39,30 @@ export function LanguageSwitcher() {
     : DEFAULT_LOCALE
   const [isPending, startTransition] = useTransition()
 
-  function handleSelect(next: Locale) {
-    if (next === currentLocale) return
+  const otherLocale =
+    LOCALES.find((locale) => locale !== currentLocale) ?? DEFAULT_LOCALE
+
+  function handleToggle() {
     startTransition(async () => {
-      await setLocale(next)
+      await setLocale(otherLocale)
       router.refresh()
     })
   }
 
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          disabled={isPending}
-          aria-label={t("label")}
-          className="gap-1.5 px-2"
-        >
-          <HugeiconsIcon icon={GlobalIcon} className="size-4" />
-          <span className="text-xs font-medium">
-            {LOCALE_SHORT_LABELS[currentLocale]}
-          </span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {LOCALES.map((locale) => {
-          const isCurrent = locale === currentLocale
-          return (
-            <DropdownMenuItem
-              key={locale}
-              aria-current={isCurrent ? "true" : undefined}
-              onSelect={(event) => {
-                event.preventDefault()
-                handleSelect(locale)
-              }}
-            >
-              <span>{LOCALE_LABELS[locale]}</span>
-              {isCurrent ? (
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {t("selectedSuffix")}
-                </span>
-              ) : null}
-            </DropdownMenuItem>
-          )
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      type="button"
+      size="sm"
+      variant="ghost"
+      disabled={isPending}
+      onClick={handleToggle}
+      aria-label={t("switchTo", { name: LOCALE_LABELS[otherLocale] })}
+      className="gap-1.5 px-2"
+    >
+      <HugeiconsIcon icon={GlobalIcon} className="size-4" />
+      <span className="text-xs font-medium">
+        {LOCALE_SHORT_LABELS[currentLocale]}
+      </span>
+    </Button>
   )
 }

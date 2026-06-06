@@ -110,7 +110,8 @@
   },
   "languageSwitcher": {
     "label": "Nyelv váltása",
-    "selectedSuffix": "(jelenlegi)"
+    "selectedSuffix": "(jelenlegi)",
+    "switchTo": "Váltás erre: {name}"
   },
   "auth": {
     "login": {

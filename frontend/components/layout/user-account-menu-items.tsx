@@ -9,7 +9,6 @@ import {
 } from "@hugeicons/core-free-icons"
 import { useTranslations } from "next-intl"
 
-import { LanguageSubmenu } from "@/components/layout/language-submenu"
 import {
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -42,7 +41,6 @@ export function UserAccountMenuItems({
           {t("settings")}
         </Link>
       </DropdownMenuItem>
-      <LanguageSubmenu />
       <DropdownMenuSeparator />
       <DropdownMenuItem
         variant="destructive"

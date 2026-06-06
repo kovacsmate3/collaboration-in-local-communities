@@ -110,7 +110,8 @@
   },
   "languageSwitcher": {
     "label": "Change language",
-    "selectedSuffix": "(current)"
+    "selectedSuffix": "(current)",
+    "switchTo": "Switch to {name}"
   },
   "auth": {
     "login": {
