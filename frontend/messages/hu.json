@@ -492,7 +492,7 @@
       "errorDescriptionMax": "A leírás túl hosszú. Kérjük, rövidítsd le.",
       "errorCategory": "Válassz kategóriát.",
       "errorAmount": "Adj meg érvényes összeget.",
-      "updatedToast": "Feladat frissítve!",
+      "updatedToast": "Feladat szerkesztve!",
       "postedToast": "Feladat közzétéve!",
       "updateErrorDefault": "Nem szerkeszteni frissíteni a feladatot.",
       "postErrorDefault": "Nem sikerült közzétenni a feladatot."
