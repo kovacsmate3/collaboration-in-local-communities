@@ -126,7 +126,7 @@
       "successTitle": "Jelszó lecserélve",
       "successSubtitle": "A jelszavad visszaállt. Most már bejelentkezhetsz az új jelszavaddal.",
       "signIn": "Bejelentkezés",
-      "successToast": "A jelszó sikeresen frissült.",
+      "successToast": "Sikeres jelszó csere.",
       "networkError": "Nem sikerült elküldeni a kérést. Ellenőrizd a kapcsolatot, és próbáld újra.",
       "invalidPasswordError": "A jelszó nem felel meg a követelményeknek.",
       "linkExpiredError": "Ez a link érvénytelen vagy lejárt. Kérj egy újat."
