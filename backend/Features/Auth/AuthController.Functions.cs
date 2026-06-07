@@ -14,7 +14,7 @@ public sealed partial class AuthController
 {
     // Supported email locales and fallback (see ResolveEmailLocale).
     private const string DefaultEmailLocale = "en";
-    private static readonly string[] SupportedEmailLocales = ["en", "hu"];
+    private static readonly string[] _supportedEmailLocales = ["en", "hu"];
 
     private static AuthResponse ToResponse(ApplicationUser user, AuthTokenResult tokens)
     {
@@ -59,7 +59,7 @@ public sealed partial class AuthController
     private string ResolveEmailLocale()
     {
         var languages = Request.GetTypedHeaders().AcceptLanguage;
-        if (languages is null || languages.Count == 0)
+        if (languages.Count == 0)
         {
             return DefaultEmailLocale;
         }
@@ -72,13 +72,13 @@ public sealed partial class AuthController
                 continue;
             }
 
-            if (SupportedEmailLocales.Contains(tag))
+            if (_supportedEmailLocales.Contains(tag))
             {
                 return tag;
             }
 
             var primary = tag.Split('-')[0];
-            if (SupportedEmailLocales.Contains(primary))
+            if (_supportedEmailLocales.Contains(primary))
             {
                 return primary;
             }
