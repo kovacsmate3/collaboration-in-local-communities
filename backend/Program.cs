@@ -10,6 +10,7 @@ using Backend.Infrastructure.Email;
 using Backend.Infrastructure.Identity;
 using Backend.Infrastructure.OpenApi;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Persistence.Analytics;
 using Backend.Infrastructure.Persistence.Queries;
 using Backend.Infrastructure.Persistence.Seeding;
 using Backend.Infrastructure.Security;
@@ -177,6 +178,13 @@ builder.Services.AddOptions<RefreshTokenPruningOptions>()
     .ValidateDataAnnotations()
     .ValidateOnStart();
 builder.Services.AddHostedService<RefreshTokenPruningBackgroundService>();
+
+builder.Services.AddScoped<ProfileReputationViewRefresher>();
+builder.Services.AddOptions<ProfileReputationRefreshOptions>()
+    .Bind(builder.Configuration.GetSection(ProfileReputationRefreshOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddHostedService<ProfileReputationRefreshBackgroundService>();
 
 builder.Services.AddApplicationIdentity();
 builder.Services.AddEmailSender(builder.Configuration);
