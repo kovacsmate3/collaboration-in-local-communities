@@ -131,6 +131,7 @@ jobs:
         with:
           name: frontend-standalone
           path: frontend/.next/standalone/
+          include-hidden-files: true
           retention-days: 1
 
   # ── E2E: full-stack Playwright ─────────────────────────────────────────────
