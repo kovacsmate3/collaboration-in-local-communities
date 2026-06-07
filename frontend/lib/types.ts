@@ -36,7 +36,7 @@ export type TaskCategory =
   | "moving"
   | "tutoring"
   | "household"
-  | "petcare"
+  | "pet_care"
   | "tools"
   | "tech"
   | "errands"

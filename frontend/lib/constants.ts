@@ -9,7 +9,7 @@ export const TASK_CATEGORY_LIST: readonly TaskCategory[] = [
   "moving",
   "tutoring",
   "household",
-  "petcare",
+  "pet_care",
   "tools",
   "tech",
   "errands",

@@ -102,7 +102,7 @@ export const mockTasks: Task[] = [
     id: "t_003",
     title: "Dog sitting this weekend",
     description: "Friendly border collie, two short walks per day. Sat–Sun.",
-    category: "petcare",
+    category: "pet_care",
     icon: "Bone01Icon",
     location: "Budapest, District V",
     compensation: { type: "voluntary" },
