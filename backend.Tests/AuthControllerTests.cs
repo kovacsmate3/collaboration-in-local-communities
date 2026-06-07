@@ -156,9 +156,17 @@ public sealed class AuthControllerTests
         Assert.True(profile.IsProfileCompleted);
         Assert.NotNull(profile.PrivacySettings);
 
-        // #159: registration no longer issues tokens/cookies — it sends a verification email.
+        // #159: registration no longer issues tokens/cookies.
         Assert.False(await db.RefreshTokens.AnyAsync(t => t.UserId == persistedUser.Id, cancellationToken));
+#if DEBUG
+        // Debug builds auto-confirm the account for local dev and skip the verification
+        // email (see the #if DEBUG branch in AuthController.RegisterAsync).
+        Assert.True(persistedUser.EmailConfirmed);
+        Assert.Empty(emailSender.SentTo);
+#else
+        // Release builds (and CI) send the verification email instead of auto-confirming.
         Assert.Equal([request.Email], emailSender.SentTo);
+#endif
 
         Assert.True(await db.AuditEvents
             .AnyAsync(e => e.EventType == "auth.registered" && e.ActorUserId == persistedUser.Id, cancellationToken));
