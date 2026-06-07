@@ -161,6 +161,12 @@ jobs:
       # ApiKey. The suite never sends mail, so a placeholder is sufficient.
       SendGrid__ApiKey: "ci-e2e-placeholder-sendgrid-api-key"
 
+      # Azurite (local blob storage emulator) connection string.
+      # appsettings.Development.json carries this value but is not reliably
+      # present in the dotnet publish output, so we set it explicitly.
+      BlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;"
+      BlobStorage__ContainerName: "profile-photos"
+
       # Frontend → backend proxy target and Playwright base URL.
       API_URL: "http://localhost:5073"
       BASE_URL: "http://localhost:3000"
@@ -202,6 +208,14 @@ jobs:
           timeout 600 bash -c '
             until curl -k --silent --output /dev/null --max-time 5 https://localhost:8081/_explorer/emulator.pem; do
               sleep 5
+            done
+          '
+
+      - name: Wait for Azurite
+        run: |
+          timeout 60 bash -c '
+            until curl --silent --output /dev/null http://localhost:10000; do
+              sleep 2
             done
           '
 
