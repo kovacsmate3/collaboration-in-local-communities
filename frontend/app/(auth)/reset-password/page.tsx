@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server"
 import { ResetPasswordForm } from "@/components/auth/reset-password-form"
 
 export const metadata: Metadata = {
-  title: "Reset your password",
+  title: "Set a new password",
 }
 
 export default async function ResetPasswordPage() {
