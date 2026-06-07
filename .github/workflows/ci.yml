@@ -232,10 +232,12 @@ jobs:
             done
           '
 
-      # next.config.ts uses output:"standalone", so no node_modules needed at runtime.
+      # next.config.ts uses output:"standalone". The server resolves .next relative
+      # to process.cwd(), so we must run it from inside the standalone directory.
       - name: Start frontend
+        working-directory: frontend-standalone
         run: |
-          PORT=3000 HOSTNAME=0.0.0.0 nohup node frontend-standalone/server.js > frontend.log 2>&1 &
+          PORT=3000 HOSTNAME=0.0.0.0 nohup node server.js > ../frontend.log 2>&1 &
           echo "FRONTEND_PID=$!" >> "$GITHUB_ENV"
 
       - name: Wait for frontend
