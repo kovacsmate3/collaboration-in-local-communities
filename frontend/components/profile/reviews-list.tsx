@@ -17,6 +17,8 @@ interface ReviewsListProps {
   totalPages?: number
   onPageChange?: (page: number) => void
   isFetching?: boolean
+  /** Render the warmer second-person empty state on the viewer's own profile. */
+  isOwn?: boolean
 }
 
 /**
@@ -32,12 +34,18 @@ export function ReviewsList({
   totalPages,
   onPageChange,
   isFetching,
+  isOwn = false,
 }: ReviewsListProps) {
   const t = useTranslations("profile.reviews")
   const locale = useLocale()
 
   if (reviews.length === 0) {
-    return <EmptyState title={t("emptyTitle")} description={t("emptyBody")} />
+    return (
+      <EmptyState
+        title={t(isOwn ? "emptyTitleOwn" : "emptyTitle")}
+        description={t(isOwn ? "emptyBodyOwn" : "emptyBody")}
+      />
+    )
   }
 
   const showPager =

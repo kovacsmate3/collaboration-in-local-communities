@@ -40,6 +40,7 @@ export function ProfilePageContent({
   const { user: authUser } = useAuth()
   const isOwnRoute = !profileId
   const isOwner = Boolean(profileId && authUser?.profileId === profileId)
+  const isOwnView = isOwnRoute || isOwner
   const ownProfile = useOwnProfile(isOwnRoute)
   const publicProfile = usePublicProfile(profileId ?? "")
   const query = isOwnRoute ? ownProfile : publicProfile
@@ -51,8 +52,12 @@ export function ProfilePageContent({
   if (query.isError || !query.data) {
     return (
       <Alert variant="destructive">
-        <AlertTitle>{t("loadErrorTitle")}</AlertTitle>
-        <AlertDescription>{t("loadErrorBody")}</AlertDescription>
+        <AlertTitle>
+          {t(isOwnView ? "loadErrorTitleOwn" : "loadErrorTitle")}
+        </AlertTitle>
+        <AlertDescription>
+          {t(isOwnView ? "loadErrorBodyOwn" : "loadErrorBody")}
+        </AlertDescription>
       </Alert>
     )
   }
@@ -60,10 +65,11 @@ export function ProfilePageContent({
   return (
     <ProfileLoaded
       profile={query.data}
-      canEdit={isOwnRoute || isOwner}
+      canEdit={isOwnView}
       editHref={editHref}
-      showMessage={!isOwnRoute && !isOwner}
-      showOwnerCtas={isOwnRoute || isOwner}
+      showMessage={!isOwnView}
+      showOwnerCtas={isOwnView}
+      isOwn={isOwnView}
     />
   )
 }
@@ -74,12 +80,14 @@ function ProfileLoaded({
   editHref,
   showMessage,
   showOwnerCtas,
+  isOwn,
 }: {
   profile: OwnProfileResponse | PublicProfileResponse
   canEdit: boolean
   editHref: string
   showMessage: boolean
   showOwnerCtas: boolean
+  isOwn: boolean
 }) {
   const t = useTranslations("profile.page")
   const skillIds = "skillIds" in profile ? profile.skillIds : []
@@ -143,17 +151,21 @@ function ProfileLoaded({
       <Tabs defaultValue="reviews">
         <TabsList>
           <TabsTrigger value="reviews">
-            {t("reviewsTab", { count: reviewsCount })}
+            {t(isOwn ? "reviewsTabOwn" : "reviewsTab", { count: reviewsCount })}
           </TabsTrigger>
           <TabsTrigger value="history">
-            {t("historyTab", { count: taskHistoryCount })}
+            {t(isOwn ? "historyTabOwn" : "historyTab", {
+              count: taskHistoryCount,
+            })}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="reviews">
           {reviewsQuery.isLoading ? (
             <ProfileTabSkeleton />
           ) : reviewsQuery.isError ? (
-            <ProfileTabError title={t("reviewsUnavailable")} />
+            <ProfileTabError
+              title={t(isOwn ? "reviewsUnavailableOwn" : "reviewsUnavailable")}
+            />
           ) : (
             <ReviewsList
               reviews={reviews}
@@ -161,6 +173,7 @@ function ProfileLoaded({
               totalPages={reviewsTotalPages}
               onPageChange={setReviewsPage}
               isFetching={reviewsQuery.isFetching}
+              isOwn={isOwn}
             />
           )}
         </TabsContent>
@@ -168,9 +181,13 @@ function ProfileLoaded({
           {taskHistoryQuery.isLoading ? (
             <ProfileTabSkeleton />
           ) : taskHistoryQuery.isError ? (
-            <ProfileTabError title={t("taskHistoryUnavailable")} />
+            <ProfileTabError
+              title={t(
+                isOwn ? "taskHistoryUnavailableOwn" : "taskHistoryUnavailable"
+              )}
+            />
           ) : (
-            <TaskHistory tasks={taskHistory} />
+            <TaskHistory tasks={taskHistory} isOwn={isOwn} />
           )}
         </TabsContent>
       </Tabs>

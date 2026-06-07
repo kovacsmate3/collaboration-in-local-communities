@@ -446,8 +446,12 @@ function EmptyState({ showOwnerCtas }: { showOwnerCtas: boolean }) {
   const t = useTranslations("profile.reputation")
   return (
     <div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-sm">
-      <p className="font-medium">{t("emptyTitle")}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{t("emptyBody")}</p>
+      <p className="font-medium">
+        {t(showOwnerCtas ? "emptyTitleOwn" : "emptyTitle")}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t(showOwnerCtas ? "emptyBodyOwn" : "emptyBody")}
+      </p>
       {showOwnerCtas ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button asChild size="sm">

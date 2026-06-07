@@ -12,6 +12,8 @@ import type { ProfileTaskHistoryItem } from "@/lib/api/profile"
 
 interface TaskHistoryProps {
   tasks: ProfileTaskHistoryItem[]
+  /** Render the warmer second-person copy on the viewer's own profile. */
+  isOwn?: boolean
 }
 
 /**
@@ -21,20 +23,25 @@ interface TaskHistoryProps {
  * profile view, not an actionable feed - so the styling is tighter and
  * cards are not navigable.
  */
-export function TaskHistory({ tasks }: TaskHistoryProps) {
+export function TaskHistory({ tasks, isOwn = false }: TaskHistoryProps) {
   const t = useTranslations("profile.taskHistory")
   const tCategories = useTranslations("tasks.categories")
   const locale = useLocale()
 
   if (tasks.length === 0) {
-    return <EmptyState title={t("emptyTitle")} description={t("emptyBody")} />
+    return (
+      <EmptyState
+        title={t(isOwn ? "emptyTitleOwn" : "emptyTitle")}
+        description={t(isOwn ? "emptyBodyOwn" : "emptyBody")}
+      />
+    )
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-sm tracking-wide text-muted-foreground uppercase">
-          {t("title")}
+          {t(isOwn ? "titleOwn" : "title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
