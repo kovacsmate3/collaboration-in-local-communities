@@ -1,5 +1,7 @@
 "use client"
 
+import { useTranslations } from "next-intl"
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,25 +24,25 @@ export function CancelTaskButton({
   onCancel,
   isPending,
 }: CancelTaskButtonProps) {
+  const t = useTranslations("tasks.cancelTask")
+  const tCommon = useTranslations("common")
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant="ghost" disabled={isPending}>
-          {isPending ? "Cancelling…" : "Cancel task"}
+          {isPending ? t("pending") : t("button")}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Cancel this task?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will cancel the task and notify any involved helpers. This
-            action cannot be undone.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t("dialogTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("dialogBody")}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Go back</AlertDialogCancel>
+          <AlertDialogCancel>{tCommon("goBack")}</AlertDialogCancel>
           <AlertDialogAction disabled={isPending} onClick={onCancel}>
-            {isPending ? "Cancelling…" : "Cancel task"}
+            {isPending ? t("pending") : t("button")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

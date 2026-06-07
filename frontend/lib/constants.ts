@@ -1,63 +1,38 @@
-import type { CompensationType, TaskCategory, TaskStatus } from "@/lib/types"
-
-/** Display metadata for task categories. Backed by `TaskCategory` for type safety. */
-export const TASK_CATEGORIES: Record<
-  TaskCategory,
-  { label: string; description: string }
-> = {
-  moving: { label: "Moving", description: "Help carrying, packing, lifting" },
-  tutoring: {
-    label: "Tutoring",
-    description: "Lessons, study help, exam prep",
-  },
-  household: {
-    label: "Household",
-    description: "Small repairs, cleaning, assembly",
-  },
-  petcare: { label: "Pet care", description: "Sitting, walking, feeding" },
-  tools: { label: "Tool lending", description: "Borrow or share equipment" },
-  tech: { label: "Tech help", description: "Setup, troubleshooting, devices" },
-  errands: { label: "Errands", description: "Quick favors, deliveries" },
-  other: { label: "Other", description: "Anything else" },
-}
-
-export const TASK_CATEGORY_LIST = Object.keys(TASK_CATEGORIES) as TaskCategory[]
+import type { CompensationType, TaskCategory } from "@/lib/types"
 
 /**
- * Display labels for the optional extra reward. Points are always awarded when
- * a helper completes a task.
+ * Stable ordering for task categories. Labels are intentionally not stored
+ * here — consumers resolve them through next-intl (`tasks.categories.{id}`)
+ * so the same id renders correctly in every locale.
  */
-export const COMPENSATION_LABELS: Record<CompensationType, string> = {
-  paid: "Paid + points",
-  points: "Points only",
-  voluntary: "Points only",
-  barter: "Barter + points",
-}
+export const TASK_CATEGORY_LIST: readonly TaskCategory[] = [
+  "moving",
+  "tutoring",
+  "household",
+  "pet_care",
+  "tools",
+  "tech",
+  "errands",
+  "other",
+]
 
+/**
+ * Reward options offered when posting a task. The values map 1:1 to the
+ * `CompensationType` discriminant (except `voluntary`, which is not user-
+ * selectable). Labels are resolved at render time via
+ * `tasks.compensation.{value}`.
+ */
 export const COMPENSATION_OPTIONS = [
-  { value: "points", label: COMPENSATION_LABELS.points },
-  { value: "paid", label: COMPENSATION_LABELS.paid },
-  { value: "barter", label: COMPENSATION_LABELS.barter },
-] as const satisfies readonly {
-  value: Exclude<CompensationType, "voluntary">
-  label: string
-}[]
+  "points",
+  "paid",
+  "barter",
+] as const satisfies readonly Exclude<CompensationType, "voluntary">[]
 
-export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
-  open: "Open",
-  in_progress: "In progress",
-  completed: "Completed",
-  reviewed: "Reviewed",
-  cancelled: "Cancelled",
-}
-
-/** Recency filter buckets for the feed search. */
-export const RECENCY_OPTIONS = [
-  { value: "any", label: "Any time" },
-  { value: "24h", label: "Last 24 hours" },
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
-] as const
+/**
+ * Recency filter buckets for the feed search. Labels are resolved through
+ * `tasks.filters.recencyOptions.{value}` so the dropdown renders in the
+ * active locale.
+ */
+export const RECENCY_OPTIONS = ["any", "24h", "7d", "30d"] as const
 
 export const APP_NAME = "2gather"
-export const APP_TAGLINE = "Local help, structured trust."

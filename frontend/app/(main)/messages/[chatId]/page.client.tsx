@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { notFound } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 import { Card } from "@/components/ui/card"
 import { ChatList } from "@/components/messages/chat-list"
@@ -17,6 +18,7 @@ interface ChatPageClientProps {
 }
 
 export function ChatPageClient({ chatId }: ChatPageClientProps) {
+  const t = useTranslations("messages.page")
   const {
     data: conversations = [],
     isLoading: listLoading,
@@ -53,7 +55,7 @@ export function ChatPageClient({ chatId }: ChatPageClientProps) {
       <Card className="overflow-hidden p-0">
         {listLoading || messagesLoading ? (
           <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <p className="text-sm text-muted-foreground">{t("loading")}</p>
           </div>
         ) : conversation ? (
           <ChatWindow

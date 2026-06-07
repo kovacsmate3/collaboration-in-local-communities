@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useQueries } from "@tanstack/react-query"
+import { useTranslations } from "next-intl"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -35,9 +36,11 @@ export function ProfilePageContent({
   profileId,
   editHref = "/profile/edit",
 }: ProfilePageContentProps) {
+  const t = useTranslations("profile.page")
   const { user: authUser } = useAuth()
   const isOwnRoute = !profileId
   const isOwner = Boolean(profileId && authUser?.profileId === profileId)
+  const isOwnView = isOwnRoute || isOwner
   const ownProfile = useOwnProfile(isOwnRoute)
   const publicProfile = usePublicProfile(profileId ?? "")
   const query = isOwnRoute ? ownProfile : publicProfile
@@ -49,10 +52,11 @@ export function ProfilePageContent({
   if (query.isError || !query.data) {
     return (
       <Alert variant="destructive">
-        <AlertTitle>Profile unavailable</AlertTitle>
+        <AlertTitle>
+          {t(isOwnView ? "loadErrorTitleOwn" : "loadErrorTitle")}
+        </AlertTitle>
         <AlertDescription>
-          The profile could not be loaded. It may have been removed or you may
-          not have access to it.
+          {t(isOwnView ? "loadErrorBodyOwn" : "loadErrorBody")}
         </AlertDescription>
       </Alert>
     )
@@ -61,10 +65,11 @@ export function ProfilePageContent({
   return (
     <ProfileLoaded
       profile={query.data}
-      canEdit={isOwnRoute || isOwner}
+      canEdit={isOwnView}
       editHref={editHref}
-      showMessage={!isOwnRoute && !isOwner}
-      showOwnerCtas={isOwnRoute || isOwner}
+      showMessage={!isOwnView}
+      showOwnerCtas={isOwnView}
+      isOwn={isOwnView}
     />
   )
 }
@@ -75,13 +80,16 @@ function ProfileLoaded({
   editHref,
   showMessage,
   showOwnerCtas,
+  isOwn,
 }: {
   profile: OwnProfileResponse | PublicProfileResponse
   canEdit: boolean
   editHref: string
   showMessage: boolean
   showOwnerCtas: boolean
+  isOwn: boolean
 }) {
+  const t = useTranslations("profile.page")
   const skillIds = "skillIds" in profile ? profile.skillIds : []
   const skillQueries = useQueries({
     queries: skillIds.map((id) => ({
@@ -122,11 +130,11 @@ function ProfileLoaded({
         actions={
           canEdit ? (
             <Button asChild variant="outline">
-              <Link href={editHref}>Edit profile</Link>
+              <Link href={editHref}>{t("editProfile")}</Link>
             </Button>
           ) : showMessage ? (
             <Button asChild>
-              <Link href="/messages">Message</Link>
+              <Link href="/messages">{t("message")}</Link>
             </Button>
           ) : null
         }
@@ -142,16 +150,22 @@ function ProfileLoaded({
 
       <Tabs defaultValue="reviews">
         <TabsList>
-          <TabsTrigger value="reviews">Reviews ({reviewsCount})</TabsTrigger>
+          <TabsTrigger value="reviews">
+            {t(isOwn ? "reviewsTabOwn" : "reviewsTab", { count: reviewsCount })}
+          </TabsTrigger>
           <TabsTrigger value="history">
-            History ({taskHistoryCount})
+            {t(isOwn ? "historyTabOwn" : "historyTab", {
+              count: taskHistoryCount,
+            })}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="reviews">
           {reviewsQuery.isLoading ? (
             <ProfileTabSkeleton />
           ) : reviewsQuery.isError ? (
-            <ProfileTabError label="Reviews" />
+            <ProfileTabError
+              title={t(isOwn ? "reviewsUnavailableOwn" : "reviewsUnavailable")}
+            />
           ) : (
             <ReviewsList
               reviews={reviews}
@@ -159,6 +173,7 @@ function ProfileLoaded({
               totalPages={reviewsTotalPages}
               onPageChange={setReviewsPage}
               isFetching={reviewsQuery.isFetching}
+              isOwn={isOwn}
             />
           )}
         </TabsContent>
@@ -166,9 +181,13 @@ function ProfileLoaded({
           {taskHistoryQuery.isLoading ? (
             <ProfileTabSkeleton />
           ) : taskHistoryQuery.isError ? (
-            <ProfileTabError label="Task history" />
+            <ProfileTabError
+              title={t(
+                isOwn ? "taskHistoryUnavailableOwn" : "taskHistoryUnavailable"
+              )}
+            />
           ) : (
-            <TaskHistory tasks={taskHistory} />
+            <TaskHistory tasks={taskHistory} isOwn={isOwn} />
           )}
         </TabsContent>
       </Tabs>
@@ -176,13 +195,12 @@ function ProfileLoaded({
   )
 }
 
-function ProfileTabError({ label }: { label: string }) {
+function ProfileTabError({ title }: { title: string }) {
+  const t = useTranslations("profile.page")
   return (
     <Alert variant="destructive">
-      <AlertTitle>{label} unavailable</AlertTitle>
-      <AlertDescription>
-        This profile section could not be loaded. Please try again shortly.
-      </AlertDescription>
+      <AlertTitle>{title}</AlertTitle>
+      <AlertDescription>{t("tabErrorBody")}</AlertDescription>
     </Alert>
   )
 }

@@ -10,7 +10,12 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Features/Auth/EmailTemplates/VerifyEmail.html" />
+    <!-- WithCulture=false: the ".hu" infix would otherwise be parsed as the
+         Hungarian culture and the template emitted into a satellite assembly,
+         where GetManifestResourceStream on the main assembly can't find it. -->
+    <EmbeddedResource Include="Features/Auth/EmailTemplates/VerifyEmail.hu.html" WithCulture="false" />
     <EmbeddedResource Include="Features/Auth/EmailTemplates/ResetPassword.html" />
+    <EmbeddedResource Include="Features/Auth/EmailTemplates/ResetPassword.hu.html" WithCulture="false" />
   </ItemGroup>
 
   <ItemGroup>

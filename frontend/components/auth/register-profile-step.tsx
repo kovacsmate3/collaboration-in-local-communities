@@ -1,36 +1,44 @@
 "use client"
 
+import { useTranslations } from "next-intl"
+
 import { LocationField } from "@/components/forms/location-field"
 import { TextareaField } from "@/components/forms/textarea-field"
 import { TextField } from "@/components/forms/text-field"
 import type { RegisterFormValues } from "@/lib/auth/schemas"
 
 export function RegisterProfileStep() {
+  const t = useTranslations("auth.register")
+
   return (
     <div className="grid gap-4">
       <TextField<RegisterFormValues>
         name="displayName"
-        label="Full name"
+        label={t("displayNameLabel")}
         autoComplete="name"
       />
 
       <TextField<RegisterFormValues>
         name="workplace"
-        label="Workplace / school"
+        label={t("workplaceLabel")}
         optional
       />
 
-      <TextField<RegisterFormValues> name="position" label="Role" optional />
+      <TextField<RegisterFormValues>
+        name="position"
+        label={t("positionLabel")}
+        optional
+      />
 
       <LocationField<RegisterFormValues>
         name="location"
-        label="Location"
-        placeholder="City, neighbourhood, or street address"
+        label={t("locationLabel")}
+        placeholder={t("locationPlaceholder")}
       />
 
       <TextareaField<RegisterFormValues>
         name="bio"
-        label="Short bio"
+        label={t("bioLabel")}
         rows={3}
         optional
       />

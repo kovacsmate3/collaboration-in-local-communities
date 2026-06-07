@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/page-header"
@@ -20,7 +21,7 @@ import { useInfiniteTaskList } from "@/lib/api/tasks"
 import type { TaskListFilters } from "@/lib/api/tasks"
 import { RECENCY_OPTIONS } from "@/lib/constants"
 
-type RecencyValue = (typeof RECENCY_OPTIONS)[number]["value"]
+type RecencyValue = (typeof RECENCY_OPTIONS)[number]
 
 const QUERY_DEBOUNCE_MS = 250
 
@@ -35,6 +36,7 @@ const QUERY_DEBOUNCE_MS = 250
  * in the URL so refreshes and shares preserve the view.
  */
 export function FeedPageClient() {
+  const t = useTranslations("tasks.feed")
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -160,11 +162,11 @@ export function FeedPageClient() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Local tasks"
-        description="Open requests in your community. Need a hand? Post a task in seconds."
+        title={t("title")}
+        description={t("description")}
         actions={
           <Button asChild>
-            <Link href="/post-task">Post a task</Link>
+            <Link href="/post-task">{t("postTask")}</Link>
           </Button>
         }
       />
@@ -177,24 +179,22 @@ export function FeedPageClient() {
       />
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading tasks…</p>
+        <p className="text-sm text-muted-foreground">{t("loadingTasks")}</p>
       ) : isError ? (
-        <p className="text-sm text-destructive">
-          Could not load tasks. Please try again.
-        </p>
+        <p className="text-sm text-destructive">{t("loadError")}</p>
       ) : (
         <>
           <TaskList
             tasks={tasks}
             emptyTitle={
               hasActiveFilters(filters)
-                ? "No tasks match your filters"
-                : "No open requests right now"
+                ? t("emptyFilteredTitle")
+                : t("emptyTitle")
             }
             emptyDescription={
               hasActiveFilters(filters)
-                ? "Try widening the category, reward, distance, or recency range."
-                : "Be the first to post one — your neighbours might be ready to help."
+                ? t("emptyFilteredBody")
+                : t("emptyBody")
             }
             hideStatus
             layout="grid"
@@ -208,7 +208,7 @@ export function FeedPageClient() {
             <div ref={sentinelRef} className="flex justify-center py-2">
               {isFetchingNextPage ? (
                 <p className="text-sm text-muted-foreground">
-                  Loading more tasks…
+                  {t("loadingMore")}
                 </p>
               ) : hasNextPage ? (
                 <Button
@@ -216,12 +216,10 @@ export function FeedPageClient() {
                   variant="outline"
                   onClick={() => void fetchNextPage()}
                 >
-                  Load more
+                  {t("loadMore")}
                 </Button>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  You are all caught up.
-                </p>
+                <p className="text-sm text-muted-foreground">{t("caughtUp")}</p>
               )}
             </div>
           ) : null}
@@ -269,8 +267,8 @@ function readFiltersFromUrl(
         : "all"
 
   const rawRecency = searchParams.get(SEARCH_PARAM_KEYS.recency) ?? "any"
-  const recency: RecencyValue = RECENCY_OPTIONS.some(
-    (o) => o.value === rawRecency
+  const recency: RecencyValue = (RECENCY_OPTIONS as readonly string[]).includes(
+    rawRecency
   )
     ? (rawRecency as RecencyValue)
     : "any"

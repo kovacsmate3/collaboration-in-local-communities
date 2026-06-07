@@ -1,3 +1,7 @@
+"use client"
+
+import { useLocale, useTranslations } from "next-intl"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { RatingStars } from "@/components/shared/rating-stars"
@@ -13,6 +17,8 @@ interface ReviewsListProps {
   totalPages?: number
   onPageChange?: (page: number) => void
   isFetching?: boolean
+  /** Render the warmer second-person empty state on the viewer's own profile. */
+  isOwn?: boolean
 }
 
 /**
@@ -28,12 +34,16 @@ export function ReviewsList({
   totalPages,
   onPageChange,
   isFetching,
+  isOwn = false,
 }: ReviewsListProps) {
+  const t = useTranslations("profile.reviews")
+  const locale = useLocale()
+
   if (reviews.length === 0) {
     return (
       <EmptyState
-        title="No reviews yet"
-        description="Reviews will appear here once tasks are completed."
+        title={t(isOwn ? "emptyTitleOwn" : "emptyTitle")}
+        description={t(isOwn ? "emptyBodyOwn" : "emptyBody")}
       />
     )
   }
@@ -63,7 +73,7 @@ export function ReviewsList({
                         {review.authorName}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {formatRelativeTime(review.createdAt)}
+                        {formatRelativeTime(review.createdAt, locale)}
                       </span>
                     </div>
                     <RatingStars value={review.rating} />
@@ -87,10 +97,10 @@ export function ReviewsList({
             disabled={page <= 1 || isFetching}
             onClick={() => onPageChange(page - 1)}
           >
-            Previous
+            {t("previous")}
           </Button>
           <span className="text-xs text-muted-foreground">
-            Page {page} of {totalPages}
+            {t("pageOf", { page, total: totalPages })}
           </span>
           <Button
             type="button"
@@ -99,7 +109,7 @@ export function ReviewsList({
             disabled={page >= totalPages || isFetching}
             onClick={() => onPageChange(page + 1)}
           >
-            Next
+            {t("next")}
           </Button>
         </div>
       ) : null}

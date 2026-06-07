@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { useAcceptTerms } from "@/lib/api/terms"
@@ -14,6 +15,8 @@ import {
 } from "@/lib/auth/functions"
 
 export function TermsAcceptancePanel() {
+  const t = useTranslations("legal")
+  const tPanel = useTranslations("legal.panel")
   const { user, isLoading, refreshSession, logout } = useAuth()
   const acceptTerms = useAcceptTerms()
   const router = useRouter()
@@ -28,14 +31,14 @@ export function TermsAcceptancePanel() {
   async function handleAcceptTerms() {
     const termsVersionId = currentUser.terms.activeVersionId
     if (!termsVersionId) {
-      toast.error("Terms are not available right now. Please try again later.")
+      toast.error(t("termsNotAvailableToast"))
       return
     }
 
     try {
       await acceptTerms.mutateAsync(termsVersionId)
       const nextUser = await refreshSession()
-      toast.success("Terms accepted")
+      toast.success(t("termsAcceptedToast"))
       router.replace(
         getPostAuthRedirectPath(
           searchParams.get("next"),
@@ -44,7 +47,7 @@ export function TermsAcceptancePanel() {
       )
       router.refresh()
     } catch {
-      toast.error("Unable to record your acceptance. Please try again.")
+      toast.error(t("recordFailedToast"))
     }
   }
 
@@ -57,19 +60,14 @@ export function TermsAcceptancePanel() {
   return (
     <section className="mb-10 rounded-lg border bg-card p-4 text-card-foreground shadow-xs">
       <div className="grid gap-2">
-        <h2 className="text-base font-semibold">
-          Accept Terms & Conditions to continue
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Your account needs an acceptance record for the current terms before
-          you can continue into the app.
-        </p>
+        <h2 className="text-base font-semibold">{tPanel("heading")}</h2>
+        <p className="text-sm text-muted-foreground">{tPanel("body")}</p>
         <p className="text-sm">
-          {currentUser.terms.activeTitle ?? "Current terms"}
+          {currentUser.terms.activeTitle ?? t("termsTitleFallback")}
           {currentUser.terms.activeVersion ? (
             <span className="text-muted-foreground">
               {" "}
-              version {currentUser.terms.activeVersion}
+              {t("versionLabel", { version: currentUser.terms.activeVersion })}
             </span>
           ) : null}
         </p>
@@ -80,7 +78,9 @@ export function TermsAcceptancePanel() {
           disabled={acceptTerms.isPending}
           onClick={() => void handleAcceptTerms()}
         >
-          {acceptTerms.isPending ? "Accepting..." : "Accept and continue"}
+          {acceptTerms.isPending
+            ? tPanel("accepting")
+            : tPanel("acceptAndContinue")}
         </Button>
         <Button
           type="button"
@@ -88,7 +88,7 @@ export function TermsAcceptancePanel() {
           disabled={acceptTerms.isPending}
           onClick={() => void handleUseAnotherAccount()}
         >
-          Use another account
+          {tPanel("useAnotherAccount")}
         </Button>
       </div>
     </section>
@@ -96,20 +96,21 @@ export function TermsAcceptancePanel() {
 }
 
 export function TermsBackLink() {
+  const t = useTranslations("legal.backLink")
   const { user, isLoading } = useAuth()
   if (user && !user.terms.hasAccepted) {
     return null
   }
 
   const href = user ? getHomePathForRole(user.role) : APP_AUTH_ROUTES.register
-  const label = user ? "Back to app" : "Back to registration"
+  const label = user ? t("toApp") : t("toRegister")
 
   return (
     <Link
       href={href}
       className="mb-8 inline-block text-sm text-muted-foreground hover:text-foreground"
     >
-      &larr; {isLoading ? "Back" : label}
+      &larr; {isLoading ? t("fallback") : label}
     </Link>
   )
 }
