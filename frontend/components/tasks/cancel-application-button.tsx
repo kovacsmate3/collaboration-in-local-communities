@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import {
@@ -27,13 +28,15 @@ export function CancelApplicationButton({
   applicationId,
   variant = "outline",
 }: CancelApplicationButtonProps) {
+  const t = useTranslations("tasks.cancelApplication")
+  const tCommon = useTranslations("common")
   const { mutate: cancelApplication, isPending } =
     useWithdrawTaskApplication(taskId)
 
   function handleCancel() {
     cancelApplication(applicationId, {
-      onSuccess: () => toast.success("Application cancelled."),
-      onError: () => toast.error("Could not cancel the application."),
+      onSuccess: () => toast.success(t("cancelledToast")),
+      onError: () => toast.error(t("cancelErrorToast")),
     })
   }
 
@@ -41,20 +44,18 @@ export function CancelApplicationButton({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button variant={variant} disabled={isPending}>
-          {isPending ? "Cancelling…" : "Cancel application"}
+          {isPending ? t("pending") : t("button")}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Cancel this application?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will remove the accepted helper and return the task to Open.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t("dialogTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("dialogBody")}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Go back</AlertDialogCancel>
+          <AlertDialogCancel>{tCommon("goBack")}</AlertDialogCancel>
           <AlertDialogAction disabled={isPending} onClick={handleCancel}>
-            {isPending ? "Cancelling…" : "Cancel application"}
+            {isPending ? t("pending") : t("button")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

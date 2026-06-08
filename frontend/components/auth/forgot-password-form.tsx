@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { type SubmitEvent } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslations } from "next-intl"
 
 import { TextField } from "@/components/forms/text-field"
 import { Button } from "@/components/ui/button"
@@ -16,6 +17,7 @@ import {
 } from "@/lib/auth/schemas"
 
 export function ForgotPasswordForm() {
+  const t = useTranslations("auth.forgot")
   const form = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: FORGOT_PASSWORD_FORM_DEFAULT_VALUES,
@@ -35,8 +37,7 @@ export function ForgotPasswordForm() {
       // Always treat HTTP responses as success to prevent email enumeration.
     } catch {
       form.setError("root", {
-        message:
-          "Unable to send the request. Please check your connection and try again.",
+        message: t("networkError"),
       })
     }
   }
@@ -48,16 +49,13 @@ export function ForgotPasswordForm() {
   if (isSubmitSuccessful) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">
-          If that address is registered, a reset link has been sent. Check your
-          inbox — it expires in 15 minutes.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("sentNotice")}</p>
         <p className="text-center text-sm text-muted-foreground">
           <Link
             href={APP_AUTH_ROUTES.login}
             className="font-medium text-foreground hover:underline"
           >
-            Back to sign in
+            {t("backToSignIn")}
           </Link>
         </p>
       </div>
@@ -73,11 +71,11 @@ export function ForgotPasswordForm() {
       >
         <TextField<ForgotPasswordFormValues>
           name="email"
-          label="Email"
+          label={t("emailLabel")}
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
-          description="We'll send a reset link if that address is registered."
+          placeholder={t("emailPlaceholder")}
+          description={t("emailDescription")}
         />
 
         {errors.root ? (
@@ -87,7 +85,7 @@ export function ForgotPasswordForm() {
         ) : null}
 
         <Button type="submit" disabled={isSubmitting} className="mt-2">
-          {isSubmitting ? "Sending..." : "Send reset link"}
+          {isSubmitting ? t("submitting") : t("submit")}
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
@@ -95,7 +93,7 @@ export function ForgotPasswordForm() {
             href={APP_AUTH_ROUTES.login}
             className="font-medium text-foreground hover:underline"
           >
-            Back to sign in
+            {t("backToSignIn")}
           </Link>
         </p>
       </form>

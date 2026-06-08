@@ -3,6 +3,7 @@
 import { Location01Icon, Search01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import * as React from "react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,8 +33,10 @@ export function LocationInput({
   value,
   onChange,
   required = false,
-  placeholder = "City, neighbourhood, or street address",
+  placeholder,
 }: LocationInputProps) {
+  const t = useTranslations("locationInput")
+  const resolvedPlaceholder = placeholder ?? t("placeholder")
   const [suggestions, setSuggestions] = React.useState<LocationSuggestion[]>([])
   const [isSearching, setIsSearching] = React.useState(false)
   const [isLocating, setIsLocating] = React.useState(false)
@@ -48,7 +51,7 @@ export function LocationInput({
   async function lookupAddress() {
     const query = value.locationText.trim()
     if (query.length < 3) {
-      setError("Enter at least 3 characters.")
+      setError(t("errorMinChars"))
       setSuggestions([])
       return
     }
@@ -63,7 +66,7 @@ export function LocationInput({
       )
 
       if (!response.ok) {
-        setError("Address lookup is unavailable.")
+        setError(t("errorLookupUnavailable"))
         setSuggestions([])
         return
       }
@@ -71,10 +74,10 @@ export function LocationInput({
       const data = (await response.json()) as SearchResponse
       setSuggestions(data.suggestions)
       if (data.suggestions.length === 0) {
-        setError("No matching addresses found.")
+        setError(t("errorNoResults"))
       }
     } catch {
-      setError("Address lookup is unavailable.")
+      setError(t("errorLookupUnavailable"))
       setSuggestions([])
     } finally {
       setIsSearching(false)
@@ -83,7 +86,7 @@ export function LocationInput({
 
   function locateUser() {
     if (!navigator.geolocation) {
-      setError("Your browser does not support location lookup.")
+      setError(t("errorBrowserUnsupported"))
       return
     }
 
@@ -103,7 +106,7 @@ export function LocationInput({
         void reverseGeocode(latitude, longitude)
       },
       () => {
-        setError("Unable to read your current location.")
+        setError(t("errorReadFailed"))
         setIsLocating(false)
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
@@ -126,7 +129,7 @@ export function LocationInput({
           latitude,
           longitude,
         })
-        setError("Address name unavailable; coordinates were saved.")
+        setError(t("errorReverseFallback"))
         return
       }
 
@@ -139,7 +142,7 @@ export function LocationInput({
         latitude,
         longitude,
       })
-      setError("Address name unavailable; coordinates were saved.")
+      setError(t("errorReverseFallback"))
     } finally {
       setIsLocating(false)
     }
@@ -158,7 +161,7 @@ export function LocationInput({
         <Input
           id={id}
           required={required}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           value={value.locationText}
           onChange={(event) => updateText(event.target.value)}
         />
@@ -171,7 +174,7 @@ export function LocationInput({
             onClick={lookupAddress}
           >
             <HugeiconsIcon icon={Search01Icon} className="size-4" />
-            {isSearching ? "Searching..." : "Search"}
+            {isSearching ? t("searching") : t("search")}
           </Button>
           <Button
             type="button"
@@ -180,7 +183,7 @@ export function LocationInput({
             onClick={locateUser}
           >
             <HugeiconsIcon icon={Location01Icon} className="size-4" />
-            {isLocating ? "Locating..." : "Use my location"}
+            {isLocating ? t("locating") : t("useMyLocation")}
           </Button>
         </div>
 
@@ -200,9 +203,7 @@ export function LocationInput({
         ) : null}
 
         {error ? <p className="text-xs text-destructive">{error}</p> : null}
-        <p className="text-xs text-muted-foreground">
-          Address data &copy; OpenStreetMap contributors.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("attribution")}</p>
       </div>
     </div>
   )

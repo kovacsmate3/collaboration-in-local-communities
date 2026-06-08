@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { notFound } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Calendar03Icon, Location01Icon } from "@hugeicons/core-free-icons"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -39,10 +40,12 @@ interface TaskDetailPageClientProps {
 }
 
 export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
+  const t = useTranslations("tasks.detail")
+  const locale = useLocale()
   const { data: task, isLoading, isError } = useTask(id)
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading task…</p>
+    return <p className="text-sm text-muted-foreground">{t("loading")}</p>
   }
 
   if (isError || !task) {
@@ -71,7 +74,9 @@ export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
           ) : null}
           <li className="flex items-center gap-1.5">
             <HugeiconsIcon icon={Calendar03Icon} className="size-4" />
-            Posted {formatRelativeTime(task.createdAt)}
+            {t("posted", {
+              relative: formatRelativeTime(task.createdAt, locale),
+            })}
           </li>
         </ul>
       </header>
@@ -79,14 +84,14 @@ export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
       <Separator />
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium">Description</h2>
+        <h2 className="text-sm font-medium">{t("description")}</h2>
         <RichTextContent html={task.description} />
       </section>
 
       <Card>
         <CardHeader>
           <CardTitle className="text-sm tracking-wide text-muted-foreground uppercase">
-            Posted by
+            {t("postedBy")}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex items-center gap-3">
@@ -101,6 +106,7 @@ export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
 }
 
 function TaskActions({ task }: { task: ApiTask }) {
+  const t = useTranslations("tasks.detail")
   const { user } = useAuth()
   const router = useRouter()
   const { mutate: updateTask, isPending: isCancelling } = useUpdateTask(task.id)
@@ -124,13 +130,15 @@ function TaskActions({ task }: { task: ApiTask }) {
 
   function handleCancel() {
     updateTask(
+      // cancellationReason is persisted data sent to the backend; intentionally
+      // left in English so DB content stays consistent across UI languages.
       { status: "Cancelled", cancellationReason: "Cancelled by seeker" },
       {
         onSuccess: () => {
-          toast.success("Task cancelled.")
+          toast.success(t("cancelledToast"))
           router.refresh()
         },
-        onError: () => toast.error("Could not cancel the task."),
+        onError: () => toast.error(t("cancelErrorToast")),
       }
     )
   }
@@ -149,7 +157,7 @@ function TaskActions({ task }: { task: ApiTask }) {
 
     startConversation(task.id, {
       onSuccess: (c) => router.push(`/messages/${c.id}`),
-      onError: () => toast.error("Could not open chat."),
+      onError: () => toast.error(t("openChatErrorToast")),
     })
   }
 
@@ -166,7 +174,7 @@ function TaskActions({ task }: { task: ApiTask }) {
           ) : (
             <>
               <Button variant="outline" asChild>
-                <Link href={`/tasks/${task.id}/edit`}>Edit task</Link>
+                <Link href={`/tasks/${task.id}/edit`}>{t("editTask")}</Link>
               </Button>
               <CancelTaskButton
                 onCancel={handleCancel}
@@ -194,7 +202,7 @@ function TaskActions({ task }: { task: ApiTask }) {
             disabled={isStarting || isLoadingConversations}
             onClick={handleMessage}
           >
-            {isStarting ? "Opening…" : "Open chat"}
+            {isStarting ? t("openingChat") : t("openChat")}
           </Button>
         ) : null}
         {task.acceptedHelperProfileId === user?.profileId ? (
@@ -220,8 +228,10 @@ function TaskActions({ task }: { task: ApiTask }) {
       <div className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">
           {isSeeker
-            ? `${task.acceptedHelperDisplayName ?? "The helper"} marked this task as done. Approve to complete it.`
-            : "Waiting for the seeker to approve completion."}
+            ? t("helperMarkedDone", {
+                helper: task.acceptedHelperDisplayName ?? t("defaultHelper"),
+              })
+            : t("waitingApproval")}
         </p>
         <div className="flex flex-wrap gap-2">
           {isSeeker ? <ApproveCompletionButton taskId={task.id} /> : null}
@@ -231,7 +241,7 @@ function TaskActions({ task }: { task: ApiTask }) {
               disabled={isStarting || isLoadingConversations}
               onClick={handleMessage}
             >
-              {isStarting ? "Opening…" : "Open chat"}
+              {isStarting ? t("openingChat") : t("openChat")}
             </Button>
           ) : null}
         </div>
@@ -247,7 +257,7 @@ function TaskActions({ task }: { task: ApiTask }) {
         ? task.seekerProfileId
         : null
     const revieweeName = isSeeker
-      ? (task.acceptedHelperDisplayName ?? "the helper")
+      ? (task.acceptedHelperDisplayName ?? t("defaultHelper"))
       : isHelper
         ? task.seekerDisplayName
         : null

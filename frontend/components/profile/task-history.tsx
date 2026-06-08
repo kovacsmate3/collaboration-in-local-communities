@@ -1,15 +1,19 @@
+"use client"
+
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
 import { CategoryBadge } from "@/components/tasks/category-badge"
 import { EmptyState } from "@/components/shared/empty-state"
 import { formatRelativeTime } from "@/lib/format"
-import { TASK_CATEGORIES } from "@/lib/constants"
 import type { ProfileTaskHistoryItem } from "@/lib/api/profile"
 
 interface TaskHistoryProps {
   tasks: ProfileTaskHistoryItem[]
+  /** Render the warmer second-person copy on the viewer's own profile. */
+  isOwn?: boolean
 }
 
 /**
@@ -19,12 +23,16 @@ interface TaskHistoryProps {
  * profile view, not an actionable feed - so the styling is tighter and
  * cards are not navigable.
  */
-export function TaskHistory({ tasks }: TaskHistoryProps) {
+export function TaskHistory({ tasks, isOwn = false }: TaskHistoryProps) {
+  const t = useTranslations("profile.taskHistory")
+  const tCategories = useTranslations("tasks.categories")
+  const locale = useLocale()
+
   if (tasks.length === 0) {
     return (
       <EmptyState
-        title="No task history yet"
-        description="Completed and ongoing tasks will appear here."
+        title={t(isOwn ? "emptyTitleOwn" : "emptyTitle")}
+        description={t(isOwn ? "emptyBodyOwn" : "emptyBody")}
       />
     )
   }
@@ -33,7 +41,7 @@ export function TaskHistory({ tasks }: TaskHistoryProps) {
     <Card>
       <CardHeader>
         <CardTitle className="text-sm tracking-wide text-muted-foreground uppercase">
-          Task history
+          {t(isOwn ? "titleOwn" : "title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
@@ -47,11 +55,11 @@ export function TaskHistory({ tasks }: TaskHistoryProps) {
               <span className="truncate text-sm font-medium">{task.title}</span>
               <div className="flex items-center gap-2">
                 <CategoryBadge
-                  label={TASK_CATEGORIES[task.category]?.label ?? task.category}
+                  label={tCategories(task.category)}
                   icon={task.icon}
                 />
                 <span className="text-xs text-muted-foreground">
-                  {formatRelativeTime(task.createdAt)}
+                  {formatRelativeTime(task.createdAt, locale)}
                 </span>
               </div>
             </div>

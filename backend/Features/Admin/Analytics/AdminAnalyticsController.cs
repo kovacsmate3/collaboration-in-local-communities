@@ -1,6 +1,8 @@
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Admin.Analytics;
@@ -8,6 +10,7 @@ namespace Backend.Features.Admin.Analytics;
 [ApiController]
 [Route("api/admin/analytics")]
 [Authorize(Roles = "Admin")]
+[EnableRateLimiting(RateLimitingExtensions.AdminPolicy)]
 public sealed class AdminAnalyticsController(AppDbContext db) : ControllerBase
 {
     [HttpGet("kpi")]

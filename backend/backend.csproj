@@ -10,18 +10,23 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Features/Auth/EmailTemplates/VerifyEmail.html" />
+    <!-- WithCulture=false: the ".hu" infix would otherwise be parsed as the
+         Hungarian culture and the template emitted into a satellite assembly,
+         where GetManifestResourceStream on the main assembly can't find it. -->
+    <EmbeddedResource Include="Features/Auth/EmailTemplates/VerifyEmail.hu.html" WithCulture="false" />
     <EmbeddedResource Include="Features/Auth/EmailTemplates/ResetPassword.html" />
+    <EmbeddedResource Include="Features/Auth/EmailTemplates/ResetPassword.hu.html" WithCulture="false" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.28.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.29.0" />
     <PackageReference Include="HtmlSanitizer" Version="9.0.892" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.8" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.60.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.61.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

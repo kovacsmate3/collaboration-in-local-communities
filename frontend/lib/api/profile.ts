@@ -342,7 +342,7 @@ const taskCategoryByBackendCode: Record<string, TaskCategory> = {
   tutoring: "tutoring",
   repairs: "household",
   cleaning: "household",
-  pet_care: "petcare",
+  pet_care: "pet_care",
   shopping: "errands",
   errands: "errands",
   other: "other",

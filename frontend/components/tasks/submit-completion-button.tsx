@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import {
@@ -23,13 +24,15 @@ interface SubmitCompletionButtonProps {
 export function SubmitCompletionButton({
   taskId,
 }: SubmitCompletionButtonProps) {
+  const t = useTranslations("tasks.completion")
+  const tCommon = useTranslations("common")
   const { mutate: submitCompletion, isPending } =
     useSubmitTaskCompletion(taskId)
 
   function handleSubmit() {
     submitCompletion(undefined, {
-      onSuccess: () => toast.success("Marked as done. Awaiting approval."),
-      onError: () => toast.error("Could not mark this task as done."),
+      onSuccess: () => toast.success(t("markedDoneToast")),
+      onError: () => toast.error(t("markDoneErrorToast")),
     })
   }
 
@@ -37,21 +40,20 @@ export function SubmitCompletionButton({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button disabled={isPending}>
-          {isPending ? "Submitting…" : "Mark as done"}
+          {isPending ? t("markingDone") : t("markAsDone")}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Mark task as done?</AlertDialogTitle>
+          <AlertDialogTitle>{t("submitDialogTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will notify the seeker that you have finished. They will review
-            and approve before the task is marked as complete.
+            {t("submitDialogBody")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Go back</AlertDialogCancel>
+          <AlertDialogCancel>{tCommon("goBack")}</AlertDialogCancel>
           <AlertDialogAction disabled={isPending} onClick={handleSubmit}>
-            {isPending ? "Submitting…" : "Mark as done"}
+            {isPending ? t("markingDone") : t("markAsDone")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

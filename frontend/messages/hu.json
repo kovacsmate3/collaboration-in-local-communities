@@ -1,0 +1,607 @@
+{
+  "common": {
+    "openUserMenu": "Felhasználói menü megnyitása",
+    "primaryNav": "Főmenü",
+    "signedOutToast": "Kijelentkezve",
+    "tagline": "Helyi segítség, megbízható közösségben.",
+    "goBack": "Vissza"
+  },
+  "landing": {
+    "signIn": "Bejelentkezés",
+    "getStarted": "Kezdjük",
+    "heroHeading": "A környéked tele van segítő kezekkel.",
+    "heroBody": "Van, hogy segítségre van szükséged, máskor épp te tudsz segíteni. A 2gather összekapcsol a közeledben élőkkel, így a hely, ahol laksz, még otthonosabbá válik.",
+    "createAccount": "Fiók létrehozása",
+    "browseFeed": "Hírfolyam böngészése"
+  },
+  "editor": {
+    "toolbarAria": "Formázási beállítások",
+    "placeholder": "Írj valamit…",
+    "bold": "Félkövér",
+    "italic": "Dőlt",
+    "strikethrough": "Áthúzott",
+    "bulletList": "Felsorolás",
+    "numberedList": "Számozott lista",
+    "blockquote": "Idézet"
+  },
+  "locationInput": {
+    "placeholder": "Város, kerület vagy utca",
+    "search": "Keresés",
+    "searching": "Keresés…",
+    "useMyLocation": "Jelenlegi helyzeted használata",
+    "locating": "Meghatározás…",
+    "attribution": "Címadatok © OpenStreetMap közreműködői.",
+    "errorMinChars": "Adj meg legalább 3 karaktert.",
+    "errorLookupUnavailable": "A címkeresés jelenleg nem érhető el.",
+    "errorNoResults": "Nem található megfelelő cím.",
+    "errorBrowserUnsupported": "A böngésződ nem támogatja a helymeghatározást.",
+    "errorReadFailed": "Nem sikerült beolvasni a jelenlegi helyzetedet.",
+    "errorReverseFallback": "A cím neve nem érhető el; a koordinátákat mentettük."
+  },
+  "terms": {
+    "pageTitle": "Felhasználási feltételek",
+    "heading": "Felhasználási feltételek",
+    "versionLine": "{version} verzió — hatályos: {date}",
+    "sections": {
+      "about": {
+        "title": "1. A 2gather-ről",
+        "body": "A 2gather olyan platform, amely a segítségre szoruló szomszédokat összeköti azokkal, akik szívesen segítenek. A fiók létrehozásával vállalod, hogy a szolgáltatást jóhiszeműen és a helyi jogszabályoknak megfelelően használod."
+      },
+      "account": {
+        "title": "2. A fiókod",
+        "body": "Felelős vagy a belépési adataid biztonságáért és a fiókodban végzett minden tevékenységért. Ha jogosulatlan hozzáférést gyanítasz, haladéktalanul értesíts minket."
+      },
+      "acceptableUse": {
+        "title": "3. Elfogadható használat",
+        "body": "Nem használhatod a 2gather-t illegális feladatok közzétételére, más felhasználók zaklatására, a személyazonosságod meghamisítására vagy a platform írásbeli engedély nélküli adatkinyerésére. Fenntartjuk a jogot, hogy felfüggesszük a szabályokat sértő fiókokat."
+      },
+      "payments": {
+        "title": "4. Fizetés és csere",
+        "body": "A 2gather elősegíti a felhasználók közötti megállapodásokat, de azoknak nem szerződő fele. Minden fizetés vagy csere kizárólag a Kereső és a Segítő között történik. A feladatokból eredő vitákért nem vállalunk felelősséget."
+      },
+      "privacy": {
+        "title": "5. Adatvédelem",
+        "body": "Adatkezelőként csak azokat a személyes adatokat gyűjtjük, amelyek a szolgáltatás működtetéséhez szükségesek: a regisztrációs adataidat (név, e-mail-cím), az általad megadott tartózkodási helyet, valamint az általad közzétett feladatokat és üzeneteket. Ezeket kizárólag a szolgáltatás nyújtása, a felhasználók összekapcsolása és a platform biztonságának fenntartása céljából kezeljük. Az adataidat nem értékesítjük. A szolgáltatás működtetéséhez megbízható adatfeldolgozókat veszünk igénybe (például tárhely- és e-mail-szolgáltatót, valamint címkereséshez térképszolgáltatót), amelyek az adatokat kizárólag a mi utasításunkra és a nevünkben kezelik. Ezen túl harmadik félnek csak akkor adunk át adatot, ha azt jogszabály írja elő, vagy ha ahhoz előzetesen hozzájárulsz. A GDPR alapján bármikor kérheted a személyes adataidhoz való hozzáférést, azok helyesbítését, törlését vagy hordozhatóságát, és tiltakozhatsz a kezelésük ellen; panasszal a Nemzeti Adatvédelmi és Információszabadság Hatósághoz (NAIH) fordulhatsz. A részletes adatvédelmi tájékoztató a 2gather.hu oldalon érhető el."
+      },
+      "liability": {
+        "title": "6. Felelősség korlátozása",
+        "body": "A 2gather ebben a korai szakaszban „úgy, ahogy van” alapon érhető el. Nem vállalunk garanciát a rendelkezésre állásra vagy bármilyen meghatározott célra való alkalmasságra. Felelősségünk az alkalmazandó jogszabályok által megengedett legnagyobb mértékben korlátozott."
+      },
+      "changes": {
+        "title": "7. Ezen feltételek módosítása",
+        "body": "A termék fejlődésével módosíthatjuk ezeket a feltételeket. A platform további használata a módosítások közzététele után a felülvizsgált feltételek elfogadásának minősül."
+      }
+    }
+  },
+  "legal": {
+    "termsTitleFallback": "Aktuális feltételek",
+    "versionLabel": "{version} verzió",
+    "termsNotAvailableToast": "A feltételek jelenleg nem elérhetők. Próbáld újra később.",
+    "termsAcceptedToast": "Feltételek elfogadva",
+    "recordFailedToast": "Nem sikerült rögzíteni az elfogadást. Próbáld újra.",
+    "panel": {
+      "heading": "Fogadd el a felhasználási feltételeket a folytatáshoz",
+      "body": "El kell fogadnod az aktuális feltételeket, mielőtt továbblépnél az alkalmazásba.",
+      "accepting": "Elfogadás…",
+      "acceptAndContinue": "Elfogadás és folytatás",
+      "useAnotherAccount": "Másik fiók használata"
+    },
+    "backLink": {
+      "fallback": "Vissza",
+      "toApp": "Vissza az alkalmazásba",
+      "toRegister": "Vissza a regisztrációhoz"
+    },
+    "gate": {
+      "title": "Fogadd el a felhasználási feltételeket",
+      "description": "Kérjük, fogadd el az aktuális feltételeket, mielőtt folytatnád az alkalmazás használatát. Előbb át is nézheted őket, ha alaposabban szeretnéd megismerni.",
+      "reviewTerms": "Feltételek megtekintése",
+      "accept": "Elfogadás",
+      "accepting": "Elfogadás…"
+    }
+  },
+  "nav": {
+    "feed": "Hírfolyam",
+    "myTasks": "Feladataim",
+    "messages": "Üzenetek",
+    "messagesUnreadAria": "{label}, {count} olvasatlan",
+    "signIn": "Bejelentkezés",
+    "profile": "Profil",
+    "settings": "Beállítások",
+    "logout": "Kijelentkezés"
+  },
+  "languageSwitcher": {
+    "label": "Nyelv váltása",
+    "selectedSuffix": "(jelenlegi)",
+    "switchTo": "Váltás erre: {name}"
+  },
+  "auth": {
+    "login": {
+      "title": "Üdv újra!",
+      "subtitle": "Jelentkezz be e-mail-címeddel és jelszavaddal",
+      "emailLabel": "E-mail-cím",
+      "emailPlaceholder": "te@pelda.hu",
+      "passwordLabel": "Jelszó",
+      "forgotPassword": "Elfelejtetted a jelszavadat?",
+      "submit": "Bejelentkezés",
+      "submitting": "Bejelentkezés…",
+      "newHere": "Még nincs felhasználói fiókod?",
+      "createAccount": "Fiók létrehozása",
+      "termsPreamble": "A folytatással elfogadod a",
+      "terms": "Felhasználási feltételeket",
+      "signedInToast": "Sikeres bejelentkezés",
+      "unableToSignIn": "Nem sikerült bejelentkezni.",
+      "emailNotVerified": "Az e-mail-címed nincs megerősítve. Kérjük, ellenőrizd a postafiókod.",
+      "resend": "Megerősítő e-mail újraküldése",
+      "resending": "Küldés…",
+      "resendSent": "Megerősítő e-mail elküldve – ellenőrizd a postafiókod.",
+      "resendError": "Nem sikerült elküldeni az e-mailt. Próbáld meg újra.",
+      "resentTo": "Új link küldve a {email} címre."
+    },
+    "forgot": {
+      "headerTitle": "Elfelejtetted a jelszavadat?",
+      "headerSubtitle": "Add meg az e-mail-címed, és visszasegítünk a fiókodba.",
+      "emailLabel": "E-mail-cím",
+      "emailPlaceholder": "te@pelda.hu",
+      "emailDescription": "Ha ezzel a címmel regisztráltál, küldünk egy linket az új jelszavad beállításához.",
+      "submit": "Új jelszó kérése",
+      "submitting": "Küldés…",
+      "backToSignIn": "Vissza a bejelentkezéshez",
+      "sentNotice": "Ha ezzel a címmel regisztráltál, elküldtük a linket az új jelszavad beállításához. Ellenőrizd a postafiókod – a link 15 percig érvényes.",
+      "networkError": "Nem sikerült elküldeni a kérést. Ellenőrizd a kapcsolatot, és próbáld újra."
+    },
+    "reset": {
+      "headerTitle": "Új jelszó beállítása",
+      "headerSubtitle": "Adj meg egy új jelszót a fiókodhoz.",
+      "newPasswordLabel": "Új jelszó",
+      "confirmPasswordLabel": "Új jelszó megerősítése",
+      "submit": "Jelszó lecserélése",
+      "submitting": "Lecserélés…",
+      "backToSignIn": "Vissza a bejelentkezéshez",
+      "invalidLinkTitle": "Érvénytelen link",
+      "invalidLinkSubtitle": "Ez a link hiányos vagy lejárt.",
+      "requestNewLink": "Új link kérése",
+      "successTitle": "Jelszó lecserélve",
+      "successSubtitle": "Beállítottuk az új jelszavadat. Most már bejelentkezhetsz vele.",
+      "signIn": "Bejelentkezés",
+      "successToast": "Sikeres jelszócsere.",
+      "networkError": "Nem sikerült elküldeni a kérést. Ellenőrizd a kapcsolatot, és próbáld újra.",
+      "invalidPasswordError": "A jelszó nem felel meg a követelményeknek.",
+      "linkExpiredError": "Ez a link érvénytelen vagy lejárt. Kérj egy újat."
+    },
+    "verifyEmail": {
+      "loadingTitle": "E-mail-cím ellenőrzése…",
+      "loadingSubtitle": "Egy pillanat türelmet.",
+      "successTitle": "E-mail-cím megerősítve",
+      "successSubtitle": "A fiókod aktív. Most már bejelentkezhetsz.",
+      "signIn": "Bejelentkezés",
+      "failedTitle": "Sikertelen megerősítés",
+      "incomplete": "A megerősítő link hiányos.",
+      "expired": "A link lejárt vagy érvénytelen.",
+      "unknownError": "Valami hiba történt. Próbáld újra.",
+      "createNewAccount": "Új fiók létrehozása",
+      "backToSignIn": "Vissza a bejelentkezéshez"
+    },
+    "register": {
+      "title": "Hozd létre a felhasználói fiókodat",
+      "subtitleAccount": "Kezdd a bejelentkezési adatokkal",
+      "subtitleProfile": "Töltsd ki a nyilvános profilodat",
+      "step1": "Fiók",
+      "step2": "Profil",
+      "emailLabel": "E-mail-cím",
+      "emailPlaceholder": "te@pelda.hu",
+      "passwordLabel": "Jelszó",
+      "passwordDescription": "Legalább 8 karakter, kis- és nagybetűvel, számmal és szimbólummal.",
+      "confirmPasswordLabel": "Jelszó megerősítése",
+      "acceptTermsPreamble": "Elfogadom a",
+      "acceptTermsLink": "Felhasználási feltételeket",
+      "displayNameLabel": "Teljes név",
+      "workplaceLabel": "Munkahely / iskola",
+      "positionLabel": "Beosztás",
+      "locationLabel": "Helyszín",
+      "locationPlaceholder": "Város, kerület vagy utca",
+      "bioLabel": "Rövid bemutatkozás",
+      "submitContinue": "Folytatás",
+      "submitCreate": "Fiók létrehozása",
+      "submitting": "Fiók létrehozása…",
+      "back": "Vissza",
+      "alreadyHaveAccount": "Van már fiókod?",
+      "signIn": "Bejelentkezés",
+      "checkEmailTitle": "Ellenőrizd a postafiókod",
+      "unableToCreate": "Nem sikerült létrehozni a fiókodat.",
+      "backToSignIn": "Vissza a bejelentkezéshez"
+    }
+  },
+  "profile": {
+    "header": {
+      "verified": "Megerősített"
+    },
+    "page": {
+      "loadErrorTitle": "A profil nem elérhető",
+      "loadErrorTitleOwn": "A profilod nem elérhető",
+      "loadErrorBody": "A profil nem tölthető be. Lehet, hogy törölték, vagy nincs hozzáférésed.",
+      "loadErrorBodyOwn": "A profilod nem tölthető be. Próbáld újra hamarosan.",
+      "editProfile": "Profilod szerkesztése",
+      "message": "Üzenet",
+      "reviewsTab": "Értékelések ({count})",
+      "reviewsTabOwn": "Értékeléseim ({count})",
+      "historyTab": "Előzmények ({count})",
+      "historyTabOwn": "Feladataim ({count})",
+      "reviewsUnavailable": "Az értékelések nem elérhetők",
+      "reviewsUnavailableOwn": "Az értékeléseid nem elérhetők",
+      "taskHistoryUnavailable": "A feladatok előzményei nem elérhetők",
+      "taskHistoryUnavailableOwn": "A feladataid előzményei nem elérhetők",
+      "tabErrorBody": "Ez a profilszakasz nem tölthető be. Próbáld újra rövidesen."
+    },
+    "editPage": {
+      "title": "Profilod szerkesztése",
+      "description": "Frissítsd az adataidat, készségeidet, és azt, amit nyilvánosan szeretnél megosztani.",
+      "loadErrorTitle": "Profilod nem elérhető",
+      "loadErrorBody": "A profilod nem tölthető be, ezért egyelőre nem szerkeszthető."
+    },
+    "avatarUpload": {
+      "changeAria": "Profilképed módosítása",
+      "changeAction": "Kép módosítása",
+      "uploadAction": "Kép feltöltése",
+      "remove": "Eltávolítás",
+      "hint": "JPEG, PNG vagy WebP · legfeljebb 500 KB-ra tömörítve",
+      "cropTitle": "Kép körbevágása",
+      "zoomLabel": "Nagyítás",
+      "cancel": "Mégse",
+      "apply": "Alkalmaz",
+      "processing": "Feldolgozás…",
+      "invalidType": "Csak JPEG, PNG és WebP képeket fogadunk el.",
+      "uploadFailed": "Nem sikerült feltöltened a képet.",
+      "removeFailed": "Nem sikerült eltávolítani a képet.",
+      "processFailed": "Nem sikerült feldolgozni a képet. Próbálj meg egy másik fájlt."
+    },
+    "editForm": {
+      "fullName": "Teljes név",
+      "fullNameRequired": "A teljes név megadása kötelező.",
+      "role": "Beosztás",
+      "workplace": "Munkahely / iskola",
+      "location": "Helyszín",
+      "availability": "Elérhetőség",
+      "bio": "Bemutatkozás",
+      "skills": "Készségek",
+      "pendingSkillsHint": "Az óra ikonnal jelölt készségek admin jóváhagyásra várnak. Jóváhagyás után jelennek meg a profilodon.",
+      "removeSkill": "{name} eltávolítása",
+      "removeSkillFallback": "Készség eltávolítása",
+      "savedToast": "Profil elmentve",
+      "saveError": "Nem sikerült elmenteni a profilt.",
+      "saving": "Mentés…",
+      "save": "Változtatások mentése",
+      "cancel": "Mégse",
+      "latLngTogether": "A szélességi és hosszúsági fokot együtt kell megadni.",
+      "skillSearchPlaceholder": "Keress készségek között, vagy írj be új nevet a hozzáadáshoz…",
+      "skillSuggestionsAria": "Készség-javaslatok",
+      "skillSearching": "Keresés…",
+      "skillsNoResults": "Nem található készség.",
+      "skillAdding": "Hozzáadás…",
+      "skillAddOption": "„{name}” hozzáadása új készségként",
+      "skillAddError": "Nem sikerült hozzáadni a készséget."
+    },
+    "reviews": {
+      "emptyTitle": "Még nincsenek értékelések",
+      "emptyBody": "Az értékelések itt jelennek meg, amint feladatok befejeződnek.",
+      "emptyTitleOwn": "Még nincsenek értékeléseid",
+      "emptyBodyOwn": "Az értékeléseid itt jelennek meg, amint befejezel feladatokat.",
+      "previous": "Előző",
+      "next": "Következő",
+      "pageOf": "{page}. oldal / {total}"
+    },
+    "taskHistory": {
+      "title": "Feladatok előzményei",
+      "titleOwn": "Feladataid előzményei",
+      "emptyTitle": "Még nincsenek korábbi feladatok",
+      "emptyTitleOwn": "Még nincsenek korábbi feladataid",
+      "emptyBody": "A befejezett és folyamatban lévő feladatok itt jelennek meg.",
+      "emptyBodyOwn": "A befejezett és folyamatban lévő feladataid itt jelennek meg."
+    },
+    "emailBanner": {
+      "title": "Az e-mail-címed nincs megerősítve",
+      "bodyUnverified": "Erősítsd meg a(z) {email} címet, hogy feladatokat tudj közzétenni és más funkciókat elérj.",
+      "bodySent": "Új megerősítő linket küldtünk a(z) {email} címre. Ellenőrizd a postafiókod.",
+      "resend": "Megerősítő e-mail újraküldése",
+      "sending": "Küldés…",
+      "sentToast": "Megerősítő e-mail elküldve – ellenőrizd a postafiókod.",
+      "sendError": "Nem sikerült elküldeni az e-mailt. Próbáld meg újra."
+    },
+    "reputation": {
+      "title": "Hírnév",
+      "tiers": {
+        "newcomer": "Újonc",
+        "bronze": "Bronz",
+        "silver": "Ezüst",
+        "gold": "Arany"
+      },
+      "score": "Pontszám",
+      "averageRating": "Átlagos értékelés",
+      "completedTasks": "Teljesített feladatok",
+      "completedTasksHint": "{count, plural, =1 {teljesített feladat} other {teljesített feladat}}",
+      "averageRatingHint": "{rating} — {count, plural, =1 {# értékelés alapján} other {# értékelés alapján}}",
+      "noReviewsYet": "Még nincs értékelés",
+      "calculatedLabel": "Hogyan számoljuk?",
+      "calculatedAria": "Hogyan számoljuk a hírnév pontszámot?",
+      "tooltipTitle": "Hírnév pontszám",
+      "tooltipBody": "Minden teljesített feladat {taskWeight} pontot ér; minden értékelés az átlagos pontszámot {reviewWeight}-vel szorozza.",
+      "tooltipTotal": "Összesen",
+      "trendLabel": "Trend",
+      "trendNoChange": "Nincs változás",
+      "trendSinceDate": "{date} óta",
+      "trendDateRange": "{start} – {end}",
+      "trendAria": "Hírnév trend: {start} – {end}",
+      "nextTierProgress": "{remaining} pont a(z) {tier} szintig",
+      "nextTierReady": "Készen áll a(z) {tier} szintre",
+      "nextTierAria": "Haladás a(z) {tier} szintig",
+      "emptyTitle": "Még nincs hírnév",
+      "emptyTitleOwn": "Még nincs hírneved",
+      "emptyBody": "Ez a felhasználó még építi a hírnevét.",
+      "emptyBodyOwn": "Teljesíts feladatokat és gyűjts értékeléseket a hírneved építéséhez.",
+      "findTask": "Találj feladatot, amiben segíthetsz",
+      "postFirstTask": "Tedd közzé az első feladatod"
+    }
+  },
+  "tasks": {
+    "status": {
+      "open": "Nyitott",
+      "inProgress": "Folyamatban",
+      "pendingApproval": "Jóváhagyásra vár",
+      "completed": "Befejezve",
+      "reviewed": "Értékelve",
+      "cancelled": "Visszavonva"
+    },
+    "compensation": {
+      "paid": "Fizetés + pont",
+      "points": "Csak pont",
+      "voluntary": "Csak pont",
+      "barter": "Csere + pont",
+      "paidPlusPoints": "{amount} + pont"
+    },
+    "categories": {
+      "moving": "Költözés",
+      "tutoring": "Korrepetálás",
+      "household": "Háztartás",
+      "pet_care": "Állatgondozás",
+      "tools": "Szerszámkölcsönzés",
+      "tech": "Tech segítség",
+      "repairs": "Javítás",
+      "shopping": "Bevásárlás",
+      "cleaning": "Takarítás",
+      "errands": "Ügyintézés",
+      "other": "Egyéb"
+    },
+    "card": {
+      "applicationStatus": "Jelentkezés: {status}"
+    },
+    "list": {
+      "emptyTitle": "Még nincsenek feladatok"
+    },
+    "filters": {
+      "searchAria": "Keresés feladatok, készségek és helyszínek között",
+      "searchPlaceholder": "Keresés feladatok, készségek, helyszínek…",
+      "categoryAria": "Szűrés kategória szerint",
+      "categoryPlaceholder": "Kategória",
+      "allCategories": "Minden kategória",
+      "rewardAria": "Szűrés jutalom szerint",
+      "rewardPlaceholder": "Jutalom",
+      "anyReward": "Bármilyen jutalom",
+      "distanceAria": "Szűrés távolság szerint",
+      "distancePlaceholder": "Távolság",
+      "anyDistance": "Bármilyen távolság",
+      "within": "{km} km-en belül",
+      "recencyAria": "Szűrés időszak szerint",
+      "recencyPlaceholder": "Időszak",
+      "addLocationHint": "Adj meg egy helyszínt a profilodban a távolság szerinti szűréshez.",
+      "recencyOptions": {
+        "any": "Bármikor",
+        "24h": "Elmúlt 24 óra",
+        "7d": "Elmúlt 7 nap",
+        "30d": "Elmúlt 30 nap"
+      }
+    },
+    "detail": {
+      "loading": "Feladat betöltése…",
+      "posted": "{relative} ezelőtt közzétéve",
+      "description": "Leírás",
+      "postedBy": "Közzétette",
+      "editTask": "Feladat szerkesztése",
+      "openChat": "Csevegés megnyitása",
+      "openingChat": "Megnyitás…",
+      "cancelledToast": "Feladat visszavonva.",
+      "cancelErrorToast": "Nem sikerült visszavonni a feladatot.",
+      "openChatErrorToast": "Nem sikerült megnyitni a csevegést.",
+      "helperMarkedDone": "{helper} elkészültnek jelölte ezt a feladatot. Hagyd jóvá a befejezéshez.",
+      "defaultHelper": "A segítő",
+      "waitingApproval": "Várakozás a feladó jóváhagyására."
+    },
+    "review": {
+      "openButton": "Értékelés írása",
+      "dialogTitle": "Értékelés írása",
+      "dialogDescription": "Milyen volt {name} segítségével dolgozni?",
+      "ratingAria": "Értékelés",
+      "starsAria": "{count, plural, =1 {# csillag} other {# csillag}}",
+      "commentPlaceholder": "Oszd meg, mi ment jól vagy mit lehetne jobban csinálni…",
+      "cancel": "Mégse",
+      "submit": "Értékelés beküldése",
+      "submitting": "Beküldés…",
+      "selectStarError": "Kérjük, válassz csillagot az értékeléshez.",
+      "submittedToast": "Értékelés beküldve!",
+      "submitErrorToast": "Nem sikerült beküldeni az értékelést. Próbáld újra.",
+      "alreadyReviewedToast": "Már értékelted ezt a feladatot.",
+      "thanks": "Értékelés beküldve – köszönjük!"
+    },
+    "completion": {
+      "markAsDone": "Késznek jelölés",
+      "markingDone": "Beküldés…",
+      "markedDoneToast": "Késznek jelölve. Jóváhagyásra vár.",
+      "markDoneErrorToast": "Nem sikerült késznek jelölni a feladatot.",
+      "approveCompletion": "Befejezés jóváhagyása",
+      "approving": "Jóváhagyás…",
+      "approvedToast": "Feladat befejezve.",
+      "approveErrorToast": "Nem sikerült jóváhagyni a befejezést.",
+      "approveDialogTitle": "Jóváhagyod a feladat befejezését?",
+      "approveDialogBody": "Ezzel teljesítettnek jelölöd a feladatot, és kifizeted a segítő jutalmát. A művelet nem visszavonható.",
+      "submitDialogTitle": "Megjelölöd a feladatot késznek?",
+      "submitDialogBody": "Ezzel értesíted a keresőt, hogy elkészültél. Át fogja nézni és jóváhagyja, mielőtt a feladat teljesítettnek minősül."
+    },
+    "application": {
+      "applyToHelp": "Jelentkezés segítőnek",
+      "applicationPending": "Jelentkezés függőben",
+      "viewConversation": "Beszélgetés megtekintése",
+      "withdraw": "Visszavonás",
+      "withdrawing": "Visszavonás…",
+      "statusBadge": "Jelentkezés: {status}",
+      "withdrewToast": "Jelentkezés visszavonva.",
+      "withdrawErrorToast": "Nem sikerült visszavonni a jelentkezést.",
+      "sentToast": "Jelentkezés elküldve.",
+      "applyErrorToast": "Nem sikerült jelentkezni erre a feladatra.",
+      "dialogTitle": "Jelentkezés segítőnek",
+      "dialogDescription": "Küldj egy rövid üzenetet a feladónak az elérhetőségedről vagy a tapasztalataidról.",
+      "messagePlaceholder": "Délután ráérek, és van egy kis kocsim is.",
+      "dialogCancel": "Mégse",
+      "send": "Jelentkezés elküldése",
+      "sending": "Küldés…"
+    },
+    "applications": {
+      "title": "Jelentkezések",
+      "loading": "Jelentkezések betöltése…",
+      "empty": "Még nincsenek jelentkezések.",
+      "viewChat": "Csevegés megtekintése",
+      "accept": "Elfogadás",
+      "reject": "Elutasítás",
+      "accepting": "Elfogadás…",
+      "acceptedToast": "Jelentkezés elfogadva.",
+      "rejectedToast": "Jelentkezés elutasítva.",
+      "updateErrorToast": "Nem sikerült frissíteni a jelentkezést.",
+      "acceptDialogTitle": "Elfogadod ezt a jelentkezést?",
+      "acceptDialogBody": "{name} lesz hozzárendelve a feladathoz, és a feladat „Folyamatban” állapotba kerül. A többi függő jelentkezést lezárjuk.",
+      "statuses": {
+        "Pending": "Függőben",
+        "Accepted": "Elfogadva",
+        "Rejected": "Elutasítva",
+        "Withdrawn": "Visszavonva"
+      }
+    },
+    "cancelTask": {
+      "button": "Feladat visszavonása",
+      "pending": "Visszavonás…",
+      "dialogTitle": "Visszavonod ezt a feladatot?",
+      "dialogBody": "Ezzel visszavonod a feladatot, és értesíted az érintett segítőket. A művelet nem visszavonható."
+    },
+    "cancelApplication": {
+      "button": "Jelentkezés visszavonása",
+      "pending": "Visszavonás…",
+      "dialogTitle": "Visszavonod ezt a jelentkezést?",
+      "dialogBody": "Ezzel eltávolítod a kiválasztott segítőt, és a feladat visszakerül „Nyitott” státuszba.",
+      "cancelledToast": "Jelentkezés visszavonva.",
+      "cancelErrorToast": "Nem sikerült visszavonni a jelentkezést."
+    },
+    "feed": {
+      "title": "Helyi feladatok",
+      "description": "Nyitott kérések a közösségedben. Segítségre van szükséged? Tegyél közzé egy feladatot pár másodperc alatt.",
+      "postTask": "Feladat közzététele",
+      "loadingTasks": "Feladatok betöltése…",
+      "loadError": "Nem sikerült betölteni a feladatokat. Próbáld újra.",
+      "emptyFilteredTitle": "Nincs a szűrőidnek megfelelő feladat",
+      "emptyFilteredBody": "Próbáld kibővíteni a kategória, jutalom, távolság vagy időszak szűrőt.",
+      "emptyTitle": "Nincsenek nyitott kérések jelenleg",
+      "emptyBody": "Tedd közzé az első feladatot – a szomszédjaid talán szívesen segítenek.",
+      "loadingMore": "További feladatok betöltése…",
+      "loadMore": "Továbbiak betöltése",
+      "caughtUp": "Mindennel naprakész vagy."
+    },
+    "myTasks": {
+      "title": "Feladataim",
+      "description": "Kövesd nyomon az általad közzétett vagy elvállalt feladatokat – nyitottól befejezettig.",
+      "postTask": "Feladat közzététele",
+      "tabPosted": "Közzétett feladataid",
+      "tabAccepted": "Elvállalt feladataid",
+      "tabApplied": "Jelentkezések",
+      "loadError": "Nem sikerült betölteni a feladatokat. Próbáld újra.",
+      "loading": "Betöltés…",
+      "emptyPostedTitle": "Még nem tettél közzé feladatot",
+      "emptyPostedBody": "Tedd közzé az első kérésed, és kérj segítséget a közösség tagjaitól.",
+      "emptyAcceptedTitle": "Nincs elvállalt feladat",
+      "emptyAcceptedBody": "Böngészd a hírfolyamot, és vállalj el egy feladatot, hogy itt megjelenjen.",
+      "emptyAppliedTitle": "Még nem jelentkeztél feladatra",
+      "emptyAppliedBody": "Jelentkezz nyitott feladatokra a hírfolyamból, és itt nyomon követheted őket."
+    },
+    "notFound": {
+      "heading": "Ez a feladat már nem elérhető",
+      "body": "Lehet, hogy törölték, vagy a feladthoz vezető link hibás.",
+      "back": "Vissza a feladataimhoz"
+    },
+    "postPage": {
+      "title": "Feladat közzététele",
+      "description": "Írd le, miben kérsz segítséget. Az egyértelmű feladatleírás és a megadott helyszín gyorsabb választ hoz."
+    },
+    "editPage": {
+      "loading": "Betöltés…",
+      "title": "Feladat szerkesztése",
+      "description": "Frissítsd a feladatod adatait."
+    },
+    "post": {
+      "emailGateTitle": "E-mail-cím megerősítése szükséges",
+      "emailGateBody": "Mielőtt feladatot tehetnél közzé, meg kell erősítened az e-mail-címedet. Ellenőrizd a postafiókod a megerősítő linkért.",
+      "resend": "Megerősítő e-mail újraküldése",
+      "resending": "Küldés…",
+      "resendSent": "Megerősítő e-mail elküldve – ellenőrizd a postafiókod.",
+      "resendError": "Nem sikerült elküldeni az e-mailt. Próbáld meg újra.",
+      "alreadyVerified": "Már megerősítetted az e-mail-címedet?",
+      "titleLabel": "Feladat címe",
+      "titlePlaceholder": "pl. Segítség dobozok cipelésében az új lakásomba",
+      "descriptionLabel": "Leírás",
+      "descriptionPlaceholder": "Írd le, miben kérsz segítséget, mikor, és milyen feltételek mellett.",
+      "categoryLabel": "Kategória",
+      "categoryLoading": "Betöltés…",
+      "categoryPlaceholder": "Válassz kategóriát",
+      "locationLabel": "Helyszín",
+      "locationPlaceholder": "Kerület, városrész vagy utca",
+      "rewardLegend": "Felajánlott jutalom",
+      "amountLabel": "Összeg (Ft)",
+      "amountPlaceholder": "pl. 5000",
+      "cancel": "Mégse",
+      "submitPost": "Feladat közzététele",
+      "submitPosting": "Közzététel…",
+      "submitSave": "Módosítások mentése",
+      "submitSaving": "Mentés…",
+      "errorTitleMin": "A címnek legalább 3 karakter hosszúnak kell lennie.",
+      "errorDescriptionMin": "A leírásnak legalább 10 karakter hosszúnak kell lennie.",
+      "errorDescriptionMax": "A leírás túl hosszú. Kérjük, rövidítsd le.",
+      "errorCategory": "Válassz kategóriát.",
+      "errorAmount": "Adj meg érvényes összeget.",
+      "updatedToast": "Feladat szerkesztve!",
+      "postedToast": "Feladat közzétéve!",
+      "updateErrorDefault": "Nem sikerült szerkeszteni a feladatot.",
+      "postErrorDefault": "Nem sikerült közzétenni a feladatot."
+    }
+  },
+  "messages": {
+    "page": {
+      "title": "Üzenetek",
+      "description": "Itt találod a feladataiddal kapcsolatos beszélgetéseket.",
+      "loading": "Betöltés…",
+      "loadError": "Nem sikerült betölteni a beszélgetéseket. Próbáld meg újra."
+    },
+    "list": {
+      "emptyTitle": "Még nincs beszélgetés",
+      "emptyBody": "Kezdeményezz beszélgetést bármelyik feladatodról. Amint üzeneted érkezik, itt fog megjelenni.",
+      "unread": "Olvasatlan"
+    },
+    "window": {
+      "applicationNotice": "{name} jelentkezett, hogy segítsen a feladatban.",
+      "accept": "Elfogadás",
+      "decline": "Elutasítás",
+      "loadingOlder": "Betöltés…",
+      "loadOlder": "Korábbi üzenetek betöltése",
+      "emptyState": "Még nincs üzenet. Köszönj!",
+      "inputPlaceholder": "Üzenet…",
+      "inputAria": "Üzenet",
+      "sendAria": "Küldés",
+      "acceptToast": "Jelentkezés elfogadva.",
+      "acceptError": "Nem sikerült elfogadni a jelentkezést.",
+      "rejectToast": "Jelentkezés elutasítva.",
+      "rejectError": "Nem sikerült elutasítani a jelentkezést."
+    }
+  }
+}

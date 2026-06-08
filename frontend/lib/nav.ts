@@ -6,9 +6,16 @@ import {
 
 import type { IconSvgElement } from "@hugeicons/react"
 
+/**
+ * Translation key under the `nav` namespace. Nav items declare the key
+ * instead of a literal label so consumers (MainNav, MobileNav) resolve
+ * the active locale at render time without re-deriving the array.
+ */
+export type NavLabelKey = "feed" | "myTasks" | "messages"
+
 export interface NavItem {
   href: string
-  label: string
+  labelKey: NavLabelKey
   icon: IconSvgElement
   /** Used by sub-routes that should still highlight the parent. */
   matches?: (pathname: string) => boolean
@@ -22,19 +29,19 @@ export interface NavItem {
 export const PRIMARY_NAV: NavItem[] = [
   {
     href: "/feed",
-    label: "Feed",
+    labelKey: "feed",
     icon: Compass01Icon,
     matches: (p) => p === "/feed" || p.startsWith("/feed/"),
   },
   {
     href: "/tasks",
-    label: "My tasks",
+    labelKey: "myTasks",
     icon: TaskDaily01Icon,
     matches: (p) => p.startsWith("/tasks"),
   },
   {
     href: "/messages",
-    label: "Messages",
+    labelKey: "messages",
     icon: BubbleChatIcon,
     matches: (p) => p.startsWith("/messages"),
   },

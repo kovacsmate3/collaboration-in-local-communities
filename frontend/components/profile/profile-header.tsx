@@ -1,3 +1,5 @@
+"use client"
+
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Briefcase01Icon,
@@ -5,6 +7,7 @@ import {
   Location01Icon,
   ShieldUserIcon,
 } from "@hugeicons/core-free-icons"
+import { useTranslations } from "next-intl"
 import type { ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +21,7 @@ interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
+  const t = useTranslations("profile.header")
   return (
     <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-4">
@@ -28,7 +32,7 @@ export function ProfileHeader({ user, actions }: ProfileHeaderProps) {
             {user.verified ? (
               <Badge variant="success" className="gap-1">
                 <HugeiconsIcon icon={ShieldUserIcon} />
-                Verified
+                {t("verified")}
               </Badge>
             ) : null}
           </div>

@@ -3,9 +3,11 @@ using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Domain.Tasks;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Backend.Infrastructure.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
@@ -15,6 +17,7 @@ namespace Backend.Features.Tasks;
 [ApiController]
 [Route("api/tasks")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksReadPolicy)]
 public sealed partial class TasksController(AppDbContext db) : ControllerBase
 {
     private const int DefaultPageSize = 20;
@@ -28,6 +31,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         [FromQuery] double? latitude,
         [FromQuery] double? longitude,
         [FromQuery] double? radiusMeters,
+        [FromQuery] string? q = null,
         [FromQuery] string? compensationType = null,
         [FromQuery] DateTimeOffset? createdAfter = null,
         [FromQuery] string? sort = null,
@@ -120,6 +124,23 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             query = query.Where(task => task.CreatedAt >= cutoff);
         }
 
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            // Escape PostgreSQL LIKE wildcards in the user input so they're
+            // treated as literal characters. The escape char is backslash;
+            // we escape \ first so it doesn't double-process the % and _
+            // we add immediately after.
+            var trimmed = q.Trim();
+            var escaped = trimmed
+                .Replace(@"\", @"\\", StringComparison.Ordinal)
+                .Replace("%", @"\%", StringComparison.Ordinal)
+                .Replace("_", @"\_", StringComparison.Ordinal);
+            var pattern = $"%{escaped}%";
+            query = query.Where(task =>
+                EF.Functions.ILike(task.Title, pattern, @"\")
+                || EF.Functions.ILike(task.Description, pattern, @"\"));
+        }
+
         // Apply hard radius filter regardless of sort order.
         if (proximityOrigin is not null)
         {
@@ -129,6 +150,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         IQueryable<CommunityTask> orderedQuery;
         var effectiveSort = sort?.ToLowerInvariant();
+        List<string>? helperSkillNames = null;
         if (effectiveSort == SortRelevant)
         {
             var userId = GetCurrentUserId();
@@ -138,6 +160,20 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
                     .Select(p => new { p.UserId, p.Location })
                     .FirstOrDefaultAsync(p => p.UserId == userId.Value, cancellationToken))?.Location
                 : null;
+
+            // Helper's approved, active skill names drive the lexical relevance
+            // boost. Pulled once up-front so the in-memory ranking below has
+            // them without doing a per-task lookup.
+            if (userId.HasValue)
+            {
+                helperSkillNames = await db.ProfileSkills
+                    .AsNoTracking()
+                    .Where(ps => ps.Profile.UserId == userId.Value
+                        && ps.Skill.Status == SkillStatus.Approved
+                        && ps.Skill.IsActive)
+                    .Select(ps => ps.Skill.Name)
+                    .ToListAsync(cancellationToken);
+            }
 
             if (proximityOrigin is not null)
             {
@@ -165,6 +201,32 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         else
         {
             orderedQuery = query.OrderByDescending(task => task.CreatedAt);
+        }
+
+        // Skill-relevance re-ranking layered on top of the existing distance/
+        // recency ordering. Done in memory because lexical matching at SQL would
+        // need either dynamically built Expression trees over a variable-length
+        // skill list, or N per-skill OR'd ILike clauses that don't scale with
+        // helper skill counts. The issue's option 1 (lexical) explicitly accepts
+        // this trade-off as the starting point; TF-IDF / BM25 / embeddings are
+        // listed as later upgrades that can re-use the call site below.
+        //
+        // Stability matters here: Enumerable.OrderByDescending is a stable sort,
+        // so ties on skill score preserve the distance-then-recency ordering
+        // produced by orderedQuery.
+        if (effectiveSort == SortRelevant && helperSkillNames is { Count: > 0 })
+        {
+            var rankedTasks = await orderedQuery.ToListAsync(cancellationToken);
+            rankedTasks = rankedTasks
+                .OrderByDescending(task => ComputeSkillMatchScore(task, helperSkillNames))
+                .ToList();
+
+            if (shouldPage)
+            {
+                rankedTasks = rankedTasks.Skip(skip).Take(effectivePageSize).ToList();
+            }
+
+            return Ok(rankedTasks.Select(TaskResponse.FromTask));
         }
 
         if (shouldPage)
@@ -199,6 +261,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> CreateAsync(
         CreateTaskRequest request,
         CancellationToken cancellationToken)
@@ -297,6 +360,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
     }
 
     [HttpPatch("{id:guid}")]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> UpdateAsync(
         Guid id,
         UpdateTaskRequest request,

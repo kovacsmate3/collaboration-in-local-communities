@@ -4,6 +4,7 @@ using Backend.Infrastructure.Persistence;
 using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Terms;
@@ -11,6 +12,7 @@ namespace Backend.Features.Terms;
 [ApiController]
 [Route("api/terms")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksReadPolicy)]
 public sealed class TermsController(AppDbContext db, IClientIpAccessor clientIpAccessor) : ControllerBase
 {
     /// <summary>
@@ -59,6 +61,7 @@ public sealed class TermsController(AppDbContext db, IClientIpAccessor clientIpA
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpPost("accept")]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> AcceptTermsAsync(
         AcceptTermsRequest request,
         CancellationToken cancellationToken)

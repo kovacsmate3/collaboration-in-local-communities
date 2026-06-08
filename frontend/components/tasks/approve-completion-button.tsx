@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import {
@@ -23,13 +24,15 @@ interface ApproveCompletionButtonProps {
 export function ApproveCompletionButton({
   taskId,
 }: ApproveCompletionButtonProps) {
+  const t = useTranslations("tasks.completion")
+  const tCommon = useTranslations("common")
   const { mutate: approveCompletion, isPending } =
     useApproveTaskCompletion(taskId)
 
   function handleApprove() {
     approveCompletion(undefined, {
-      onSuccess: () => toast.success("Task completed."),
-      onError: () => toast.error("Could not approve completion."),
+      onSuccess: () => toast.success(t("approvedToast")),
+      onError: () => toast.error(t("approveErrorToast")),
     })
   }
 
@@ -37,21 +40,20 @@ export function ApproveCompletionButton({
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button disabled={isPending}>
-          {isPending ? "Approving…" : "Approve completion"}
+          {isPending ? t("approving") : t("approveCompletion")}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Approve task completion?</AlertDialogTitle>
+          <AlertDialogTitle>{t("approveDialogTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            This will mark the task as complete and release the helper&apos;s
-            reward. This action cannot be undone.
+            {t("approveDialogBody")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Go back</AlertDialogCancel>
+          <AlertDialogCancel>{tCommon("goBack")}</AlertDialogCancel>
           <AlertDialogAction disabled={isPending} onClick={handleApprove}>
-            {isPending ? "Approving…" : "Approve completion"}
+            {isPending ? t("approving") : t("approveCompletion")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

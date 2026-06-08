@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 import { CheckboxField } from "@/components/forms/checkbox-field"
 import { PasswordField } from "@/components/forms/password-field"
@@ -9,26 +10,28 @@ import { APP_LEGAL_ROUTES } from "@/lib/auth/constants"
 import type { RegisterFormValues } from "@/lib/auth/schemas"
 
 export function RegisterAccountStep() {
+  const t = useTranslations("auth.register")
+
   return (
     <div className="grid gap-4">
       <TextField<RegisterFormValues>
         name="email"
-        label="Email"
+        label={t("emailLabel")}
         type="email"
         autoComplete="email"
-        placeholder="you@example.com"
+        placeholder={t("emailPlaceholder")}
       />
 
       <PasswordField<RegisterFormValues>
         name="password"
-        label="Password"
+        label={t("passwordLabel")}
         autoComplete="new-password"
-        description="Use at least 8 characters with uppercase, lowercase, number, and symbol."
+        description={t("passwordDescription")}
       />
 
       <PasswordField<RegisterFormValues>
         name="confirmPassword"
-        label="Confirm password"
+        label={t("confirmPasswordLabel")}
         autoComplete="new-password"
       />
 
@@ -36,12 +39,12 @@ export function RegisterAccountStep() {
         name="acceptTerms"
         label={
           <>
-            I agree to the{" "}
+            {t("acceptTermsPreamble")}{" "}
             <Link
               href={APP_LEGAL_ROUTES.terms}
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
-              Terms
+              {t("acceptTermsLink")}
             </Link>
             .
           </>
