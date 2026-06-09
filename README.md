@@ -1,4 +1,52 @@
-# collaboration-in-local-communities
+# 2gather — Collaboration in Local Communities
+
+**2gather** is a bilingual (HU/EN) neighbour-help platform. Every member is both a
+**Seeker** (post a task) and a **Helper** (accept one). Discover people nearby,
+agree the terms in chat, complete the task, and build a public reputation —
+turning a neighbourhood into a self-sustaining micro-cooperation community.
+
+> Course project for *Advanced Software Technology*. See the assignment background
+> and the project results write-up in [`docs/results/`](docs/results/AdvSoftTech_Assignment-Results.md).
+
+## What it does
+
+- **Post a task** — title, description, category, location, and compensation type
+  (paid / barter / voluntary), visible to helpers immediately.
+- **Find help nearby** — Helper Feed with category, distance, and compensation
+  filters; location-aware results via PostGIS proximity.
+- **Skill matching** — tasks matching a helper's listed skills surface first.
+- **Chat before meeting** — one-on-one realtime messaging (SignalR) opens once
+  interest is expressed.
+- **Reputation** — star ratings + written reviews; profiles show average rating,
+  completed-task count, and recent reviews.
+- **Points** — helpers earn platform points on completed tasks.
+- **Bilingual** — full Hungarian and English UI.
+
+## Try it
+
+- **Live app:** _‹production URL — to be confirmed›_
+- **Local:** `docker compose up` runs the full stack (backend + frontend +
+  Postgres + Cosmos emulator). Register → accept Terms → complete your profile →
+  post a task → switch to the Helper Feed → accept → chat → complete → review.
+
+See [Local dev stack](#local-dev-stack) below for variants and IDE-based workflows.
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js (App Router), TypeScript, Tailwind, shadcn/ui |
+| Backend | ASP.NET Core Web API (.NET), EF Core, ASP.NET Identity, JWT |
+| Data | PostgreSQL + PostGIS (relational + geo), Cosmos DB (chat messages) |
+| Realtime | Azure SignalR (chat) |
+| Infra | Azure Container Apps (backend), Vercel (frontend), Blob Storage, Key Vault |
+| CI/CD | GitHub Actions (CI, E2E, CD), Qodana, Codecov |
+
+## Project management
+
+- **Issues / bug tracker:** [GitHub Issues](https://github.com/kovacsmate3/collaboration-in-local-communities/issues)
+- **Board:** GitHub Projects (Kanban), with work organised into Sprint 0–4 milestones.
+- **Conventions:** [`CONVENTIONS.md`](./CONVENTIONS.md) — formatting, linting, and contribution workflow.
 
 ## Design
 
