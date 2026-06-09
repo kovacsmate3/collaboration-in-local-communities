@@ -5,20 +5,27 @@ interface RichTextContentProps {
   className?: string
 }
 
+/**
+ * Renders user-authored HTML coming from the rich-text editor / markdown
+ * pipeline. Single source of truth for typography across all rendered HTML
+ * surfaces (task descriptions, terms page, admin terms preview) so the
+ * three sites stay visually identical for the same input — see issue #244.
+ *
+ * The styling rides on Tailwind Typography's `prose` family of classes,
+ * registered via the `@plugin "@tailwindcss/typography"` directive in
+ * `app/globals.css`. The `prose-sm` size variant matches the rest of the
+ * app's `text-sm` body copy; `dark:prose-invert` flips the palette in the
+ * dark theme. `max-w-none` opts out of the plugin's default 65ch reading
+ * width so the host container's width wins.
+ *
+ * Pass extra Tailwind classes via `className` to layer site-specific
+ * tweaks (e.g. additional bottom margin) without forking the component.
+ */
 export function RichTextContent({ html, className }: RichTextContentProps) {
   return (
     <div
       className={cn(
-        "text-sm leading-relaxed text-muted-foreground",
-        "[&_strong]:font-semibold [&_strong]:text-foreground",
-        "[&_em]:italic",
-        "[&_s]:line-through",
-        "[&_p]:mb-2 [&_p:last-child]:mb-0",
-        "[&_ul]:mb-2 [&_ul]:list-disc [&_ul]:pl-5",
-        "[&_ol]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5",
-        "[&_li]:mb-0.5",
-        "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:italic",
-        "[&_img]:my-3 [&_img]:max-w-full [&_img]:rounded-md",
+        "prose prose-sm max-w-none prose-neutral dark:prose-invert",
         className
       )}
       dangerouslySetInnerHTML={{ __html: html }}
