@@ -226,10 +226,12 @@
       "reviewsTabOwn": "My reviews ({count})",
       "historyTab": "History ({count})",
       "historyTabOwn": "My tasks ({count})",
+      "pointsTabOwn": "My points",
       "reviewsUnavailable": "Reviews unavailable",
       "reviewsUnavailableOwn": "Your reviews are unavailable",
       "taskHistoryUnavailable": "Task history unavailable",
       "taskHistoryUnavailableOwn": "Your task history is unavailable",
+      "pointsUnavailableOwn": "Your points are unavailable",
       "tabErrorBody": "This profile section could not be loaded. Please try again shortly."
     },
     "editPage": {
@@ -296,6 +298,20 @@
       "emptyTitleOwn": "You have no task history yet",
       "emptyBody": "Completed and ongoing tasks will appear here.",
       "emptyBodyOwn": "Your completed and ongoing tasks will appear here."
+    },
+    "points": {
+      "balanceLabel": "Points balance",
+      "unit": "{count, plural, =1 {point} other {points}}",
+      "historyEmptyTitle": "No points yet",
+      "historyEmptyBody": "Complete tasks to start earning points. They will show up here.",
+      "entryType": {
+        "taskCompletedReward": "Task completed",
+        "manualAdjustment": "Manual adjustment",
+        "redemption": "Redemption"
+      },
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {total}"
     },
     "emailBanner": {
       "title": "Your email is not verified",
