@@ -27,7 +27,8 @@ public sealed class UserSeedingHelper(
     /// Ensure the supplied development account exists and has the supplied
     /// roles, creating the user, profile, and privacy settings as needed.
     /// </summary>
-    public async Task EnsureUserAsync(
+    /// <returns>The ensured <see cref="ApplicationUser"/>.</returns>
+    public async Task<ApplicationUser> EnsureUserAsync(
         DevSeedAccount account,
         IReadOnlyCollection<string> roles,
         CancellationToken cancellationToken)
@@ -36,6 +37,7 @@ public sealed class UserSeedingHelper(
         await EnsureRolesAsync(user, roles);
         await EnsureProfileAsync(user, account, cancellationToken);
         await EnsureTermsAcceptedAsync(user, cancellationToken);
+        return user;
     }
 
     private async Task EnsureTermsAcceptedAsync(

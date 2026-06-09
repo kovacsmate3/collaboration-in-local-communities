@@ -23,6 +23,10 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// `seed` runs the data seeders against the configured database and exits,
+// without starting the web host. Wired to `npm run seed` for demo data.
+var seedOnly = args.Any(arg => string.Equals(arg, "seed", StringComparison.OrdinalIgnoreCase));
+
 // Bind application-owned Azure settings from the "Azure" configuration section.
 // Values flow through any ASP.NET Core configuration provider (appsettings,
 // environment variables like Azure__CosmosEndpoint / Azure__Postgres__Host, etc.).
@@ -259,6 +263,19 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Database connection check failed");
         throw;
     }
+}
+
+if (seedOnly)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    await db.Database.MigrateAsync();
+    await scope.ServiceProvider.RunDataSeedersAsync();
+
+    logger.LogInformation("Seed-only run complete; exiting without starting the web host.");
+    return;
 }
 
 {
