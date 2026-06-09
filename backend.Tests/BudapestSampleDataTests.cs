@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence.Seeding;
@@ -59,6 +56,7 @@ public class BudapestSampleDataTests
     public void EveryTask_HasCoordinatesWithinBudapest()
     {
         // Greater-Budapest bounding box; keeps the demo map pins in the city.
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local -- assertion-only lambda over the catalogue.
         Assert.All(BudapestSampleData.Tasks, task =>
         {
             Assert.InRange(task.Latitude, 47.34, 47.61);
@@ -69,6 +67,7 @@ public class BudapestSampleDataTests
     [Fact]
     public void Tasks_HaveNonEmptyTitleAndDescription()
     {
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local -- assertion-only lambda over the catalogue.
         Assert.All(BudapestSampleData.Tasks, task =>
         {
             Assert.False(string.IsNullOrWhiteSpace(task.Title));

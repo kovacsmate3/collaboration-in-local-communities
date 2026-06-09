@@ -2,7 +2,6 @@ using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using NetTopologySuite.Geometries;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
