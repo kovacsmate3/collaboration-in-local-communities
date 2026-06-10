@@ -9,7 +9,12 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
 {
     public void Configure(EntityTypeBuilder<Category> builder)
     {
-        builder.ToTable(TableNames.Categories, SchemaNames.Config);
+        builder.ToTable(
+            TableNames.Categories,
+            SchemaNames.Config,
+            table => table.HasCheckConstraint(
+                "ck_categories_points_weight_positive",
+                "points_weight > 0"));
 
         builder.HasGeneratedUuid(category => category.Id);
         builder.Property(category => category.Code).HasMaxLength(64).IsRequired();
@@ -20,6 +25,9 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .HasDefaultValue(Category.DefaultIcon)
             .IsRequired();
         builder.Property(category => category.SortOrder).HasDefaultValue(0);
+        builder.Property(category => category.PointsWeight)
+            .HasColumnType("numeric(4,2)")
+            .HasDefaultValue(Category.DefaultPointsWeight);
         builder.Property(category => category.IsActive).HasDefaultValue(true);
         builder.HasCreatedAt(category => category.CreatedAt);
         builder.HasUpdatedAt(category => category.UpdatedAt);
@@ -35,17 +43,17 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .HasDatabaseName("ix_categories_sort_order");
 
         builder.HasData(
-            SeedCategory("00000000-0000-0000-0000-000000000101", "moving", "Moving", "DeliveryTruck01Icon", 10),
-            SeedCategory("00000000-0000-0000-0000-000000000102", "tutoring", "Tutoring", "Mortarboard02Icon", 20),
-            SeedCategory("00000000-0000-0000-0000-000000000103", "repairs", "Repairs", "Wrench01Icon", 30),
-            SeedCategory("00000000-0000-0000-0000-000000000104", "shopping", "Shopping", "ShoppingBag03Icon", 40),
-            SeedCategory("00000000-0000-0000-0000-000000000105", "pet_care", "Pet Care", "Bone01Icon", 50),
-            SeedCategory("00000000-0000-0000-0000-000000000106", "cleaning", "Cleaning", "SparklesIcon", 60),
-            SeedCategory("00000000-0000-0000-0000-000000000107", "errands", "Errands", "RunningShoesIcon", 70),
-            SeedCategory("00000000-0000-0000-0000-000000000108", "other", "Other", Category.DefaultIcon, 80));
+            SeedCategory("00000000-0000-0000-0000-000000000101", "moving", "Moving", "DeliveryTruck01Icon", 10, 1.5m),
+            SeedCategory("00000000-0000-0000-0000-000000000102", "tutoring", "Tutoring", "Mortarboard02Icon", 20, 1.3m),
+            SeedCategory("00000000-0000-0000-0000-000000000103", "repairs", "Repairs", "Wrench01Icon", 30, 1.4m),
+            SeedCategory("00000000-0000-0000-0000-000000000104", "shopping", "Shopping", "ShoppingBag03Icon", 40, 1.0m),
+            SeedCategory("00000000-0000-0000-0000-000000000105", "pet_care", "Pet Care", "Bone01Icon", 50, 1.1m),
+            SeedCategory("00000000-0000-0000-0000-000000000106", "cleaning", "Cleaning", "SparklesIcon", 60, 1.2m),
+            SeedCategory("00000000-0000-0000-0000-000000000107", "errands", "Errands", "RunningShoesIcon", 70, 1.0m),
+            SeedCategory("00000000-0000-0000-0000-000000000108", "other", "Other", Category.DefaultIcon, 80, 1.0m));
     }
 
-    private static Category SeedCategory(string id, string code, string name, string icon, int sortOrder)
+    private static Category SeedCategory(string id, string code, string name, string icon, int sortOrder, decimal pointsWeight)
     {
         return new Category
         {
@@ -54,6 +62,7 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             Name = name,
             Icon = icon,
             SortOrder = sortOrder,
+            PointsWeight = pointsWeight,
             IsActive = true,
             CreatedAt = ConfigurationHelpers.SeedTimestamp,
             UpdatedAt = ConfigurationHelpers.SeedTimestamp

@@ -11,6 +11,7 @@ public sealed record AdminCategoryResponse(
     string Icon,
     string? Description,
     int SortOrder,
+    decimal PointsWeight,
     bool IsActive)
 {
     /// <summary>
@@ -25,6 +26,7 @@ public sealed record AdminCategoryResponse(
             category.Icon,
             category.Description,
             category.SortOrder,
+            category.PointsWeight,
             category.IsActive);
     }
 }

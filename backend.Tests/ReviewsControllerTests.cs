@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Backend.Application.Reviews;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Features.Profiles;
@@ -52,6 +53,47 @@ public sealed class ReviewsControllerTests
 
         Assert.Contains(db.ActivityEvents, a => a.EventType == ActivityEventType.ReviewSubmitted);
         Assert.Contains(db.AuditEvents, a => a.EventType == "review.submitted");
+    }
+
+    [Fact]
+    public async Task PostReviewAsync_SeekerReviewsHelper_AwardsReviewQualityBonus()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var scenario = await SeedCompletedTaskAsync(db, cancellationToken);
+        var controller = CreateController(db, scenario.SeekerUserId);
+
+        var result = await controller.PostReviewAsync(
+            scenario.TaskId,
+            new PostReviewRequest { Rating = 5 },
+            cancellationToken);
+
+        Assert.Equal(StatusCodes.Status201Created, Assert.IsType<ObjectResult>(result).StatusCode);
+
+        var bonus = Assert.Single(db.PointsLedger);
+        Assert.Equal(PointEntryType.ReviewQualityBonus, bonus.EntryType);
+        Assert.Equal(scenario.HelperProfileId, bonus.ProfileId);
+        Assert.Equal(scenario.TaskId, bonus.TaskId);
+        Assert.Equal(2 * ReviewQualityBonusCalculator.PointsPerStar, bonus.Amount);
+    }
+
+    [Fact]
+    public async Task PostReviewAsync_HelperReviewsSeeker_AwardsNoBonus()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var scenario = await SeedCompletedTaskAsync(db, cancellationToken);
+        var controller = CreateController(db, scenario.HelperUserId);
+
+        var result = await controller.PostReviewAsync(
+            scenario.TaskId,
+            new PostReviewRequest { Rating = 5 },
+            cancellationToken);
+
+        Assert.Equal(StatusCodes.Status201Created, Assert.IsType<ObjectResult>(result).StatusCode);
+
+        // A helper reviewing the seeker does not earn the helper a quality bonus.
+        Assert.Empty(db.PointsLedger);
     }
 
     [Fact]
@@ -439,7 +481,10 @@ public sealed class ReviewsControllerTests
 
     private static ReviewsController CreateController(AppDbContext db, Guid userId)
     {
-        return new ReviewsController(db, new PassthroughBlobStorageService())
+        return new ReviewsController(
+            db,
+            new PassthroughBlobStorageService(),
+            new TaskReviewBonusService(db, new ReviewQualityBonusCalculator()))
         {
             ControllerContext = new ControllerContext
             {
