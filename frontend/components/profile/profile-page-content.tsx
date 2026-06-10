@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProfileHeader } from "@/components/profile/profile-header"
+import { PointsWallet } from "@/components/profile/points-wallet"
 import { ReputationCard } from "@/components/profile/reputation-card"
 import { ReviewsList } from "@/components/profile/reviews-list"
 import { TaskHistory } from "@/components/profile/task-history"
@@ -17,9 +18,12 @@ import { useAuth } from "@/lib/auth-context"
 import {
   type OwnProfileResponse,
   type PublicProfileResponse,
+  POINTS_LEDGER_PAGE_SIZE,
   profileKeys,
   toProfileUser,
   useOwnProfile,
+  usePointsBalance,
+  usePointsLedger,
   useProfileReputationTrend,
   useProfileReviews,
   useProfileTaskHistory,
@@ -108,14 +112,24 @@ function ProfileLoaded({
   // leak across and surface as an empty reviews tab on a profile with fewer
   // pages. Done during render via a previous-prop snapshot per React's
   // "Adjusting state when a prop changes" guidance (preferred over useEffect).
+  const [ledgerPage, setLedgerPage] = useState(1)
   const [prevProfileId, setPrevProfileId] = useState(profile.id)
   if (prevProfileId !== profile.id) {
     setPrevProfileId(profile.id)
     setReviewsPage(1)
+    setLedgerPage(1)
   }
   const reviewsQuery = useProfileReviews(profile.id, reviewsPage)
   const taskHistoryQuery = useProfileTaskHistory(profile.id)
   const reputationTrendQuery = useProfileReputationTrend(profile.id)
+  // Points are private (me-only endpoints), so only query and surface them on
+  // the viewer's own profile.
+  const pointsBalanceQuery = usePointsBalance(isOwn)
+  const pointsLedgerQuery = usePointsLedger(
+    ledgerPage,
+    POINTS_LEDGER_PAGE_SIZE,
+    isOwn
+  )
   const reviews = reviewsQuery.data?.items ?? []
   const taskHistory = taskHistoryQuery.data ?? []
   const reviewsCount = reviewsQuery.data?.totalCount ?? profile.reviewCount
@@ -158,6 +172,9 @@ function ProfileLoaded({
               count: taskHistoryCount,
             })}
           </TabsTrigger>
+          {isOwn ? (
+            <TabsTrigger value="points">{t("pointsTabOwn")}</TabsTrigger>
+          ) : null}
         </TabsList>
         <TabsContent value="reviews">
           {reviewsQuery.isLoading ? (
@@ -190,6 +207,24 @@ function ProfileLoaded({
             <TaskHistory tasks={taskHistory} isOwn={isOwn} />
           )}
         </TabsContent>
+        {isOwn ? (
+          <TabsContent value="points">
+            {pointsBalanceQuery.isLoading || pointsLedgerQuery.isLoading ? (
+              <ProfileTabSkeleton />
+            ) : pointsBalanceQuery.isError || pointsLedgerQuery.isError ? (
+              <ProfileTabError title={t("pointsUnavailableOwn")} />
+            ) : (
+              <PointsWallet
+                balance={pointsBalanceQuery.data?.balance ?? 0}
+                entries={pointsLedgerQuery.data?.items ?? []}
+                page={ledgerPage}
+                totalPages={pointsLedgerQuery.data?.totalPages ?? 0}
+                onPageChange={setLedgerPage}
+                isFetching={pointsLedgerQuery.isFetching}
+              />
+            )}
+          </TabsContent>
+        ) : null}
       </Tabs>
     </div>
   )

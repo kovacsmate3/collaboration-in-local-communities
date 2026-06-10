@@ -555,6 +555,181 @@ public sealed class ProfilesControllerTests
         Assert.Equal(70, response.ReputationScore);
     }
 
+    [Fact]
+    public async Task GetOwnPointsBalanceAsync_ReturnsSignedSumOfOwnEntries_IgnoringOtherProfiles()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
+        var other = CreateProfile("Other");
+
+        db.Profiles.Add(other);
+        var now = DateTimeOffset.UtcNow;
+        db.PointsLedger.AddRange(
+            CreateLedgerEntry(profileId, 10, now.AddMinutes(-3)),
+            CreateLedgerEntry(profileId, 15, now.AddMinutes(-2)),
+            // A redemption is a negative entry; the balance must net it out.
+            CreateLedgerEntry(profileId, -5, now.AddMinutes(-1), PointEntryType.Redemption),
+            // Another profile's entry must not leak into this user's balance.
+            CreateLedgerEntry(other.Id, 100, now));
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+        var result = await controller.GetOwnPointsBalanceAsync(cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<PointsBalanceResponse>(ok.Value);
+        Assert.Equal(profileId, response.ProfileId);
+        Assert.Equal(20, response.Balance);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsBalanceAsync_ReturnsZero_WhenNoEntries()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+        var result = await controller.GetOwnPointsBalanceAsync(cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<PointsBalanceResponse>(ok.Value);
+        Assert.Equal(profileId, response.ProfileId);
+        Assert.Equal(0, response.Balance);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsBalanceAsync_ReturnsNotFound_WhenUserHasNoProfile()
+    {
+        await using var db = CreateDbContext();
+        var controller = CreateProfilesController(db, Guid.NewGuid());
+
+        var result = await controller.GetOwnPointsBalanceAsync(TestContext.Current.CancellationToken);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsBalanceAsync_ReturnsUnauthorized_WhenNoClaim()
+    {
+        await using var db = CreateDbContext();
+        var controller = CreateProfilesControllerWithoutAuth(db);
+
+        var result = await controller.GetOwnPointsBalanceAsync(TestContext.Current.CancellationToken);
+
+        Assert.IsType<UnauthorizedResult>(result);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsLedgerAsync_ReturnsEntriesNewestFirst_ScopedToOwnProfile()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
+        var other = CreateProfile("Other");
+
+        db.Profiles.Add(other);
+        var now = DateTimeOffset.UtcNow;
+        db.PointsLedger.AddRange(
+            CreateLedgerEntry(profileId, 10, now.AddMinutes(-2), description: "older"),
+            CreateLedgerEntry(profileId, 15, now.AddMinutes(-1), description: "newer"),
+            CreateLedgerEntry(other.Id, 100, now, description: "other profile"));
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+        var result = await controller.GetOwnPointsLedgerAsync(page: 1, pageSize: 20, cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var paged = Assert.IsType<PointsLedgerPagedResponse>(ok.Value);
+        Assert.Equal(2, paged.TotalCount);
+        Assert.Equal(1, paged.TotalPages);
+        Assert.Equal(["newer", "older"], paged.Items.Select(entry => entry.Description));
+        Assert.Equal(
+            nameof(PointEntryType.TaskCompletedReward),
+            paged.Items[0].EntryType);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsLedgerAsync_RespectsPaginationParameters()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
+
+        var now = DateTimeOffset.UtcNow;
+        for (var i = 0; i < 3; i++)
+        {
+            db.PointsLedger.Add(CreateLedgerEntry(profileId, 10, now.AddMinutes(i), description: $"entry {i}"));
+        }
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+
+        // Page 1, size 2 → newest 2.
+        var page1Result = await controller.GetOwnPointsLedgerAsync(page: 1, pageSize: 2, cancellationToken);
+        var page1 = Assert.IsType<PointsLedgerPagedResponse>(Assert.IsType<OkObjectResult>(page1Result).Value);
+        Assert.Equal(3, page1.TotalCount);
+        Assert.Equal(2, page1.TotalPages);
+        Assert.Equal(["entry 2", "entry 1"], page1.Items.Select(entry => entry.Description));
+
+        // Page 2, size 2 → oldest 1.
+        var page2Result = await controller.GetOwnPointsLedgerAsync(page: 2, pageSize: 2, cancellationToken);
+        var page2 = Assert.IsType<PointsLedgerPagedResponse>(Assert.IsType<OkObjectResult>(page2Result).Value);
+        Assert.Single(page2.Items);
+        Assert.Equal("entry 0", page2.Items[0].Description);
+    }
+
+    [Theory]
+    [InlineData(0, 20)]
+    [InlineData(-1, 20)]
+    [InlineData(1, 0)]
+    [InlineData(1, 101)]
+    public async Task GetOwnPointsLedgerAsync_InvalidPagination_ReturnsValidationProblem(int page, int pageSize)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, _) = await SeedProfileAsync(db, cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+        var result = await controller.GetOwnPointsLedgerAsync(page, pageSize, cancellationToken);
+
+        var problem = Assert.IsAssignableFrom<ObjectResult>(result);
+        Assert.IsAssignableFrom<ValidationProblemDetails>(problem.Value);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsLedgerAsync_ReturnsNotFound_WhenUserHasNoProfile()
+    {
+        await using var db = CreateDbContext();
+        var controller = CreateProfilesController(db, Guid.NewGuid());
+
+        var result = await controller.GetOwnPointsLedgerAsync(
+            page: 1, pageSize: 20, TestContext.Current.CancellationToken);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    private static PointsLedgerEntry CreateLedgerEntry(
+        Guid profileId,
+        int amount,
+        DateTimeOffset createdAt,
+        PointEntryType entryType = PointEntryType.TaskCompletedReward,
+        Guid? taskId = null,
+        string? description = null)
+    {
+        return new PointsLedgerEntry
+        {
+            Id = Guid.NewGuid(),
+            ProfileId = profileId,
+            TaskId = taskId,
+            Amount = amount,
+            EntryType = entryType,
+            Description = description,
+            CreatedAt = createdAt
+        };
+    }
+
     private static async Task<(Guid userId, Guid profileId)> SeedProfileAsync(
         AppDbContext db, CancellationToken cancellationToken)
     {
@@ -678,6 +853,20 @@ public sealed class ProfilesControllerTests
         };
 
         return controller;
+    }
+
+    private static ProfilesController CreateProfilesControllerWithoutAuth(AppDbContext db)
+    {
+        return new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity())
+                }
+            }
+        };
     }
 
     private sealed class NullBlobStorageService : IBlobStorageService

@@ -226,10 +226,12 @@
       "reviewsTabOwn": "Értékeléseim ({count})",
       "historyTab": "Előzmények ({count})",
       "historyTabOwn": "Feladataim ({count})",
+      "pointsTabOwn": "Pontjaim",
       "reviewsUnavailable": "Az értékelések nem elérhetők",
       "reviewsUnavailableOwn": "Az értékeléseid nem elérhetők",
       "taskHistoryUnavailable": "A feladatok előzményei nem elérhetők",
       "taskHistoryUnavailableOwn": "A feladataid előzményei nem elérhetők",
+      "pointsUnavailableOwn": "A pontjaid nem elérhetők",
       "tabErrorBody": "Ez a profilszakasz nem tölthető be. Próbáld újra rövidesen."
     },
     "editPage": {
@@ -296,6 +298,20 @@
       "emptyTitleOwn": "Még nincsenek korábbi feladataid",
       "emptyBody": "A befejezett és folyamatban lévő feladatok itt jelennek meg.",
       "emptyBodyOwn": "A befejezett és folyamatban lévő feladataid itt jelennek meg."
+    },
+    "points": {
+      "balanceLabel": "Pontegyenleg",
+      "unit": "pont",
+      "historyEmptyTitle": "Még nincsenek pontjaid",
+      "historyEmptyBody": "Teljesíts feladatokat, hogy pontokat gyűjthess. Itt fognak megjelenni.",
+      "entryType": {
+        "taskCompletedReward": "Teljesített feladat",
+        "manualAdjustment": "Kézi módosítás",
+        "redemption": "Beváltás"
+      },
+      "previous": "Előző",
+      "next": "Következő",
+      "pageOf": "{page}. oldal / {total}"
     },
     "emailBanner": {
       "title": "Az e-mail-címed nincs megerősítve",

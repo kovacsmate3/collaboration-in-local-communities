@@ -145,6 +145,30 @@ export interface ProfileTaskHistoryItem {
   createdAt: string
 }
 
+export interface PointsBalanceResponse {
+  profileId: string
+  balance: number
+}
+
+export interface PointsLedgerEntryResponse {
+  id: string
+  amount: number
+  entryType: string
+  description?: string | null
+  taskId?: string | null
+  createdAt: string
+}
+
+export interface PointsLedgerPagedResponse {
+  items: PointsLedgerEntryResponse[]
+  totalCount: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export const POINTS_LEDGER_PAGE_SIZE = 20
+
 export const profileKeys = {
   all: ["profiles"] as const,
   me: () => [...profileKeys.all, "me"] as const,
@@ -156,6 +180,10 @@ export const profileKeys = {
     [...profileKeys.public(id), "task-history"] as const,
   reputationTrend: (id: string) =>
     [...profileKeys.public(id), "reputation-trend"] as const,
+  pointsBalance: () => [...profileKeys.me(), "points-balance"] as const,
+  pointsLedger: () => [...profileKeys.me(), "points-ledger"] as const,
+  pointsLedgerPage: (page: number, pageSize: number) =>
+    [...profileKeys.pointsLedger(), { page, pageSize }] as const,
   skill: (id: string) => ["skills", "detail", id] as const,
   skills: (prefix: string) => ["skills", "search", prefix] as const,
 }
@@ -278,6 +306,39 @@ export function useProfileReputationTrend(id: string) {
         `/profiles/${id}/reputation-trend`
       ),
     enabled: id.length > 0,
+  })
+}
+
+/**
+ * Current user's points balance. Private (me-only) endpoint, so it takes no
+ * profile id and should only be enabled on the viewer's own profile.
+ */
+export function usePointsBalance(enabled = true) {
+  return useQuery({
+    queryKey: profileKeys.pointsBalance(),
+    queryFn: () =>
+      apiClient.get<PointsBalanceResponse>("/profiles/me/points-balance"),
+    enabled,
+  })
+}
+
+/**
+ * Current user's points ledger history, paginated and newest first. Private
+ * (me-only) endpoint; enable only on the viewer's own profile.
+ */
+export function usePointsLedger(
+  page: number = 1,
+  pageSize: number = POINTS_LEDGER_PAGE_SIZE,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: profileKeys.pointsLedgerPage(page, pageSize),
+    queryFn: () =>
+      apiClient.get<PointsLedgerPagedResponse>(
+        `/profiles/me/points-ledger?page=${page}&pageSize=${pageSize}`
+      ),
+    enabled,
+    placeholderData: (previousData) => previousData,
   })
 }
 
