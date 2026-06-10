@@ -6,6 +6,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
+import { ErrorState } from "@/components/shared/error-state"
+import { LoadingState } from "@/components/shared/loading-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { TaskList } from "@/components/tasks/task-list"
 import {
@@ -136,6 +138,7 @@ export function FeedPageClient() {
     isFetchingNextPage,
     isLoading,
     isError,
+    refetch,
   } = useInfiniteTaskList(serverFilters)
 
   const tasks = React.useMemo(() => data?.pages.flat() ?? [], [data])
@@ -179,9 +182,9 @@ export function FeedPageClient() {
       />
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">{t("loadingTasks")}</p>
+        <LoadingState rows={4} />
       ) : isError ? (
-        <p className="text-sm text-destructive">{t("loadError")}</p>
+        <ErrorState onRetry={() => void refetch()} />
       ) : (
         <>
           <TaskList
