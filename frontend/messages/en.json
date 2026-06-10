@@ -4,7 +4,18 @@
     "primaryNav": "Primary",
     "signedOutToast": "Signed out",
     "tagline": "Local help, structured trust.",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "states": {
+      "loading": "Loading…",
+      "loadErrorTitle": "Something went wrong",
+      "loadErrorBody": "We couldn't load this. Please try again in a moment.",
+      "tryAgain": "Try again"
+    }
+  },
+  "notFound": {
+    "heading": "We couldn't find that page",
+    "body": "The link may be broken or the page may have moved.",
+    "backToFeed": "Back to the feed"
   },
   "landing": {
     "signIn": "Sign in",
@@ -416,7 +427,6 @@
       }
     },
     "detail": {
-      "loading": "Loading task…",
       "posted": "Posted {relative}",
       "description": "Description",
       "postedBy": "Posted by",
@@ -516,8 +526,6 @@
       "title": "Local tasks",
       "description": "Open requests in your community. Need a hand? Post a task in seconds.",
       "postTask": "Post a task",
-      "loadingTasks": "Loading tasks…",
-      "loadError": "Could not load tasks. Please try again.",
       "emptyFilteredTitle": "No tasks match your filters",
       "emptyFilteredBody": "Try widening the category, reward, distance, or recency range.",
       "emptyTitle": "No open requests right now",
@@ -533,8 +541,6 @@
       "tabPosted": "Posted",
       "tabAccepted": "Accepted",
       "tabApplied": "Applied",
-      "loadError": "Could not load tasks. Please try again.",
-      "loading": "Loading…",
       "emptyPostedTitle": "You haven't posted anything yet",
       "emptyPostedBody": "Post your first request and get help from the community.",
       "emptyAcceptedTitle": "No accepted tasks",
@@ -552,7 +558,6 @@
       "description": "Describe what you need help with. Clear titles and locations get answered fastest."
     },
     "editPage": {
-      "loading": "Loading…",
       "title": "Edit task",
       "description": "Update the details of your task."
     },
@@ -595,9 +600,7 @@
   "messages": {
     "page": {
       "title": "Messages",
-      "description": "Your conversations about tasks.",
-      "loading": "Loading…",
-      "loadError": "Could not load conversations. Please try again."
+      "description": "Your conversations about tasks."
     },
     "list": {
       "emptyTitle": "No conversations yet",

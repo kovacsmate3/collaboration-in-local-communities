@@ -10,18 +10,31 @@ import { PageHeader } from "@/components/shared/page-header"
 import { TaskCard } from "@/components/tasks/task-card"
 import { TaskList } from "@/components/tasks/task-list"
 import { EmptyState } from "@/components/shared/empty-state"
+import { ErrorState } from "@/components/shared/error-state"
+import { LoadingState } from "@/components/shared/loading-state"
 import { useAuth } from "@/lib/auth-context"
 import { useMyTaskApplications, useTaskList } from "@/lib/api/tasks"
 
 export function TasksPageClient() {
   const t = useTranslations("tasks.myTasks")
   const { user } = useAuth()
-  const { data: tasks = [], isLoading, isError } = useTaskList()
+  const {
+    data: tasks = [],
+    isLoading,
+    isError,
+    refetch: refetchTasks,
+  } = useTaskList()
   const {
     data: applications = [],
     isLoading: isLoadingApplications,
     isError: isApplicationsError,
+    refetch: refetchApplications,
   } = useMyTaskApplications()
+
+  function handleRetry() {
+    if (isError) void refetchTasks()
+    if (isApplicationsError) void refetchApplications()
+  }
 
   const posted = tasks.filter((t) => t.seekerProfileId === user?.profileId)
   const accepted = tasks.filter(
@@ -58,14 +71,16 @@ export function TasksPageClient() {
         </TabsList>
 
         {isError || isApplicationsError ? (
-          <p className="mt-4 text-sm text-destructive">{t("loadError")}</p>
+          <div className="mt-4">
+            <ErrorState onRetry={handleRetry} />
+          </div>
         ) : (
           <>
             <TabsContent value="posted">
               {isLoading ? (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  {t("loading")}
-                </p>
+                <div className="mt-4">
+                  <LoadingState rows={3} />
+                </div>
               ) : (
                 <TaskList
                   tasks={posted}
@@ -76,9 +91,9 @@ export function TasksPageClient() {
             </TabsContent>
             <TabsContent value="accepted">
               {isLoading ? (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  {t("loading")}
-                </p>
+                <div className="mt-4">
+                  <LoadingState rows={3} />
+                </div>
               ) : (
                 <TaskList
                   tasks={accepted}
@@ -89,9 +104,9 @@ export function TasksPageClient() {
             </TabsContent>
             <TabsContent value="applied">
               {isLoadingApplications ? (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  {t("loading")}
-                </p>
+                <div className="mt-4">
+                  <LoadingState rows={3} />
+                </div>
               ) : applications.length === 0 ? (
                 <EmptyState
                   icon={InboxIcon}

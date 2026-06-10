@@ -4,7 +4,18 @@
     "primaryNav": "Főmenü",
     "signedOutToast": "Kijelentkezve",
     "tagline": "Helyi segítség, megbízható közösségben.",
-    "goBack": "Vissza"
+    "goBack": "Vissza",
+    "states": {
+      "loading": "Betöltés…",
+      "loadErrorTitle": "Hiba történt",
+      "loadErrorBody": "Nem sikerült betölteni. Próbáld újra egy pillanat múlva.",
+      "tryAgain": "Próbáld újra"
+    }
+  },
+  "notFound": {
+    "heading": "Nem találtuk meg ezt az oldalt",
+    "body": "A link sérült lehet, vagy az oldalt áthelyezhették.",
+    "backToFeed": "Vissza a hírfolyamhoz"
   },
   "landing": {
     "signIn": "Bejelentkezés",
@@ -416,7 +427,6 @@
       }
     },
     "detail": {
-      "loading": "Feladat betöltése…",
       "posted": "{relative} ezelőtt közzétéve",
       "description": "Leírás",
       "postedBy": "Közzétette",
@@ -516,8 +526,6 @@
       "title": "Helyi feladatok",
       "description": "Nyitott kérések a közösségedben. Segítségre van szükséged? Tegyél közzé egy feladatot pár másodperc alatt.",
       "postTask": "Feladat közzététele",
-      "loadingTasks": "Feladatok betöltése…",
-      "loadError": "Nem sikerült betölteni a feladatokat. Próbáld újra.",
       "emptyFilteredTitle": "Nincs a szűrőidnek megfelelő feladat",
       "emptyFilteredBody": "Próbáld kibővíteni a kategória, jutalom, távolság vagy időszak szűrőt.",
       "emptyTitle": "Nincsenek nyitott kérések jelenleg",
@@ -533,8 +541,6 @@
       "tabPosted": "Közzétett feladataid",
       "tabAccepted": "Elvállalt feladataid",
       "tabApplied": "Jelentkezések",
-      "loadError": "Nem sikerült betölteni a feladatokat. Próbáld újra.",
-      "loading": "Betöltés…",
       "emptyPostedTitle": "Még nem tettél közzé feladatot",
       "emptyPostedBody": "Tedd közzé az első kérésed, és kérj segítséget a közösség tagjaitól.",
       "emptyAcceptedTitle": "Nincs elvállalt feladat",
@@ -552,7 +558,6 @@
       "description": "Írd le, miben kérsz segítséget. Az egyértelmű feladatleírás és a megadott helyszín gyorsabb választ hoz."
     },
     "editPage": {
-      "loading": "Betöltés…",
       "title": "Feladat szerkesztése",
       "description": "Frissítsd a feladatod adatait."
     },
@@ -595,9 +600,7 @@
   "messages": {
     "page": {
       "title": "Üzenetek",
-      "description": "Itt találod a feladataiddal kapcsolatos beszélgetéseket.",
-      "loading": "Betöltés…",
-      "loadError": "Nem sikerült betölteni a beszélgetéseket. Próbáld meg újra."
+      "description": "Itt találod a feladataiddal kapcsolatos beszélgetéseket."
     },
     "list": {
       "emptyTitle": "Még nincs beszélgetés",
