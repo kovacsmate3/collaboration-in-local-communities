@@ -95,3 +95,61 @@ Apply migrations to the configured database:
 ```powershell
 dotnet ef database update --project backend --startup-project backend --context Backend.Infrastructure.Persistence.AppDbContext
 ```
+
+## Seeding demo data
+
+A one-shot seeder populates a fresh **development** database with realistic demo
+content: a couple of fixed login accounts, ten sample neighbour ("seeker")
+accounts, and 50 curated Budapest community tasks spread across every category,
+compensation type, and lifecycle status.
+
+With Postgres running (see above), from the **repo root**:
+
+```powershell
+npm run seed
+```
+
+This runs `dotnet run --project backend -- seed`, which applies any pending
+migrations, runs the seeders, and exits without starting the web host. The
+seeders also run automatically on normal backend startup in Development, so a
+plain `dotnet run` (or `docker compose up`) seeds too. Seeding is **idempotent**
+— each demo task carries a stable `DEMO-####` public code, so re-running never
+duplicates rows.
+
+### Development-only by design
+
+The demo accounts and tasks are **never created outside Development**. Seeders
+are only registered when `ASPNETCORE_ENVIRONMENT=Development`; in any other
+environment none of the seed accounts or tasks are inserted. Two config switches
+(section `DevSeed`) let you opt out even in Development:
+
+| Setting                    | Effect                                    |
+| -------------------------- | ----------------------------------------- |
+| `DevSeed:Enabled=false`    | Disables **all** dev seeders.             |
+| `DevSeed:SampleTasks:Enabled=false` | Disables just the 50 sample tasks (and their seeker accounts). |
+
+### Seeded login credentials
+
+All seeded accounts use addresses on the reserved `.test` TLD, so they can never
+collide with a real email. The two fixed accounts can be overridden via the
+`DevSeed:Admin` / `DevSeed:User` config sections.
+
+| Role  | Email                | Password    |
+| ----- | -------------------- | ----------- |
+| Admin | `admin@local.test`   | `Admin123!` |
+| User  | `user@local.test`    | `User123!`  |
+
+The ten sample seeker accounts all share the password `Seed123!`:
+
+| Name      | Email                    |
+| --------- | ------------------------ |
+| Anna K.   | `seed.anna@local.test`   |
+| Bence T.  | `seed.bence@local.test`  |
+| Csilla M. | `seed.csilla@local.test` |
+| Dániel P. | `seed.daniel@local.test` |
+| Eszter V. | `seed.eszter@local.test` |
+| Gábor Sz. | `seed.gabor@local.test`  |
+| Hanna B.  | `seed.hanna@local.test`  |
+| István L. | `seed.istvan@local.test` |
+| Júlia N.  | `seed.julia@local.test`  |
+| Márk H.   | `seed.mark@local.test`   |
