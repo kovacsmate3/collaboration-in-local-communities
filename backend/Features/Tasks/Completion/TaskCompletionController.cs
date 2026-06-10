@@ -2,9 +2,12 @@ using System.Security.Claims;
 using Backend.Application.TaskCompletion;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
+using Backend.Domain.Tasks;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
@@ -13,6 +16,7 @@ namespace Backend.Features.Tasks.Completion;
 [ApiController]
 [Route("api/tasks/{taskId:guid}")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
 public sealed class TaskCompletionController(
     AppDbContext db,
     ITaskCompletionRewardService rewardService) : ControllerBase
@@ -42,15 +46,15 @@ public sealed class TaskCompletionController(
             return Forbid();
         }
 
-        if (task.Status != DomainTaskStatus.InProgress)
+        if (!TaskStatusTransitions.CanTransition(task.Status, DomainTaskStatus.PendingApproval))
         {
             var submitDetail = task.Status == DomainTaskStatus.PendingApproval
                 ? "This task is already awaiting the seeker's approval."
                 : "Only in-progress tasks can be marked as done.";
             return Problem(
-                title: "Task cannot be marked as done",
+                title: "Invalid task status transition",
                 detail: submitDetail,
-                statusCode: StatusCodes.Status409Conflict);
+                statusCode: StatusCodes.Status400BadRequest);
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -128,15 +132,15 @@ public sealed class TaskCompletionController(
             return Forbid();
         }
 
-        if (task.Status != DomainTaskStatus.PendingApproval)
+        if (!TaskStatusTransitions.CanTransition(task.Status, DomainTaskStatus.Completed))
         {
             var approveDetail = task.Status == DomainTaskStatus.Completed
                 ? "This task has already been marked as completed."
                 : "Only tasks awaiting approval can be approved.";
             return Problem(
-                title: "Task cannot be approved",
+                title: "Invalid task status transition",
                 detail: approveDetail,
-                statusCode: StatusCodes.Status409Conflict);
+                statusCode: StatusCodes.Status400BadRequest);
         }
 
         if (task.AcceptedHelperProfileId is null)
@@ -153,6 +157,18 @@ public sealed class TaskCompletionController(
         task.Status = DomainTaskStatus.Completed;
         task.CompletedAt = now;
         task.UpdatedAt = now;
+
+        // Credit the helper — the party who actually performed the work — with a
+        // completed task so it feeds their reputation score. The seeker is not
+        // credited: posting a task is not "work done" for reputation purposes,
+        // mirroring how seeker-received reviews are excluded from the score.
+        // This approval path runs at most once per task (any later call sees a
+        // Completed status and 409s above), so the counter cannot double-count.
+        if (task.AcceptedHelperProfile is not null)
+        {
+            task.AcceptedHelperProfile.CompletedTaskCount += 1;
+            task.AcceptedHelperProfile.UpdatedAt = now;
+        }
 
         var seekerAlreadyConfirmed = await db.TaskCompletionConfirmations.AnyAsync(
             confirmation => confirmation.TaskId == task.Id && confirmation.ProfileId == profile.Id,

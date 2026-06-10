@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 
 import { ACCESS_TOKEN_COOKIE } from "@/lib/auth/cookies"
 import { BACKEND_AUTH_PATHS } from "@/lib/auth/constants"
+import { LOCALE_COOKIE_NAME, isSupportedLocale } from "@/i18n/config"
 import {
   appendBackendSetCookie,
   clearAuthCookies,
@@ -129,6 +130,15 @@ async function fetchBackend(
 
   if (accessToken) {
     headers.set("authorization", `Bearer ${accessToken}`)
+  }
+
+  // Mirror the UI's language for backend-generated content (e.g. emails). The
+  // user's explicit locale choice (NEXT_LOCALE cookie) wins; otherwise the
+  // browser's Accept-Language header already in `headers` flows through. This
+  // matches the resolution order in i18n/request.ts.
+  const localeChoice = request.cookies.get(LOCALE_COOKIE_NAME)?.value
+  if (isSupportedLocale(localeChoice)) {
+    headers.set("accept-language", localeChoice)
   }
 
   const backendUrl = getBackendUrl(path, request.url)

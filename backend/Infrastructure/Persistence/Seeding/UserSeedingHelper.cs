@@ -27,7 +27,8 @@ public sealed class UserSeedingHelper(
     /// Ensure the supplied development account exists and has the supplied
     /// roles, creating the user, profile, and privacy settings as needed.
     /// </summary>
-    public async Task EnsureUserAsync(
+    /// <returns>The ensured <see cref="ApplicationUser"/>.</returns>
+    public async Task<ApplicationUser> EnsureUserAsync(
         DevSeedAccount account,
         IReadOnlyCollection<string> roles,
         CancellationToken cancellationToken)
@@ -35,6 +36,50 @@ public sealed class UserSeedingHelper(
         var user = await EnsureIdentityUserAsync(account, cancellationToken);
         await EnsureRolesAsync(user, roles);
         await EnsureProfileAsync(user, account, cancellationToken);
+        await EnsureTermsAcceptedAsync(user, cancellationToken);
+        return user;
+    }
+
+    private async Task EnsureTermsAcceptedAsync(
+        ApplicationUser user,
+        CancellationToken cancellationToken)
+    {
+        // Record acceptance of the current active terms so seeded accounts land
+        // straight in the app instead of being held at the terms-acceptance gate.
+        var now = DateTimeOffset.UtcNow;
+
+        var activeTerms = await db.TermsVersions
+            .Where(terms => terms.IsActive && terms.EffectiveFrom <= now)
+            .OrderByDescending(terms => terms.EffectiveFrom)
+            .ThenByDescending(terms => terms.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (activeTerms is null)
+        {
+            return;
+        }
+
+        var alreadyAccepted = await db.UserTermsAcceptances
+            .AnyAsync(
+                acceptance =>
+                    acceptance.UserId == user.Id
+                    && acceptance.TermsVersionId == activeTerms.Id,
+                cancellationToken);
+
+        if (alreadyAccepted)
+        {
+            return;
+        }
+
+        db.UserTermsAcceptances.Add(new UserTermsAcceptance
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            TermsVersionId = activeTerms.Id,
+            AcceptedAt = now,
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<ApplicationUser> EnsureIdentityUserAsync(

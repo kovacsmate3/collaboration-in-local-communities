@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { apiClient } from "@/lib/api/client"
+import {
+  invalidateProfileData,
+  invalidateSkillData,
+} from "@/lib/api/query-invalidation"
 import { COMPLETED_TASK_WEIGHT, REVIEW_QUALITY_WEIGHT } from "@/lib/reputation"
 import type {
   Reputation,
@@ -141,6 +145,30 @@ export interface ProfileTaskHistoryItem {
   createdAt: string
 }
 
+export interface PointsBalanceResponse {
+  profileId: string
+  balance: number
+}
+
+export interface PointsLedgerEntryResponse {
+  id: string
+  amount: number
+  entryType: string
+  description?: string | null
+  taskId?: string | null
+  createdAt: string
+}
+
+export interface PointsLedgerPagedResponse {
+  items: PointsLedgerEntryResponse[]
+  totalCount: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export const POINTS_LEDGER_PAGE_SIZE = 20
+
 export const profileKeys = {
   all: ["profiles"] as const,
   me: () => [...profileKeys.all, "me"] as const,
@@ -152,6 +180,10 @@ export const profileKeys = {
     [...profileKeys.public(id), "task-history"] as const,
   reputationTrend: (id: string) =>
     [...profileKeys.public(id), "reputation-trend"] as const,
+  pointsBalance: () => [...profileKeys.me(), "points-balance"] as const,
+  pointsLedger: () => [...profileKeys.me(), "points-ledger"] as const,
+  pointsLedgerPage: (page: number, pageSize: number) =>
+    [...profileKeys.pointsLedger(), { page, pageSize }] as const,
   skill: (id: string) => ["skills", "detail", id] as const,
   skills: (prefix: string) => ["skills", "search", prefix] as const,
 }
@@ -180,7 +212,7 @@ export function useUpdateOwnProfile() {
       apiClient.put<OwnProfileResponse>("/profiles/me", data),
     onSuccess: (profile) => {
       qc.setQueryData(profileKeys.me(), profile)
-      void qc.invalidateQueries({ queryKey: profileKeys.all })
+      invalidateProfileData(qc)
     },
   })
 }
@@ -202,7 +234,7 @@ export function useUploadProfilePhoto() {
         profileKeys.me(),
         (prev) => (prev ? { ...prev, photoUrl: data.photoUrl } : prev)
       )
-      void qc.invalidateQueries({ queryKey: profileKeys.all })
+      invalidateProfileData(qc)
     },
   })
 }
@@ -217,7 +249,7 @@ export function useDeleteProfilePhoto() {
         profileKeys.me(),
         (prev) => (prev ? { ...prev, photoUrl: null } : prev)
       )
-      void qc.invalidateQueries({ queryKey: profileKeys.all })
+      invalidateProfileData(qc)
     },
   })
 }
@@ -277,6 +309,39 @@ export function useProfileReputationTrend(id: string) {
   })
 }
 
+/**
+ * Current user's points balance. Private (me-only) endpoint, so it takes no
+ * profile id and should only be enabled on the viewer's own profile.
+ */
+export function usePointsBalance(enabled = true) {
+  return useQuery({
+    queryKey: profileKeys.pointsBalance(),
+    queryFn: () =>
+      apiClient.get<PointsBalanceResponse>("/profiles/me/points-balance"),
+    enabled,
+  })
+}
+
+/**
+ * Current user's points ledger history, paginated and newest first. Private
+ * (me-only) endpoint; enable only on the viewer's own profile.
+ */
+export function usePointsLedger(
+  page: number = 1,
+  pageSize: number = POINTS_LEDGER_PAGE_SIZE,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: profileKeys.pointsLedgerPage(page, pageSize),
+    queryFn: () =>
+      apiClient.get<PointsLedgerPagedResponse>(
+        `/profiles/me/points-ledger?page=${page}&pageSize=${pageSize}`
+      ),
+    enabled,
+    placeholderData: (previousData) => previousData,
+  })
+}
+
 export function useSkills(prefix: string) {
   return useQuery({
     queryKey: profileKeys.skills(prefix),
@@ -300,6 +365,7 @@ export function useCreateSkill() {
       apiClient.post<SkillResponse>("/skills", data),
     onSuccess: (skill) => {
       qc.setQueryData(profileKeys.skill(skill.id), skill)
+      invalidateSkillData(qc)
     },
   })
 }
@@ -337,7 +403,7 @@ const taskCategoryByBackendCode: Record<string, TaskCategory> = {
   tutoring: "tutoring",
   repairs: "household",
   cleaning: "household",
-  pet_care: "petcare",
+  pet_care: "pet_care",
   shopping: "errands",
   errands: "errands",
   other: "other",

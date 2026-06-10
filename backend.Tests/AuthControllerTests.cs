@@ -156,12 +156,88 @@ public sealed class AuthControllerTests
         Assert.True(profile.IsProfileCompleted);
         Assert.NotNull(profile.PrivacySettings);
 
-        // #159: registration no longer issues tokens/cookies — it sends a verification email.
+        // #159: registration no longer issues tokens/cookies.
         Assert.False(await db.RefreshTokens.AnyAsync(t => t.UserId == persistedUser.Id, cancellationToken));
+#if DEBUG
+        // Debug builds auto-confirm the account for local dev and skip the verification
+        // email (see the #if DEBUG branch in AuthController.RegisterAsync).
+        Assert.True(persistedUser.EmailConfirmed);
+        Assert.Empty(emailSender.SentTo);
+#else
+        // Release builds (and CI) send the verification email instead of auto-confirming.
         Assert.Equal([request.Email], emailSender.SentTo);
+#endif
 
         Assert.True(await db.AuditEvents
             .AnyAsync(e => e.EventType == "auth.registered" && e.ActorUserId == persistedUser.Id, cancellationToken));
+    }
+
+    [Theory]
+    [InlineData("hu", "2gather – E-mail-cím megerősítése", "Erősítsd meg az e-mail-címed")]
+    [InlineData("hu-HU", "2gather – E-mail-cím megerősítése", "Erősítsd meg az e-mail-címed")]
+    [InlineData("en", "2gather - Verify your email address", "Verify your email address")]
+    [InlineData(null, "2gather - Verify your email address", "Verify your email address")]
+    public async Task ResendVerificationEmailAsync_SendsEmailInRequestedLocale(
+        string? acceptLanguage,
+        string expectedSubject,
+        string expectedBodySnippet)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var services = CreateServices();
+        using var scope = services.CreateScope();
+        await SeedRolesAsync(scope, cancellationToken);
+        var user = await SeedUserAsync(scope, cancellationToken, emailConfirmed: false);
+
+        var emailSender = new RecordingEmailSender();
+        var controller = CreateController(
+            scope,
+            clientIp: DefaultClientIp,
+            emailSender: emailSender,
+            acceptLanguage: acceptLanguage);
+
+        var result = await controller.ResendVerificationEmailAsync(
+            new ResendVerificationEmailRequest(user.Email!),
+            cancellationToken);
+
+        Assert.IsType<OkResult>(result);
+        var email = emailSender.Single;
+        Assert.Equal(user.Email, email.ToEmail);
+        Assert.Equal(expectedSubject, email.Subject);
+        Assert.Contains(expectedBodySnippet, email.HtmlContent, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("hu", "2gather – Új jelszó beállítása", "Állíts be új jelszót")]
+    [InlineData("hu-HU", "2gather – Új jelszó beállítása", "Állíts be új jelszót")]
+    [InlineData("en", "2gather - Set a new password", "Set a new password")]
+    [InlineData(null, "2gather - Set a new password", "Set a new password")]
+    public async Task ForgotPasswordAsync_SendsResetEmailInRequestedLocale(
+        string? acceptLanguage,
+        string expectedSubject,
+        string expectedBodySnippet)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var services = CreateServices();
+        using var scope = services.CreateScope();
+        await SeedRolesAsync(scope, cancellationToken);
+        var user = await SeedUserAsync(scope, cancellationToken);
+
+        var emailSender = new RecordingEmailSender();
+        var controller = CreateController(
+            scope,
+            clientIp: DefaultClientIp,
+            emailSender: emailSender,
+            acceptLanguage: acceptLanguage);
+
+        var result = await controller.ForgotPasswordAsync(
+            new ForgotPasswordRequest(user.Email!),
+            cancellationToken);
+
+        Assert.IsType<OkResult>(result);
+        var email = emailSender.Single;
+        Assert.Equal(user.Email, email.ToEmail);
+        Assert.Equal(expectedSubject, email.Subject);
+        Assert.Contains(expectedBodySnippet, email.HtmlContent, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -668,7 +744,8 @@ public sealed class AuthControllerTests
         Guid? currentUserId = null,
         string? refreshTokenCookie = null,
         string? clientIp = null,
-        IEmailSender? emailSender = null)
+        IEmailSender? emailSender = null,
+        string? acceptLanguage = null)
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -679,6 +756,11 @@ public sealed class AuthControllerTests
         if (refreshTokenCookie is not null)
         {
             httpContext.Request.Headers.Cookie = $"{RefreshTokenCookieName}={refreshTokenCookie}";
+        }
+
+        if (acceptLanguage is not null)
+        {
+            httpContext.Request.Headers.AcceptLanguage = acceptLanguage;
         }
 
         if (currentUserId is not null)
@@ -852,9 +934,15 @@ public sealed class AuthControllerTests
         }
     }
 
+    private sealed record SentEmail(string ToEmail, string Subject, string HtmlContent);
+
     private sealed class RecordingEmailSender : IEmailSender
     {
-        public List<string> SentTo { get; } = [];
+        public List<SentEmail> Sent { get; } = [];
+
+        public List<string> SentTo => Sent.ConvertAll(m => m.ToEmail);
+
+        public SentEmail Single => Assert.Single(Sent);
 
         public Task SendEmailAsync(
             string toEmail,
@@ -862,7 +950,7 @@ public sealed class AuthControllerTests
             string htmlContent,
             CancellationToken cancellationToken = default)
         {
-            SentTo.Add(toEmail);
+            Sent.Add(new SentEmail(toEmail, subject, htmlContent));
             return Task.CompletedTask;
         }
     }

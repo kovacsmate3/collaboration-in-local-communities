@@ -1,0 +1,626 @@
+{
+  "common": {
+    "openUserMenu": "Open user menu",
+    "primaryNav": "Primary",
+    "signedOutToast": "Signed out",
+    "tagline": "Local help, structured trust.",
+    "goBack": "Go back",
+    "states": {
+      "loading": "Loading…",
+      "loadErrorTitle": "Something went wrong",
+      "loadErrorBody": "We couldn't load this. Please try again in a moment.",
+      "tryAgain": "Try again"
+    }
+  },
+  "notFound": {
+    "heading": "We couldn't find that page",
+    "body": "The link may be broken or the page may have moved.",
+    "backToFeed": "Back to the feed"
+  },
+  "landing": {
+    "signIn": "Sign in",
+    "getStarted": "Get started",
+    "heroHeading": "Your neighbourhood is full of helping hands.",
+    "heroBody": "Some days you need a hand, some days you've got one to spare. 2gather connects you with the people right around you, so the place you live feels a little more like home.",
+    "createAccount": "Create an account",
+    "browseFeed": "Browse the feed"
+  },
+  "editor": {
+    "toolbarAria": "Formatting options",
+    "placeholder": "Write something…",
+    "bold": "Bold",
+    "italic": "Italic",
+    "strikethrough": "Strikethrough",
+    "bulletList": "Bullet list",
+    "numberedList": "Numbered list",
+    "blockquote": "Blockquote"
+  },
+  "locationInput": {
+    "placeholder": "City, neighbourhood, or street address",
+    "search": "Search",
+    "searching": "Searching…",
+    "useMyLocation": "Use my location",
+    "locating": "Locating…",
+    "attribution": "Address data © OpenStreetMap contributors.",
+    "errorMinChars": "Enter at least 3 characters.",
+    "errorLookupUnavailable": "Address lookup is unavailable.",
+    "errorNoResults": "No matching addresses found.",
+    "errorBrowserUnsupported": "Your browser does not support location lookup.",
+    "errorReadFailed": "Unable to read your current location.",
+    "errorReverseFallback": "Address name unavailable; coordinates were saved."
+  },
+  "terms": {
+    "pageTitle": "Terms & Conditions",
+    "heading": "Terms & Conditions",
+    "versionLine": "Version {version} — effective {date}",
+    "sections": {
+      "about": {
+        "title": "1. About 2gather",
+        "body": "2gather is a platform that connects neighbours who need help with those willing to offer it. By creating an account you agree to use the service in good faith and in accordance with your local laws."
+      },
+      "account": {
+        "title": "2. Your account",
+        "body": "You are responsible for keeping your credentials secure and for all activity that occurs under your account. Notify us immediately if you suspect unauthorised access."
+      },
+      "acceptableUse": {
+        "title": "3. Acceptable use",
+        "body": "You may not use 2gather to post illegal tasks, harass other users, misrepresent your identity, or scrape the platform without written permission. We reserve the right to suspend accounts that violate these rules."
+      },
+      "payments": {
+        "title": "4. Payments & barter",
+        "body": "2gather facilitates agreements between users but is not a party to them. Any payment or exchange is solely between the Seeker and the Helper. We are not liable for disputes arising from tasks."
+      },
+      "privacy": {
+        "title": "5. Privacy",
+        "body": "As the data controller, we collect only the personal data needed to operate the service: your registration details (name, email address), the location you provide, and the tasks and messages you post. We process this data solely to provide the service, connect users, and keep the platform secure. We do not sell your data. To run the service we rely on trusted processors (for example our hosting and email providers, and a maps provider for address lookup), which handle your data only on our instructions and on our behalf. Beyond these, we disclose data to third parties only where required by law or where you have given prior consent. Under the GDPR you may at any time request access to, correction, deletion, or portability of your personal data, and object to its processing; you may also lodge a complaint with the Hungarian National Authority for Data Protection and Freedom of Information (NAIH). The full privacy notice is available at 2gather.hu."
+      },
+      "liability": {
+        "title": "6. Limitation of liability",
+        "body": "2gather is provided \"as is\" during this early phase. We make no warranties about uptime or fitness for a particular purpose. Our liability is limited to the maximum extent permitted by applicable law."
+      },
+      "changes": {
+        "title": "7. Changes to these terms",
+        "body": "We may update these terms as the product evolves. Continued use of the platform after changes are posted constitutes acceptance of the revised terms."
+      }
+    }
+  },
+  "legal": {
+    "termsTitleFallback": "Current terms",
+    "versionLabel": "version {version}",
+    "termsNotAvailableToast": "Terms are not available right now. Please try again later.",
+    "termsAcceptedToast": "Terms accepted",
+    "recordFailedToast": "Unable to record your acceptance. Please try again.",
+    "panel": {
+      "heading": "Accept Terms & Conditions to continue",
+      "body": "Your account needs an acceptance record for the current terms before you can continue into the app.",
+      "accepting": "Accepting…",
+      "acceptAndContinue": "Accept and continue",
+      "useAnotherAccount": "Use another account"
+    },
+    "backLink": {
+      "fallback": "Back",
+      "toApp": "Back to app",
+      "toRegister": "Back to registration"
+    },
+    "gate": {
+      "title": "Accept Terms & Conditions",
+      "description": "Please accept the current terms before continuing to use the app. You can review them first if you need a closer look.",
+      "reviewTerms": "Review terms",
+      "accept": "Accept",
+      "accepting": "Accepting…"
+    }
+  },
+  "nav": {
+    "feed": "Feed",
+    "myTasks": "My tasks",
+    "messages": "Messages",
+    "messagesUnreadAria": "{label}, {count} unread",
+    "signIn": "Sign in",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "languageSwitcher": {
+    "label": "Change language",
+    "selectedSuffix": "(current)",
+    "switchTo": "Switch to {name}"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in with your email and password",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "newHere": "New here?",
+      "createAccount": "Create an account",
+      "termsPreamble": "By continuing, you agree to our",
+      "terms": "Terms",
+      "signedInToast": "Signed in successfully",
+      "unableToSignIn": "Unable to sign in.",
+      "emailNotVerified": "Your email address is not verified. Please check your inbox.",
+      "resend": "Resend verification email",
+      "resending": "Sending…",
+      "resendSent": "Verification email sent — check your inbox.",
+      "resendError": "Could not send the email. Please try again.",
+      "resentTo": "A new link was sent to {email}."
+    },
+    "forgot": {
+      "headerTitle": "Forgot your password?",
+      "headerSubtitle": "Enter your email and we'll get you back in.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "emailDescription": "We'll email you a link to set a new password if that address is registered.",
+      "submit": "Request a new password",
+      "submitting": "Sending…",
+      "backToSignIn": "Back to sign in",
+      "sentNotice": "If that address is registered, we've emailed you a link to set a new password. Check your inbox — it expires in 15 minutes.",
+      "networkError": "Unable to send the request. Please check your connection and try again."
+    },
+    "reset": {
+      "headerTitle": "Set a new password",
+      "headerSubtitle": "Enter a new password for your account.",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm new password",
+      "submit": "Update password",
+      "submitting": "Updating…",
+      "backToSignIn": "Back to sign in",
+      "invalidLinkTitle": "Invalid link",
+      "invalidLinkSubtitle": "This link is incomplete or has expired.",
+      "requestNewLink": "Request a new link",
+      "successTitle": "Password updated",
+      "successSubtitle": "Your new password is set. You can now sign in with it.",
+      "signIn": "Sign in",
+      "successToast": "Password updated successfully.",
+      "networkError": "Unable to send the request. Please check your connection and try again.",
+      "invalidPasswordError": "The password does not meet the requirements.",
+      "linkExpiredError": "This link is invalid or has expired. Please request a new one."
+    },
+    "verifyEmail": {
+      "loadingTitle": "Verifying your email…",
+      "loadingSubtitle": "Please wait a moment.",
+      "successTitle": "Email verified",
+      "successSubtitle": "Your account is active. You can now sign in.",
+      "signIn": "Sign in",
+      "failedTitle": "Verification failed",
+      "incomplete": "The verification link is incomplete.",
+      "expired": "The link has expired or is invalid.",
+      "unknownError": "Something went wrong. Please try again.",
+      "createNewAccount": "Create a new account",
+      "backToSignIn": "Back to sign in"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitleAccount": "Start with your sign-in details",
+      "subtitleProfile": "Complete your public profile",
+      "step1": "Account",
+      "step2": "Profile",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordDescription": "Use at least 8 characters with uppercase, lowercase, number, and symbol.",
+      "confirmPasswordLabel": "Confirm password",
+      "acceptTermsPreamble": "I agree to the",
+      "acceptTermsLink": "Terms",
+      "displayNameLabel": "Full name",
+      "workplaceLabel": "Workplace / school",
+      "positionLabel": "Role",
+      "locationLabel": "Location",
+      "locationPlaceholder": "City, neighbourhood, or street address",
+      "bioLabel": "Short bio",
+      "submitContinue": "Continue",
+      "submitCreate": "Create account",
+      "submitting": "Creating account…",
+      "back": "Back",
+      "alreadyHaveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "checkEmailTitle": "Check your email",
+      "unableToCreate": "Unable to create account.",
+      "backToSignIn": "Back to sign in"
+    }
+  },
+  "profile": {
+    "header": {
+      "verified": "Verified"
+    },
+    "page": {
+      "loadErrorTitle": "Profile unavailable",
+      "loadErrorTitleOwn": "Your profile is unavailable",
+      "loadErrorBody": "The profile could not be loaded. It may have been removed or you may not have access to it.",
+      "loadErrorBodyOwn": "Your profile could not be loaded. Please try again shortly.",
+      "editProfile": "Edit profile",
+      "message": "Message",
+      "reviewsTab": "Reviews ({count})",
+      "reviewsTabOwn": "My reviews ({count})",
+      "historyTab": "History ({count})",
+      "historyTabOwn": "My tasks ({count})",
+      "pointsTabOwn": "My points",
+      "reviewsUnavailable": "Reviews unavailable",
+      "reviewsUnavailableOwn": "Your reviews are unavailable",
+      "taskHistoryUnavailable": "Task history unavailable",
+      "taskHistoryUnavailableOwn": "Your task history is unavailable",
+      "pointsUnavailableOwn": "Your points are unavailable",
+      "tabErrorBody": "This profile section could not be loaded. Please try again shortly."
+    },
+    "editPage": {
+      "title": "Edit profile",
+      "description": "Update your details, skills, and what you'd like to share publicly.",
+      "loadErrorTitle": "Profile unavailable",
+      "loadErrorBody": "Your profile could not be loaded, so it cannot be edited yet."
+    },
+    "avatarUpload": {
+      "changeAria": "Change profile photo",
+      "changeAction": "Change photo",
+      "uploadAction": "Upload photo",
+      "remove": "Remove",
+      "hint": "JPEG, PNG or WebP · compressed to ≤ 500 KB",
+      "cropTitle": "Crop photo",
+      "zoomLabel": "Zoom",
+      "cancel": "Cancel",
+      "apply": "Apply",
+      "processing": "Processing…",
+      "invalidType": "Only JPEG, PNG, and WebP images are accepted.",
+      "uploadFailed": "Failed to upload photo.",
+      "removeFailed": "Failed to remove photo.",
+      "processFailed": "Failed to process the image. Please try another file."
+    },
+    "editForm": {
+      "fullName": "Full name",
+      "fullNameRequired": "Full name is required.",
+      "role": "Role",
+      "workplace": "Workplace / school",
+      "location": "Location",
+      "availability": "Availability",
+      "bio": "Bio",
+      "skills": "Skills",
+      "pendingSkillsHint": "Skills marked with a clock icon are awaiting admin approval. They will appear on your profile once approved.",
+      "removeSkill": "Remove {name}",
+      "removeSkillFallback": "Remove skill",
+      "savedToast": "Profile saved",
+      "saveError": "Unable to save profile.",
+      "saving": "Saving…",
+      "save": "Save changes",
+      "cancel": "Cancel",
+      "latLngTogether": "Latitude and longitude must be provided together.",
+      "skillSearchPlaceholder": "Search skills, or type a name to add a new one…",
+      "skillSuggestionsAria": "Skill suggestions",
+      "skillSearching": "Searching…",
+      "skillsNoResults": "No skills found.",
+      "skillAdding": "Adding…",
+      "skillAddOption": "Add \"{name}\" as a new skill",
+      "skillAddError": "Could not add skill."
+    },
+    "reviews": {
+      "emptyTitle": "No reviews yet",
+      "emptyBody": "Reviews will appear here once tasks are completed.",
+      "emptyTitleOwn": "You have no reviews yet",
+      "emptyBodyOwn": "Your reviews will appear here once your tasks are completed.",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {total}"
+    },
+    "taskHistory": {
+      "title": "Task history",
+      "titleOwn": "My task history",
+      "emptyTitle": "No task history yet",
+      "emptyTitleOwn": "You have no task history yet",
+      "emptyBody": "Completed and ongoing tasks will appear here.",
+      "emptyBodyOwn": "Your completed and ongoing tasks will appear here."
+    },
+    "points": {
+      "balanceLabel": "Points balance",
+      "unit": "{count, plural, =1 {point} other {points}}",
+      "historyEmptyTitle": "No points yet",
+      "historyEmptyBody": "Complete tasks to start earning points. They will show up here.",
+      "entryType": {
+        "taskCompletedReward": "Task completed",
+        "manualAdjustment": "Manual adjustment",
+        "redemption": "Redemption"
+      },
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {total}"
+    },
+    "emailBanner": {
+      "title": "Your email is not verified",
+      "bodyUnverified": "Verify {email} to unlock posting tasks and other features.",
+      "bodySent": "A new verification link was sent to {email}. Check your inbox.",
+      "resend": "Resend verification email",
+      "sending": "Sending…",
+      "sentToast": "Verification email sent — check your inbox.",
+      "sendError": "Could not send the email. Please try again."
+    },
+    "reputation": {
+      "title": "Reputation",
+      "tiers": {
+        "newcomer": "Newcomer",
+        "bronze": "Bronze",
+        "silver": "Silver",
+        "gold": "Gold"
+      },
+      "score": "Score",
+      "averageRating": "Average rating",
+      "completedTasks": "Completed tasks",
+      "completedTasksHint": "{count, plural, =1 {task completed} other {tasks completed}}",
+      "averageRatingHint": "{rating} from {count, plural, =1 {# review} other {# reviews}}",
+      "noReviewsYet": "No reviews yet",
+      "calculatedLabel": "How is this calculated?",
+      "calculatedAria": "How is the reputation score calculated?",
+      "tooltipTitle": "Reputation score",
+      "tooltipBody": "Each completed task is worth {taskWeight} points; each review multiplies your average rating by {reviewWeight}.",
+      "tooltipTotal": "Total",
+      "trendLabel": "Trend",
+      "trendNoChange": "No change",
+      "trendSinceDate": "Since {date}",
+      "trendDateRange": "{start} – {end}",
+      "trendAria": "Reputation trend from {start} to {end}",
+      "nextTierProgress": "{remaining} points to {tier}",
+      "nextTierReady": "Ready for {tier}",
+      "nextTierAria": "Progress to {tier} tier",
+      "emptyTitle": "No reputation yet",
+      "emptyTitleOwn": "You have no reputation yet",
+      "emptyBody": "This member is still building their reputation.",
+      "emptyBodyOwn": "Complete tasks and collect reviews to start building your reputation.",
+      "findTask": "Find a task to help with",
+      "postFirstTask": "Post your first task"
+    }
+  },
+  "tasks": {
+    "status": {
+      "open": "Open",
+      "inProgress": "In progress",
+      "pendingApproval": "Awaiting approval",
+      "completed": "Completed",
+      "reviewed": "Reviewed",
+      "cancelled": "Cancelled"
+    },
+    "compensation": {
+      "paid": "Paid + points",
+      "points": "Points only",
+      "voluntary": "Points only",
+      "barter": "Barter + points",
+      "paidPlusPoints": "{amount} + points"
+    },
+    "categories": {
+      "moving": "Moving",
+      "tutoring": "Tutoring",
+      "household": "Household",
+      "pet_care": "Pet care",
+      "tools": "Tool lending",
+      "tech": "Tech help",
+      "repairs": "Repairs",
+      "shopping": "Shopping",
+      "cleaning": "Cleaning",
+      "errands": "Errands",
+      "other": "Other"
+    },
+    "card": {
+      "applicationStatus": "Application {status}"
+    },
+    "list": {
+      "emptyTitle": "No tasks yet"
+    },
+    "filters": {
+      "searchAria": "Search tasks, skills, locations",
+      "searchPlaceholder": "Search tasks, skills, locations…",
+      "categoryAria": "Filter by category",
+      "categoryPlaceholder": "Category",
+      "allCategories": "All categories",
+      "rewardAria": "Filter by reward",
+      "rewardPlaceholder": "Reward",
+      "anyReward": "Any reward",
+      "distanceAria": "Filter by distance",
+      "distancePlaceholder": "Distance",
+      "anyDistance": "Any distance",
+      "within": "Within {km} km",
+      "recencyAria": "Filter by recency",
+      "recencyPlaceholder": "Recency",
+      "addLocationHint": "Add a location to your profile to filter by distance.",
+      "recencyOptions": {
+        "any": "Any time",
+        "24h": "Last 24 hours",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days"
+      }
+    },
+    "detail": {
+      "posted": "Posted {relative}",
+      "description": "Description",
+      "postedBy": "Posted by",
+      "editTask": "Edit task",
+      "openChat": "Open chat",
+      "openingChat": "Opening…",
+      "cancelledToast": "Task cancelled.",
+      "cancelErrorToast": "Could not cancel the task.",
+      "openChatErrorToast": "Could not open chat.",
+      "helperMarkedDone": "{helper} marked this task as done. Approve to complete it.",
+      "defaultHelper": "The helper",
+      "waitingApproval": "Waiting for the seeker to approve completion."
+    },
+    "review": {
+      "openButton": "Leave a review",
+      "dialogTitle": "Leave a review",
+      "dialogDescription": "How was your experience working with {name}?",
+      "ratingAria": "Rating",
+      "starsAria": "{count, plural, =1 {# star} other {# stars}}",
+      "commentPlaceholder": "Share what went well or what could be improved…",
+      "cancel": "Cancel",
+      "submit": "Submit review",
+      "submitting": "Submitting…",
+      "selectStarError": "Please select a star rating.",
+      "submittedToast": "Review submitted!",
+      "submitErrorToast": "Could not submit the review. Please try again.",
+      "alreadyReviewedToast": "You've already reviewed this task.",
+      "thanks": "Review submitted — thank you!"
+    },
+    "completion": {
+      "markAsDone": "Mark as done",
+      "markingDone": "Submitting…",
+      "markedDoneToast": "Marked as done. Awaiting approval.",
+      "markDoneErrorToast": "Could not mark this task as done.",
+      "approveCompletion": "Approve completion",
+      "approving": "Approving…",
+      "approvedToast": "Task completed.",
+      "approveErrorToast": "Could not approve completion.",
+      "approveDialogTitle": "Approve task completion?",
+      "approveDialogBody": "This will mark the task as complete and release the helper's reward. This action cannot be undone.",
+      "submitDialogTitle": "Mark task as done?",
+      "submitDialogBody": "This will notify the seeker that you have finished. They will review and approve before the task is marked as complete."
+    },
+    "application": {
+      "applyToHelp": "Apply to help",
+      "applicationPending": "Application pending",
+      "viewConversation": "View conversation",
+      "withdraw": "Withdraw",
+      "withdrawing": "Withdrawing…",
+      "statusBadge": "Application {status}",
+      "withdrewToast": "Application withdrawn.",
+      "withdrawErrorToast": "Could not withdraw the application.",
+      "sentToast": "Application sent.",
+      "applyErrorToast": "Could not apply to this task.",
+      "dialogTitle": "Apply to help",
+      "dialogDescription": "Send a short note to the seeker with your availability or relevant experience.",
+      "messagePlaceholder": "I can help this afternoon and have a small hand cart.",
+      "dialogCancel": "Cancel",
+      "send": "Send application",
+      "sending": "Sending…"
+    },
+    "applications": {
+      "title": "Applications",
+      "loading": "Loading applications…",
+      "empty": "No applications yet.",
+      "viewChat": "View chat",
+      "accept": "Accept",
+      "reject": "Reject",
+      "accepting": "Accepting…",
+      "acceptedToast": "Application accepted.",
+      "rejectedToast": "Application rejected.",
+      "updateErrorToast": "Could not update the application.",
+      "acceptDialogTitle": "Accept this application?",
+      "acceptDialogBody": "{name} will be assigned to this task and it will move to In Progress. Other pending applications will be closed.",
+      "statuses": {
+        "Pending": "Pending",
+        "Accepted": "Accepted",
+        "Rejected": "Rejected",
+        "Withdrawn": "Withdrawn"
+      }
+    },
+    "cancelTask": {
+      "button": "Cancel task",
+      "pending": "Cancelling…",
+      "dialogTitle": "Cancel this task?",
+      "dialogBody": "This will cancel the task and notify any involved helpers. This action cannot be undone."
+    },
+    "cancelApplication": {
+      "button": "Cancel application",
+      "pending": "Cancelling…",
+      "dialogTitle": "Cancel this application?",
+      "dialogBody": "This will remove the accepted helper and return the task to Open.",
+      "cancelledToast": "Application cancelled.",
+      "cancelErrorToast": "Could not cancel the application."
+    },
+    "feed": {
+      "title": "Local tasks",
+      "description": "Open requests in your community. Need a hand? Post a task in seconds.",
+      "postTask": "Post a task",
+      "emptyFilteredTitle": "No tasks match your filters",
+      "emptyFilteredBody": "Try widening the category, reward, distance, or recency range.",
+      "emptyTitle": "No open requests right now",
+      "emptyBody": "Be the first to post one — your neighbours might be ready to help.",
+      "loadingMore": "Loading more tasks…",
+      "loadMore": "Load more",
+      "caughtUp": "You are all caught up."
+    },
+    "myTasks": {
+      "title": "My tasks",
+      "description": "Track everything you've posted or accepted, from open to completed.",
+      "postTask": "Post a task",
+      "tabPosted": "Posted",
+      "tabAccepted": "Accepted",
+      "tabApplied": "Applied",
+      "emptyPostedTitle": "You haven't posted anything yet",
+      "emptyPostedBody": "Post your first request and get help from the community.",
+      "emptyAcceptedTitle": "No accepted tasks",
+      "emptyAcceptedBody": "Browse the feed and accept a task to see it here.",
+      "emptyAppliedTitle": "No applications yet",
+      "emptyAppliedBody": "Apply to open tasks from the feed to track them here."
+    },
+    "notFound": {
+      "heading": "This task is no longer available",
+      "body": "It may have been removed or the link may be incorrect.",
+      "back": "Back to my tasks"
+    },
+    "postPage": {
+      "title": "Post a task",
+      "description": "Describe what you need help with. Clear titles and locations get answered fastest."
+    },
+    "editPage": {
+      "title": "Edit task",
+      "description": "Update the details of your task."
+    },
+    "post": {
+      "emailGateTitle": "Email verification required",
+      "emailGateBody": "You need to verify your email address before posting tasks. Check your inbox for the verification link.",
+      "resend": "Resend verification email",
+      "resending": "Sending…",
+      "resendSent": "Verification email sent — check your inbox.",
+      "resendError": "Could not send the email. Please try again.",
+      "alreadyVerified": "Already verified?",
+      "titleLabel": "Task title",
+      "titlePlaceholder": "e.g. Help carrying boxes to my new apartment",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Describe what you need help with, when, and any constraints.",
+      "categoryLabel": "Category",
+      "categoryLoading": "Loading…",
+      "categoryPlaceholder": "Pick a category",
+      "locationLabel": "Location",
+      "locationPlaceholder": "District, neighbourhood, or street address",
+      "rewardLegend": "Reward offered",
+      "amountLabel": "Amount (HUF)",
+      "amountPlaceholder": "e.g. 5000",
+      "cancel": "Cancel",
+      "submitPost": "Post task",
+      "submitPosting": "Posting…",
+      "submitSave": "Save changes",
+      "submitSaving": "Saving…",
+      "errorTitleMin": "Title must be at least 3 characters.",
+      "errorDescriptionMin": "Description must be at least 10 characters.",
+      "errorDescriptionMax": "Description is too long. Please shorten it.",
+      "errorCategory": "Pick a category.",
+      "errorAmount": "Enter a valid paid amount.",
+      "updatedToast": "Task updated!",
+      "postedToast": "Task posted!",
+      "updateErrorDefault": "Could not update the task.",
+      "postErrorDefault": "Could not post the task."
+    }
+  },
+  "messages": {
+    "page": {
+      "title": "Messages",
+      "description": "Your conversations about tasks."
+    },
+    "list": {
+      "emptyTitle": "No conversations yet",
+      "emptyBody": "Start a conversation from any task to begin chatting.",
+      "unread": "Unread"
+    },
+    "window": {
+      "applicationNotice": "{name} applied to help with this task.",
+      "accept": "Accept",
+      "decline": "Decline",
+      "loadingOlder": "Loading…",
+      "loadOlder": "Load older messages",
+      "emptyState": "No messages yet. Say hello!",
+      "inputPlaceholder": "Message…",
+      "inputAria": "Message",
+      "sendAria": "Send",
+      "acceptToast": "Application accepted.",
+      "acceptError": "Could not accept the application.",
+      "rejectToast": "Application rejected.",
+      "rejectError": "Could not reject the application."
+    }
+  }
+}

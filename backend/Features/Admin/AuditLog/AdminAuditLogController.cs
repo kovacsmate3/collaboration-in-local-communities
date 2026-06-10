@@ -1,6 +1,8 @@
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Admin.AuditLog;
@@ -8,6 +10,7 @@ namespace Backend.Features.Admin.AuditLog;
 [ApiController]
 [Route("api/admin/audit-log")]
 [Authorize(Roles = "Admin")]
+[EnableRateLimiting(RateLimitingExtensions.AdminPolicy)]
 public sealed class AdminAuditLogController(AppDbContext db) : ControllerBase
 {
     private const int DefaultPageSize = 20;

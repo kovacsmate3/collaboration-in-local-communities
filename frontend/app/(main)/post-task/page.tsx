@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
 
 import { PageHeader } from "@/components/shared/page-header"
 import { PostTaskForm } from "@/components/tasks/post-task-form"
@@ -13,13 +14,11 @@ export const metadata: Metadata = {
  * Single-step form for the skeleton; consider splitting into a stepper
  * once we add image uploads, location autocomplete, and skill matching.
  */
-export default function PostTaskPage() {
+export default async function PostTaskPage() {
+  const t = await getTranslations("tasks.postPage")
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <PageHeader
-        title="Post a task"
-        description="Describe what you need help with. Clear titles and locations get answered fastest."
-      />
+      <PageHeader title={t("title")} description={t("description")} />
       <PostTaskForm />
     </div>
   )

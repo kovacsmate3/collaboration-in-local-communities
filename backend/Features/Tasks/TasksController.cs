@@ -1,10 +1,13 @@
 using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
+using Backend.Domain.Tasks;
 using Backend.Infrastructure.Persistence;
+using Backend.Infrastructure.Security;
 using Backend.Infrastructure.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite.Geometries;
 using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
@@ -14,10 +17,12 @@ namespace Backend.Features.Tasks;
 [ApiController]
 [Route("api/tasks")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksReadPolicy)]
 public sealed partial class TasksController(AppDbContext db) : ControllerBase
 {
     private const int DefaultPageSize = 20;
     private const int MaxPageSize = 100;
+    private const string SortRelevant = "relevant";
 
     [HttpGet]
     public async Task<IActionResult> ListAsync(
@@ -26,8 +31,10 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
         [FromQuery] double? latitude,
         [FromQuery] double? longitude,
         [FromQuery] double? radiusMeters,
+        [FromQuery] string? q = null,
         [FromQuery] string? compensationType = null,
         [FromQuery] DateTimeOffset? createdAfter = null,
+        [FromQuery] string? sort = null,
         [FromQuery] int? page = null,
         [FromQuery] int? pageSize = null,
         CancellationToken cancellationToken = default)
@@ -117,19 +124,109 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             query = query.Where(task => task.CreatedAt >= cutoff);
         }
 
-        IQueryable<CommunityTask> orderedQuery;
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            // Escape PostgreSQL LIKE wildcards in the user input so they're
+            // treated as literal characters. The escape char is backslash;
+            // we escape \ first so it doesn't double-process the % and _
+            // we add immediately after.
+            var trimmed = q.Trim();
+            var escaped = trimmed
+                .Replace(@"\", @"\\", StringComparison.Ordinal)
+                .Replace("%", @"\%", StringComparison.Ordinal)
+                .Replace("_", @"\_", StringComparison.Ordinal);
+            var pattern = $"%{escaped}%";
+            query = query.Where(task =>
+                EF.Functions.ILike(task.Title, pattern, @"\")
+                || EF.Functions.ILike(task.Description, pattern, @"\"));
+        }
+
+        // Apply hard radius filter regardless of sort order.
         if (proximityOrigin is not null)
         {
             var radius = radiusMeters.GetValueOrDefault();
+            query = query.Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius));
+        }
 
+        IQueryable<CommunityTask> orderedQuery;
+        var effectiveSort = sort?.ToLowerInvariant();
+        List<string>? helperSkillNames = null;
+        if (effectiveSort == SortRelevant)
+        {
+            var userId = GetCurrentUserId();
+            var userLocation = userId.HasValue
+                ? (await db.Profiles
+                    .AsNoTracking()
+                    .Select(p => new { p.UserId, p.Location })
+                    .FirstOrDefaultAsync(p => p.UserId == userId.Value, cancellationToken))?.Location
+                : null;
+
+            // Helper's approved, active skill names drive the lexical relevance
+            // boost. Pulled once up-front so the in-memory ranking below has
+            // them without doing a per-task lookup.
+            if (userId.HasValue)
+            {
+                helperSkillNames = await db.ProfileSkills
+                    .AsNoTracking()
+                    .Where(ps => ps.Profile.UserId == userId.Value
+                        && ps.Skill.Status == SkillStatus.Approved
+                        && ps.Skill.IsActive)
+                    .Select(ps => ps.Skill.Name)
+                    .ToListAsync(cancellationToken);
+            }
+
+            if (proximityOrigin is not null)
+            {
+                orderedQuery = query
+                    .OrderBy(task => task.Location!.Distance(proximityOrigin))
+                    .ThenByDescending(task => task.CreatedAt);
+            }
+            else if (userLocation is not null)
+            {
+                orderedQuery = query
+                    .OrderBy(task => task.Location != null ? (double?)task.Location.Distance(userLocation) : null)
+                    .ThenByDescending(task => task.CreatedAt);
+            }
+            else
+            {
+                orderedQuery = query.OrderByDescending(task => task.CreatedAt);
+            }
+        }
+        else if (proximityOrigin is not null)
+        {
             orderedQuery = query
-                .Where(task => task.Location != null && task.Location.IsWithinDistance(proximityOrigin, radius))
                 .OrderBy(task => task.Location!.Distance(proximityOrigin))
                 .ThenByDescending(task => task.CreatedAt);
         }
         else
         {
             orderedQuery = query.OrderByDescending(task => task.CreatedAt);
+        }
+
+        // Skill-relevance re-ranking layered on top of the existing distance/
+        // recency ordering. Done in memory because lexical matching at SQL would
+        // need either dynamically built Expression trees over a variable-length
+        // skill list, or N per-skill OR'd ILike clauses that don't scale with
+        // helper skill counts. The issue's option 1 (lexical) explicitly accepts
+        // this trade-off as the starting point; TF-IDF / BM25 / embeddings are
+        // listed as later upgrades that can re-use the call site below.
+        //
+        // Stability matters here: Enumerable.OrderByDescending is a stable sort,
+        // so ties on skill score preserve the distance-then-recency ordering
+        // produced by orderedQuery.
+        if (effectiveSort == SortRelevant && helperSkillNames is { Count: > 0 })
+        {
+            var rankedTasks = await orderedQuery.ToListAsync(cancellationToken);
+            rankedTasks = rankedTasks
+                .OrderByDescending(task => ComputeSkillMatchScore(task, helperSkillNames))
+                .ToList();
+
+            if (shouldPage)
+            {
+                rankedTasks = rankedTasks.Skip(skip).Take(effectivePageSize).ToList();
+            }
+
+            return Ok(rankedTasks.Select(TaskResponse.FromTask));
         }
 
         if (shouldPage)
@@ -164,6 +261,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> CreateAsync(
         CreateTaskRequest request,
         CancellationToken cancellationToken)
@@ -262,6 +360,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
     }
 
     [HttpPatch("{id:guid}")]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> UpdateAsync(
         Guid id,
         UpdateTaskRequest request,
@@ -289,7 +388,26 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
             return Forbid();
         }
 
-        if (task.Status is DomainTaskStatus.Completed or DomainTaskStatus.Cancelled)
+        // A status change request is only ever a cancellation (enforced below).
+        // Validate the transition against the FSM up front so an invalid
+        // transition fails with 400 before any field-level edits are applied.
+        if (request.Status is not null)
+        {
+            if (!string.Equals(request.Status, nameof(DomainTaskStatus.Cancelled), StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(nameof(request.Status), "Status can only be changed to 'Cancelled'.");
+                return ValidationProblem(ModelState);
+            }
+
+            if (!TaskStatusTransitions.CanTransition(task.Status, DomainTaskStatus.Cancelled))
+            {
+                return Problem(
+                    title: "Invalid task status transition",
+                    detail: $"A task with status '{task.Status}' cannot be transitioned to 'Cancelled'.",
+                    statusCode: StatusCodes.Status400BadRequest);
+            }
+        }
+        else if (task.Status is DomainTaskStatus.Completed or DomainTaskStatus.Cancelled)
         {
             return Problem(
                 title: "Task cannot be modified",
@@ -393,12 +511,7 @@ public sealed partial class TasksController(AppDbContext db) : ControllerBase
 
         if (request.Status is not null)
         {
-            if (!string.Equals(request.Status, nameof(DomainTaskStatus.Cancelled), StringComparison.OrdinalIgnoreCase))
-            {
-                ModelState.AddModelError(nameof(request.Status), "Status can only be changed to 'Cancelled'.");
-                return ValidationProblem(ModelState);
-            }
-
+            // Target status and transition validity already verified above.
             var oldStatus = task.Status;
             var cancelledAt = DateTimeOffset.UtcNow;
             var cancellationReason = StringUtilities.Normalize(request.CancellationReason);

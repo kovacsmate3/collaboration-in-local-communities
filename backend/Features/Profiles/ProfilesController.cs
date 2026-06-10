@@ -15,6 +15,7 @@ namespace Backend.Features.Profiles;
 [ApiController]
 [Route("api/profiles")]
 [Authorize]
+[EnableRateLimiting(RateLimitingExtensions.TasksReadPolicy)]
 public sealed partial class ProfilesController(AppDbContext db, IBlobStorageService blobStorage, ILogger<ProfilesController> logger) : ControllerBase
 {
     /// <summary>
@@ -39,6 +40,12 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             return NotFound();
         }
 
+        // The headline rating/count below reflect ALL reviews received (so a
+        // task-giver still visibly "gets" the rating their helper left them),
+        // but the reputation SCORE only counts reviews earned as a helper —
+        // see GetScoreReviewAggregateAsync.
+        var scoreAggregate = await GetScoreReviewAggregateAsync(profile.Id, cancellationToken);
+
         var privacy = profile.PrivacySettings;
         var response = new PublicProfileResponse
         {
@@ -54,7 +61,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             ReviewCount = profile.ReviewCount,
             CompletedTaskCount = profile.CompletedTaskCount,
             ReputationScore = ReputationScoreCalculator.Compute(
-                profile.AverageRating, profile.ReviewCount, profile.CompletedTaskCount)
+                scoreAggregate.AverageRating, scoreAggregate.ReviewCount, profile.CompletedTaskCount)
         };
 
         return Ok(response);
@@ -248,6 +255,8 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             return NotFound();
         }
 
+        var scoreAggregate = await GetScoreReviewAggregateAsync(profile.Id, cancellationToken);
+
         var response = new OwnProfileResponse
         {
             Id = profile.Id,
@@ -266,7 +275,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             ReviewCount = profile.ReviewCount,
             CompletedTaskCount = profile.CompletedTaskCount,
             ReputationScore = ReputationScoreCalculator.Compute(
-                profile.AverageRating, profile.ReviewCount, profile.CompletedTaskCount),
+                scoreAggregate.AverageRating, scoreAggregate.ReviewCount, profile.CompletedTaskCount),
             CreatedAt = profile.CreatedAt,
             UpdatedAt = profile.UpdatedAt,
             SkillIds = profile.ProfileSkills.Select(ps => ps.SkillId).ToList(),
@@ -293,6 +302,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpPut("me")]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> UpdateOwnProfileAsync(
         UpdateOwnProfileRequest request,
         CancellationToken cancellationToken)
@@ -362,6 +372,8 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
 
         await db.SaveChangesAsync(cancellationToken);
 
+        var scoreAggregate = await GetScoreReviewAggregateAsync(profile.Id, cancellationToken);
+
         var response = new OwnProfileResponse
         {
             Id = profile.Id,
@@ -380,7 +392,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
             ReviewCount = profile.ReviewCount,
             CompletedTaskCount = profile.CompletedTaskCount,
             ReputationScore = ReputationScoreCalculator.Compute(
-                profile.AverageRating, profile.ReviewCount, profile.CompletedTaskCount),
+                scoreAggregate.AverageRating, scoreAggregate.ReviewCount, profile.CompletedTaskCount),
             CreatedAt = profile.CreatedAt,
             UpdatedAt = profile.UpdatedAt,
             SkillIds = profile.ProfileSkills.Select(ps => ps.SkillId).ToList(),
@@ -407,6 +419,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpPut("me/privacy")]
+    [EnableRateLimiting(RateLimitingExtensions.TasksWritePolicy)]
     public async Task<IActionResult> UpdatePrivacySettingsAsync(
         UpdateProfilePrivacySettingsRequest request,
         CancellationToken cancellationToken)
@@ -550,6 +563,7 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
     /// 401 Unauthorized if not authenticated.
     /// </returns>
     [HttpDelete("me/photo")]
+    [EnableRateLimiting(RateLimitingExtensions.PhotoUploadPolicy)]
     public async Task<IActionResult> DeleteProfilePhotoAsync(CancellationToken cancellationToken)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -587,5 +601,41 @@ public sealed partial class ProfilesController(AppDbContext db, IBlobStorageServ
         await blobStorage.DeleteBlobByUrlAsync(oldPhotoUrl, cancellationToken);
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Computes the review aggregate that feeds the reputation <em>score</em>.
+    /// Only reviews a profile earned as the accepted helper of a task count:
+    /// a task-giver (seeker) did not perform the work, so reviews they received
+    /// in that role are displayed but do not award reputation points.
+    /// </summary>
+    private async Task<(decimal AverageRating, int ReviewCount)> GetScoreReviewAggregateAsync(
+        Guid profileId,
+        CancellationToken cancellationToken)
+    {
+        var stats = await db.Reviews
+            .AsNoTracking()
+            .Where(review =>
+                review.RevieweeProfileId == profileId
+                && review.Task.AcceptedHelperProfileId == profileId)
+            .GroupBy(_ => 1)
+            .Select(group => new
+            {
+                Count = group.Count(),
+                Sum = group.Sum(review => (decimal)review.Rating),
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (stats is null || stats.Count == 0)
+        {
+            return (0m, 0);
+        }
+
+        var averageRating = decimal.Round(
+            stats.Sum / stats.Count,
+            2,
+            MidpointRounding.AwayFromZero);
+
+        return (averageRating, stats.Count);
     }
 }

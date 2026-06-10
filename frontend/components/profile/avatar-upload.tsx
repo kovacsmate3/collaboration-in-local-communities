@@ -10,6 +10,7 @@ import {
   Loading03Icon,
 } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 import { UserAvatar } from "@/components/shared/user-avatar"
 import { Button } from "@/components/ui/button"
@@ -105,6 +106,7 @@ async function getCroppedBlob(
 }
 
 export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
+  const t = useTranslations("profile.avatarUpload")
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [preview, setPreview] = React.useState<string | null>(null)
   const [isDraggingOver, setIsDraggingOver] = React.useState(false)
@@ -139,7 +141,7 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
 
   function processFile(file: File) {
     if (!ACCEPTED_MIME_TYPES.has(file.type)) {
-      toast.error("Only JPEG, PNG, and WebP images are accepted.")
+      toast.error(t("invalidType"))
       return
     }
     const objectUrl = URL.createObjectURL(file)
@@ -197,13 +199,11 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
         },
         onError: (err) => {
           setPreview(null)
-          toast.error(
-            err instanceof Error ? err.message : "Failed to upload photo."
-          )
+          toast.error(err instanceof Error ? err.message : t("uploadFailed"))
         },
       })
     } catch {
-      toast.error("Failed to process the image. Please try another file.")
+      toast.error(t("processFailed"))
     } finally {
       setIsCropping(false)
     }
@@ -220,9 +220,7 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
         void refreshSession()
       },
       onError: (err) => {
-        toast.error(
-          err instanceof Error ? err.message : "Failed to remove photo."
-        )
+        toast.error(err instanceof Error ? err.message : t("removeFailed"))
       },
     })
   }
@@ -262,7 +260,7 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
                 "bg-black/0 opacity-0 transition-opacity hover:bg-black/40 hover:opacity-100",
                 "focus-visible:bg-black/40 focus-visible:opacity-100 focus-visible:outline-none"
               )}
-              aria-label="Change profile photo"
+              aria-label={t("changeAria")}
             >
               <HugeiconsIcon icon={Edit01Icon} className="size-5 text-white" />
             </button>
@@ -277,7 +275,7 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
               disabled={isPending}
               className="font-medium underline-offset-4 hover:underline disabled:opacity-50"
             >
-              {hasPhoto ? "Change photo" : "Upload photo"}
+              {hasPhoto ? t("changeAction") : t("uploadAction")}
             </button>
 
             {hasPhoto && (
@@ -292,15 +290,13 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
                   className="flex items-center gap-1 text-muted-foreground underline-offset-4 hover:text-destructive hover:underline disabled:opacity-50"
                 >
                   <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
-                  Remove
+                  {t("remove")}
                 </button>
               </>
             )}
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            JPEG, PNG or WebP · compressed to ≤ 500 KB
-          </p>
+          <p className="text-xs text-muted-foreground">{t("hint")}</p>
         </div>
 
         <input
@@ -322,7 +318,7 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
       >
         <DialogContent className="max-w-sm gap-0 overflow-hidden p-0">
           <DialogHeader className="px-6 pt-6 pb-4">
-            <DialogTitle>Crop photo</DialogTitle>
+            <DialogTitle>{t("cropTitle")}</DialogTitle>
           </DialogHeader>
 
           <div className="relative h-72 bg-black">
@@ -348,16 +344,16 @@ export function AvatarUpload({ name, currentPhotoUrl }: AvatarUploadProps) {
               step={0.01}
               value={[zoom]}
               onValueChange={([v]) => setZoom(v)}
-              aria-label="Zoom"
+              aria-label={t("zoomLabel")}
             />
           </div>
 
           <DialogFooter className="px-6 pb-6">
             <Button variant="outline" onClick={handleCancelCrop}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button onClick={handleApplyCrop} disabled={isCropping}>
-              {isCropping ? "Processing…" : "Apply"}
+              {isCropping ? t("processing") : t("apply")}
             </Button>
           </DialogFooter>
         </DialogContent>

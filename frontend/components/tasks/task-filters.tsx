@@ -3,6 +3,7 @@
 import * as React from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Search01Icon } from "@hugeicons/core-free-icons"
+import { useTranslations } from "next-intl"
 
 import { Input } from "@/components/ui/input"
 import {
@@ -19,14 +20,18 @@ import type { CompensationType } from "@/lib/types"
 /**
  * Radius options offered in the feed filter. Stored as meters so the value
  * can be forwarded straight to the backend's `radiusMeters` query parameter.
+ *
+ * The label is intentionally NOT in this list — the consumer resolves it
+ * through next-intl (`tasks.filters.anyDistance` or `tasks.filters.within`
+ * with `{km}`) so the dropdown renders in either language.
  */
 export const RADIUS_OPTIONS = [
-  { value: "any", label: "Any distance", meters: null },
-  { value: "1000", label: "Within 1 km", meters: 1000 },
-  { value: "5000", label: "Within 5 km", meters: 5000 },
-  { value: "10000", label: "Within 10 km", meters: 10_000 },
-  { value: "25000", label: "Within 25 km", meters: 25_000 },
-  { value: "50000", label: "Within 50 km", meters: 50_000 },
+  { value: "any", meters: null, km: null },
+  { value: "1000", meters: 1000, km: 1 },
+  { value: "5000", meters: 5000, km: 5 },
+  { value: "10000", meters: 10_000, km: 10 },
+  { value: "25000", meters: 25_000, km: 25 },
+  { value: "50000", meters: 50_000, km: 50 },
 ] as const
 
 export type RadiusOptionValue = (typeof RADIUS_OPTIONS)[number]["value"]
@@ -36,7 +41,7 @@ export interface TaskFiltersState {
   /** Backend category id (GUID) or `"all"` for no category filter. */
   category: string
   compensation: CompensationType | "all"
-  recency: (typeof RECENCY_OPTIONS)[number]["value"]
+  recency: (typeof RECENCY_OPTIONS)[number]
   /** Selected radius bucket. `"any"` disables the proximity filter. */
   radius: RadiusOptionValue
 }
@@ -74,6 +79,9 @@ export function TaskFilters({
   categories,
   hasOrigin,
 }: TaskFiltersProps) {
+  const t = useTranslations("tasks.filters")
+  const tCompensation = useTranslations("tasks.compensation")
+  const tCategories = useTranslations("tasks.categories")
   const update = (patch: Partial<TaskFiltersState>) =>
     onChange({ ...value, ...patch })
 
@@ -88,9 +96,9 @@ export function TaskFilters({
           />
           <Input
             type="search"
-            aria-label="Search tasks, skills, locations"
+            aria-label={t("searchAria")}
             className="pl-9"
-            placeholder="Search tasks, skills, locations..."
+            placeholder={t("searchPlaceholder")}
             value={value.query}
             onChange={(e) => update({ query: e.target.value })}
           />
@@ -100,14 +108,14 @@ export function TaskFilters({
           value={value.category}
           onValueChange={(v) => update({ category: v })}
         >
-          <SelectTrigger aria-label="Filter by category" className="lg:w-44">
-            <SelectValue placeholder="Category" />
+          <SelectTrigger aria-label={t("categoryAria")} className="lg:w-44">
+            <SelectValue placeholder={t("categoryPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
+            <SelectItem value="all">{t("allCategories")}</SelectItem>
             {categories.map((c) => (
               <SelectItem key={c.id} value={c.id}>
-                {c.name}
+                {tCategories.has(c.code) ? tCategories(c.code) : c.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -119,14 +127,14 @@ export function TaskFilters({
             update({ compensation: v as TaskFiltersState["compensation"] })
           }
         >
-          <SelectTrigger aria-label="Filter by reward" className="lg:w-40">
-            <SelectValue placeholder="Reward" />
+          <SelectTrigger aria-label={t("rewardAria")} className="lg:w-40">
+            <SelectValue placeholder={t("rewardPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Any reward</SelectItem>
-            {COMPENSATION_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
+            <SelectItem value="all">{t("anyReward")}</SelectItem>
+            {COMPENSATION_OPTIONS.map((value) => (
+              <SelectItem key={value} value={value}>
+                {tCompensation(value)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -140,16 +148,18 @@ export function TaskFilters({
           disabled={!hasOrigin}
         >
           <SelectTrigger
-            aria-label="Filter by distance"
+            aria-label={t("distanceAria")}
             aria-describedby={!hasOrigin ? "radius-helper" : undefined}
             className="lg:w-40"
           >
-            <SelectValue placeholder="Distance" />
+            <SelectValue placeholder={t("distancePlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             {RADIUS_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+                {opt.km == null
+                  ? t("anyDistance")
+                  : t("within", { km: opt.km })}
               </SelectItem>
             ))}
           </SelectContent>
@@ -161,13 +171,13 @@ export function TaskFilters({
             update({ recency: v as TaskFiltersState["recency"] })
           }
         >
-          <SelectTrigger aria-label="Filter by recency" className="lg:w-40">
-            <SelectValue placeholder="Recency" />
+          <SelectTrigger aria-label={t("recencyAria")} className="lg:w-40">
+            <SelectValue placeholder={t("recencyPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            {RECENCY_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
+            {RECENCY_OPTIONS.map((value) => (
+              <SelectItem key={value} value={value}>
+                {t(`recencyOptions.${value}`)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -175,7 +185,7 @@ export function TaskFilters({
       </div>
       {!hasOrigin ? (
         <p id="radius-helper" className="text-xs text-muted-foreground">
-          Add a location to your profile to filter by distance.
+          {t("addLocationHint")}
         </p>
       ) : null}
     </div>

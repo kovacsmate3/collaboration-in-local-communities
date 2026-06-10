@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { SubmitEvent } from "react"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { LocationInput } from "@/components/shared/location-input"
@@ -23,6 +24,7 @@ import { useAuth } from "@/lib/auth-context"
 import { APP_AUTH_ROUTES } from "@/lib/auth/constants"
 import { resendVerificationEmail } from "@/lib/auth/functions"
 import { useCategories } from "@/lib/api/categories"
+import { useOwnProfile, type OwnProfileResponse } from "@/lib/api/profile"
 import { useCreateTask, useUpdateTask } from "@/lib/api/tasks"
 import { COMPENSATION_OPTIONS } from "@/lib/constants"
 import type { LocationValue } from "@/lib/location"
@@ -55,11 +57,15 @@ export function PostTaskForm({
   taskId,
   initialValues,
 }: PostTaskFormProps = {}) {
+  const t = useTranslations("tasks.post")
+  const tCompensation = useTranslations("tasks.compensation")
+  const tCategories = useTranslations("tasks.categories")
   const isEditing = Boolean(taskId)
   const { user } = useAuth()
   const router = useRouter()
   const { data: categories = [], isLoading: categoriesLoading } =
     useCategories()
+  const { data: profile } = useOwnProfile(Boolean(user))
   const { mutate: createTask, isPending: isCreating } = useCreateTask()
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask(
     taskId ?? ""
@@ -84,9 +90,9 @@ export function PostTaskForm({
     setIsResending(true)
     try {
       await resendVerificationEmail(user.email)
-      toast.success("Verification email sent — check your inbox.")
+      toast.success(t("resendSent"))
     } catch {
-      toast.error("Could not send the email. Please try again.")
+      toast.error(t("resendError"))
     } finally {
       setIsResending(false)
     }
@@ -96,11 +102,10 @@ export function PostTaskForm({
     return (
       <div className="rounded-md border border-amber-200 bg-amber-50 px-5 py-4 dark:border-amber-900 dark:bg-amber-950">
         <p className="font-medium text-amber-800 dark:text-amber-200">
-          Email verification required
+          {t("emailGateTitle")}
         </p>
         <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-          You need to verify your email address before posting tasks. Check your
-          inbox for the verification link.
+          {t("emailGateBody")}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
@@ -110,10 +115,12 @@ export function PostTaskForm({
             onClick={handleResend}
             className="border-amber-300 bg-transparent text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-900"
           >
-            {isResending ? "Sending..." : "Resend verification email"}
+            {isResending ? t("resending") : t("resend")}
           </Button>
           <Button size="sm" variant="ghost" asChild>
-            <Link href={APP_AUTH_ROUTES.verifyEmail}>Already verified?</Link>
+            <Link href={APP_AUTH_ROUTES.verifyEmail}>
+              {t("alreadyVerified")}
+            </Link>
           </Button>
         </div>
       </div>
@@ -125,22 +132,22 @@ export function PostTaskForm({
 
     const title = form.title.trim()
     if (title.length < 3) {
-      toast.error("Title must be at least 3 characters.")
+      toast.error(t("errorTitleMin"))
       return
     }
 
     const plainText = form.description.replace(/<[^>]*>/g, "").trim()
     if (plainText.length < 10) {
-      toast.error("Description must be at least 10 characters.")
+      toast.error(t("errorDescriptionMin"))
       return
     }
     if (form.description.length > 50_000) {
-      toast.error("Description is too long. Please shorten it.")
+      toast.error(t("errorDescriptionMax"))
       return
     }
 
     if (!form.categoryId) {
-      toast.error("Pick a category.")
+      toast.error(t("errorCategory"))
       return
     }
 
@@ -153,9 +160,11 @@ export function PostTaskForm({
       form.compensationType === "paid" &&
       (amount === undefined || !Number.isFinite(amount) || amount < 0)
     ) {
-      toast.error("Enter a valid paid amount.")
+      toast.error(t("errorAmount"))
       return
     }
+
+    const location = getSubmissionLocation(form.location, profile)
 
     if (isEditing) {
       updateTask(
@@ -165,16 +174,18 @@ export function PostTaskForm({
           categoryId: form.categoryId,
           compensationType: form.compensationType,
           compensationAmount: amount,
-          locationText: form.location.locationText || undefined,
+          locationText: location.locationText || undefined,
+          latitude: location.latitude,
+          longitude: location.longitude,
         },
         {
           onSuccess: () => {
-            toast.success("Task updated!")
+            toast.success(t("updatedToast"))
             router.push(`/tasks/${taskId}`)
           },
           onError: (err) => {
             const message =
-              err instanceof Error ? err.message : "Could not update the task."
+              err instanceof Error ? err.message : t("updateErrorDefault")
             toast.error(message)
           },
         }
@@ -189,52 +200,60 @@ export function PostTaskForm({
         categoryId: form.categoryId,
         compensationType: form.compensationType,
         compensationAmount: amount,
-        locationText: form.location.locationText || undefined,
-        latitude: form.location.latitude,
-        longitude: form.location.longitude,
+        locationText: location.locationText || undefined,
+        latitude: location.latitude,
+        longitude: location.longitude,
       },
       {
         onSuccess: (task) => {
-          toast.success("Task posted!")
+          toast.success(t("postedToast"))
           router.push(`/tasks/${task.id}`)
         },
         onError: (err) => {
           const message =
-            err instanceof Error ? err.message : "Could not post the task."
+            err instanceof Error ? err.message : t("postErrorDefault")
           toast.error(message)
         },
       }
     )
   }
 
+  const submitLabel = isEditing
+    ? isPending
+      ? t("submitSaving")
+      : t("submitSave")
+    : isPending
+      ? t("submitPosting")
+      : t("submitPost")
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="title">Task title</Label>
+        <Label htmlFor="title">{t("titleLabel")}</Label>
         <Input
           id="title"
           required
           minLength={3}
           maxLength={160}
-          placeholder="e.g. Help carrying boxes to my new apartment"
+          placeholder={t("titlePlaceholder")}
           value={form.title}
           onChange={(e) => update("title", e.target.value)}
         />
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label>Description</Label>
+        <Label>{t("descriptionLabel")}</Label>
         <RichTextEditor
           value={form.description}
           onChange={(html) => update("description", html)}
-          placeholder="Describe what you need help with, when, and any constraints."
+          placeholder={t("descriptionPlaceholder")}
           maxLength={50_000}
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="category">Category</Label>
+          <Label htmlFor="category">{t("categoryLabel")}</Label>
           <Select
             required
             value={form.categoryId}
@@ -243,13 +262,17 @@ export function PostTaskForm({
           >
             <SelectTrigger id="category">
               <SelectValue
-                placeholder={categoriesLoading ? "Loading…" : "Pick a category"}
+                placeholder={
+                  categoriesLoading
+                    ? t("categoryLoading")
+                    : t("categoryPlaceholder")
+                }
               />
             </SelectTrigger>
             <SelectContent>
               {categories.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
-                  {c.name}
+                  {tCategories.has(c.code) ? tCategories(c.code) : c.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -259,8 +282,8 @@ export function PostTaskForm({
         <div className="flex flex-col gap-2">
           <LocationInput
             id="location"
-            label="Location"
-            placeholder="District, neighbourhood, or street address"
+            label={t("locationLabel")}
+            placeholder={t("locationPlaceholder")}
             value={form.location}
             onChange={(location) => update("location", location)}
           />
@@ -268,7 +291,7 @@ export function PostTaskForm({
       </div>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="text-sm font-medium">Reward offered</legend>
+        <legend className="text-sm font-medium">{t("rewardLegend")}</legend>
         <RadioGroup
           value={form.compensationType}
           onValueChange={(v) =>
@@ -276,24 +299,23 @@ export function PostTaskForm({
           }
           className="grid gap-2 sm:grid-cols-3"
         >
-          {COMPENSATION_OPTIONS.map((option) => (
+          {COMPENSATION_OPTIONS.map((value) => (
             <Label
-              key={option.value}
-              htmlFor={`comp-${option.value}`}
+              key={value}
+              htmlFor={`comp-${value}`}
               className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-background p-3 hover:bg-muted"
             >
-              <RadioGroupItem
-                id={`comp-${option.value}`}
-                value={option.value}
-              />
-              <span className="text-sm font-medium">{option.label}</span>
+              <RadioGroupItem id={`comp-${value}`} value={value} />
+              <span className="text-sm font-medium">
+                {tCompensation(value)}
+              </span>
             </Label>
           ))}
         </RadioGroup>
 
         {form.compensationType === "paid" ? (
           <div className="flex flex-col gap-2">
-            <Label htmlFor="amount">Amount (HUF)</Label>
+            <Label htmlFor="amount">{t("amountLabel")}</Label>
             <Input
               id="amount"
               type="number"
@@ -301,7 +323,7 @@ export function PostTaskForm({
               max={9_999_999_999.99}
               step="0.01"
               required
-              placeholder="e.g. 5000"
+              placeholder={t("amountPlaceholder")}
               value={form.compensationAmount}
               onChange={(e) => update("compensationAmount", e.target.value)}
             />
@@ -311,20 +333,43 @@ export function PostTaskForm({
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" asChild>
-          <Link href={isEditing ? `/tasks/${taskId}` : "/feed"}>Cancel</Link>
+          <Link href={isEditing ? `/tasks/${taskId}` : "/feed"}>
+            {t("cancel")}
+          </Link>
         </Button>
         <Button type="submit" disabled={isPending || !form.categoryId}>
-          {isEditing
-            ? isPending
-              ? "Saving…"
-              : "Save changes"
-            : isPending
-              ? "Posting…"
-              : "Post task"}
+          {submitLabel}
         </Button>
       </div>
     </form>
   )
+}
+
+function getSubmissionLocation(
+  location: LocationValue,
+  profile: OwnProfileResponse | undefined
+): LocationValue {
+  const locationText = location.locationText.trim()
+  if (locationText) {
+    return { ...location, locationText }
+  }
+
+  const profileLocationText = profile?.locationText?.trim() ?? ""
+  if (!profileLocationText) {
+    return { locationText: "" }
+  }
+
+  const latitude = toFiniteCoordinate(profile?.latitude)
+  const longitude = toFiniteCoordinate(profile?.longitude)
+  if (latitude === undefined || longitude === undefined) {
+    return { locationText: profileLocationText }
+  }
+
+  return { locationText: profileLocationText, latitude, longitude }
+}
+
+function toFiniteCoordinate(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined
 }
 
 function normalizeCompensationType(value: unknown): CompensationType {

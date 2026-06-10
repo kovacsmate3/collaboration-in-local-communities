@@ -85,7 +85,7 @@ public sealed class TaskCompletionControllerTests
         var result = await controller.SubmitAsync(scenario.TaskId, cancellationToken);
 
         var problem = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status409Conflict, problem.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
 
         // No write-through side effects.
         var reloaded = await db.Tasks.AsNoTracking().FirstAsync(t => t.Id == scenario.TaskId, cancellationToken);
@@ -138,9 +138,11 @@ public sealed class TaskCompletionControllerTests
         var firstResult = await controller.ApproveAsync(scenario.TaskId, cancellationToken);
         Assert.IsType<OkObjectResult>(firstResult);
 
+        // Re-approving a Completed task is an invalid FSM transition (400), and
+        // the reward/completion side effects must not run a second time.
         var secondResult = await controller.ApproveAsync(scenario.TaskId, cancellationToken);
         var problem = Assert.IsType<ObjectResult>(secondResult);
-        Assert.Equal(StatusCodes.Status409Conflict, problem.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
 
         // Reward and completion side effects must remain singletons.
         Assert.Single(db.PointsLedger);
@@ -202,7 +204,7 @@ public sealed class TaskCompletionControllerTests
         var result = await controller.ApproveAsync(scenario.TaskId, cancellationToken);
 
         var problem = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status409Conflict, problem.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, problem.StatusCode);
         Assert.Empty(db.PointsLedger);
     }
 

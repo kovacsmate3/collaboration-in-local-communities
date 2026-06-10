@@ -4,7 +4,8 @@
   "private": true,
   "description": "Monorepo dev tooling (husky + lint-staged). Backend lives in /backend, frontend in /frontend.",
   "scripts": {
-    "prepare": "husky || true"
+    "prepare": "husky || true",
+    "seed": "dotnet run --project backend -- seed"
   },
   "devDependencies": {
     "husky": "^9.1.7",

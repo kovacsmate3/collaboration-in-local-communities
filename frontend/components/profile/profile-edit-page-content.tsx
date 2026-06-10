@@ -1,6 +1,7 @@
 "use client"
 
 import { useQueries } from "@tanstack/react-query"
+import { useTranslations } from "next-intl"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -19,6 +20,7 @@ interface ProfileEditPageContentProps {
 export function ProfileEditPageContent({
   returnHref = "/profile",
 }: ProfileEditPageContentProps) {
+  const t = useTranslations("profile.editPage")
   const profileQuery = useOwnProfile()
   const skillIds = profileQuery.data?.skillIds ?? []
   const skillQueries = useQueries({
@@ -43,10 +45,8 @@ export function ProfileEditPageContent({
   if (profileQuery.isError || !profileQuery.data) {
     return (
       <Alert variant="destructive">
-        <AlertTitle>Profile unavailable</AlertTitle>
-        <AlertDescription>
-          Your profile could not be loaded, so it cannot be edited yet.
-        </AlertDescription>
+        <AlertTitle>{t("loadErrorTitle")}</AlertTitle>
+        <AlertDescription>{t("loadErrorBody")}</AlertDescription>
       </Alert>
     )
   }

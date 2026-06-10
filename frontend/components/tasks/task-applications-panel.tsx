@@ -1,8 +1,20 @@
 "use client"
 
 import Link from "next/link"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { UserAvatar } from "@/components/shared/user-avatar"
@@ -27,6 +39,10 @@ export function TaskApplicationsPanel({
   isLoading,
   taskId,
 }: TaskApplicationsPanelProps) {
+  const t = useTranslations("tasks.applications")
+  const tStatuses = useTranslations("tasks.applications.statuses")
+  const tCommon = useTranslations("common")
+  const locale = useLocale()
   const { mutate: patchApplication, isPending } =
     usePatchTaskApplication(taskId)
 
@@ -36,11 +52,9 @@ export function TaskApplicationsPanel({
       {
         onSuccess: () =>
           toast.success(
-            action === "accept"
-              ? "Application accepted."
-              : "Application rejected."
+            action === "accept" ? t("acceptedToast") : t("rejectedToast")
           ),
-        onError: () => toast.error("Could not update the application."),
+        onError: () => toast.error(t("updateErrorToast")),
       }
     )
   }
@@ -48,13 +62,13 @@ export function TaskApplicationsPanel({
   return (
     <section className="rounded-lg border bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium">Applications</h2>
+        <h2 className="text-sm font-medium">{t("title")}</h2>
         <Badge variant="muted">{isLoading ? "…" : applications.length}</Badge>
       </div>
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading applications…</p>
+        <p className="text-sm text-muted-foreground">{t("loading")}</p>
       ) : applications.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No applications yet.</p>
+        <p className="text-sm text-muted-foreground">{t("empty")}</p>
       ) : (
         <div className="divide-y">
           {applications.map((application) => (
@@ -67,9 +81,9 @@ export function TaskApplicationsPanel({
                 <span className="text-sm font-medium">
                   {application.helperDisplayName}
                 </span>
-                <Badge variant="outline">{application.status}</Badge>
+                <Badge variant="outline">{tStatuses(application.status)}</Badge>
                 <span className="ml-auto text-xs text-muted-foreground">
-                  {formatRelativeTime(application.createdAt)}
+                  {formatRelativeTime(application.createdAt, locale)}
                 </span>
               </div>
               {application.message ? (
@@ -81,26 +95,51 @@ export function TaskApplicationsPanel({
                 {application.conversationId ? (
                   <Button size="sm" variant="outline" asChild>
                     <Link href={`/messages/${application.conversationId}`}>
-                      View chat
+                      {t("viewChat")}
                     </Link>
                   </Button>
                 ) : null}
                 {application.status === "Pending" ? (
                   <>
-                    <Button
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() => handleAction(application.id, "accept")}
-                    >
-                      Accept
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" disabled={isPending}>
+                          {t("accept")}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {t("acceptDialogTitle")}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t("acceptDialogBody", {
+                              name: application.helperDisplayName,
+                            })}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>
+                            {tCommon("goBack")}
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            disabled={isPending}
+                            onClick={() =>
+                              handleAction(application.id, "accept")
+                            }
+                          >
+                            {isPending ? t("accepting") : t("accept")}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                     <Button
                       size="sm"
                       variant="ghost"
                       disabled={isPending}
                       onClick={() => handleAction(application.id, "reject")}
                     >
-                      Reject
+                      {t("reject")}
                     </Button>
                   </>
                 ) : null}

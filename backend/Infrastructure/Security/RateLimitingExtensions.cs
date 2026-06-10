@@ -8,6 +8,10 @@ public static class RateLimitingExtensions
     public const string ConversationsPolicy = "conversations";
     public const string ReviewsPolicy = "reviews";
     public const string PhotoUploadPolicy = "photo-upload";
+    public const string TasksReadPolicy = "tasks-read";
+    public const string TasksWritePolicy = "tasks-write";
+    public const string LocationsPolicy = "locations";
+    public const string AdminPolicy = "admin";
 
     public static IServiceCollection AddAppRateLimiting(
         this IServiceCollection services,
@@ -20,47 +24,32 @@ public static class RateLimitingExtensions
         {
             limiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-            limiterOptions.AddPolicy(AuthPolicy, context =>
-            {
-                var ip = context.RequestServices.GetRequiredService<IClientIpAccessor>().GetClientIp() ?? "unknown";
-                return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = opts.Auth.PermitLimit,
-                    Window = TimeSpan.FromSeconds(opts.Auth.WindowSeconds)
-                });
-            });
-
-            limiterOptions.AddPolicy(ConversationsPolicy, context =>
-            {
-                var ip = context.RequestServices.GetRequiredService<IClientIpAccessor>().GetClientIp() ?? "unknown";
-                return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = opts.Conversations.PermitLimit,
-                    Window = TimeSpan.FromSeconds(opts.Conversations.WindowSeconds)
-                });
-            });
-
-            limiterOptions.AddPolicy(ReviewsPolicy, context =>
-            {
-                var ip = context.RequestServices.GetRequiredService<IClientIpAccessor>().GetClientIp() ?? "unknown";
-                return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = opts.Reviews.PermitLimit,
-                    Window = TimeSpan.FromSeconds(opts.Reviews.WindowSeconds)
-                });
-            });
-
-            limiterOptions.AddPolicy(PhotoUploadPolicy, context =>
-            {
-                var ip = context.RequestServices.GetRequiredService<IClientIpAccessor>().GetClientIp() ?? "unknown";
-                return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = opts.PhotoUpload.PermitLimit,
-                    Window = TimeSpan.FromSeconds(opts.PhotoUpload.WindowSeconds)
-                });
-            });
+            AddIpFixedWindowPolicy(limiterOptions, AuthPolicy, opts.Auth);
+            AddIpFixedWindowPolicy(limiterOptions, ConversationsPolicy, opts.Conversations);
+            AddIpFixedWindowPolicy(limiterOptions, ReviewsPolicy, opts.Reviews);
+            AddIpFixedWindowPolicy(limiterOptions, PhotoUploadPolicy, opts.PhotoUpload);
+            AddIpFixedWindowPolicy(limiterOptions, TasksReadPolicy, opts.TasksRead);
+            AddIpFixedWindowPolicy(limiterOptions, TasksWritePolicy, opts.TasksWrite);
+            AddIpFixedWindowPolicy(limiterOptions, LocationsPolicy, opts.Locations);
+            AddIpFixedWindowPolicy(limiterOptions, AdminPolicy, opts.Admin);
         });
 
         return services;
+    }
+
+    private static void AddIpFixedWindowPolicy(
+        Microsoft.AspNetCore.RateLimiting.RateLimiterOptions limiterOptions,
+        string policyName,
+        WindowPolicyOptions policy)
+    {
+        limiterOptions.AddPolicy(policyName, context =>
+        {
+            var ip = context.RequestServices.GetRequiredService<IClientIpAccessor>().GetClientIp() ?? "unknown";
+            return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = policy.PermitLimit,
+                Window = TimeSpan.FromSeconds(policy.WindowSeconds)
+            });
+        });
     }
 }

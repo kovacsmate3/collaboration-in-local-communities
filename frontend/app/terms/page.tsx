@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
+import { getFormatter, getTranslations } from "next-intl/server"
 
 import {
   TermsAcceptancePanel,
@@ -10,8 +11,11 @@ import {
   BACKEND_TERMS_PATHS,
 } from "@/lib/auth/constants"
 
-export const metadata: Metadata = {
-  title: "Terms & Conditions",
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("terms")
+  return {
+    title: t("pageTitle"),
+  }
 }
 
 interface ActiveTermsResponse {
@@ -37,6 +41,8 @@ async function fetchActiveTerms(): Promise<ActiveTermsResponse | null> {
 
 export default async function TermsPage() {
   const activeTerms = await fetchActiveTerms()
+  const t = await getTranslations("terms")
+  const format = await getFormatter()
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">
@@ -46,12 +52,16 @@ export default async function TermsPage() {
       </Suspense>
 
       <h1 className="mb-2 text-3xl font-semibold tracking-tight">
-        Terms &amp; Conditions
+        {t("heading")}
       </h1>
       {activeTerms && (
         <p className="mb-10 text-sm text-muted-foreground">
-          Version {activeTerms.version} &mdash; effective{" "}
-          {new Date(activeTerms.effectiveFrom).toLocaleDateString()}
+          {t("versionLine", {
+            version: activeTerms.version,
+            date: format.dateTime(new Date(activeTerms.effectiveFrom), {
+              dateStyle: "medium",
+            }),
+          })}
         </p>
       )}
 
@@ -67,73 +77,26 @@ export default async function TermsPage() {
   )
 }
 
-function StaticPlaceholderContent() {
+async function StaticPlaceholderContent() {
+  const t = await getTranslations("terms.sections")
+  const sections = [
+    "about",
+    "account",
+    "acceptableUse",
+    "payments",
+    "privacy",
+    "liability",
+    "changes",
+  ] as const
+
   return (
     <div className="prose prose-neutral dark:prose-invert flex flex-col gap-8 text-sm leading-relaxed">
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">1. About 2gather</h2>
-        <p className="text-muted-foreground">
-          2gather is a platform that connects neighbours who need help with
-          those willing to offer it. By creating an account you agree to use the
-          service in good faith and in accordance with your local laws.
-        </p>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">2. Your account</h2>
-        <p className="text-muted-foreground">
-          You are responsible for keeping your credentials secure and for all
-          activity that occurs under your account. Notify us immediately if you
-          suspect unauthorised access.
-        </p>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">3. Acceptable use</h2>
-        <p className="text-muted-foreground">
-          You may not use 2gather to post illegal tasks, harass other users,
-          misrepresent your identity, or scrape the platform without written
-          permission. We reserve the right to suspend accounts that violate
-          these rules.
-        </p>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">4. Payments &amp; barter</h2>
-        <p className="text-muted-foreground">
-          2gather facilitates agreements between users but is not a party to
-          them. Any payment or exchange is solely between the Seeker and the
-          Helper. We are not liable for disputes arising from tasks.
-        </p>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">5. Privacy</h2>
-        <p className="text-muted-foreground">
-          We collect only the information needed to operate the service. We do
-          not sell your data. A full privacy policy will be published before the
-          public launch.
-        </p>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">6. Limitation of liability</h2>
-        <p className="text-muted-foreground">
-          2gather is provided &ldquo;as is&rdquo; during this early phase. We
-          make no warranties about uptime or fitness for a particular purpose.
-          Our liability is limited to the maximum extent permitted by applicable
-          law.
-        </p>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="text-base font-semibold">7. Changes to these terms</h2>
-        <p className="text-muted-foreground">
-          We may update these terms as the product evolves. Continued use of the
-          platform after changes are posted constitutes acceptance of the
-          revised terms.
-        </p>
-      </section>
+      {sections.map((id) => (
+        <section key={id} className="flex flex-col gap-2">
+          <h2 className="text-base font-semibold">{t(`${id}.title`)}</h2>
+          <p className="text-muted-foreground">{t(`${id}.body`)}</p>
+        </section>
+      ))}
     </div>
   )
 }

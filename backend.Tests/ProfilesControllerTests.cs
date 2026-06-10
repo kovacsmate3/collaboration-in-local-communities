@@ -428,26 +428,33 @@ public sealed class ProfilesControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var trend = Assert.IsAssignableFrom<IEnumerable<ProfileReputationTrendPointResponse>>(ok.Value).ToList();
 
+        // Only helper-side contributions score: the helper-side completion on
+        // thirdDay and the helper-side review on fourthDay. The seeker-side
+        // completion (firstDay) and seeker-side review (secondDay) are excluded,
+        // so they no longer appear as trend points.
         Assert.Equal(
-            [10, 20, 30, 36],
+            [10, 16],
             trend.Select(point => point.Score));
         Assert.Equal(
-            new[] { firstDay, secondDay, thirdDay, fourthDay }
+            new[] { thirdDay, fourthDay }
                 .Select(day => DateOnly.FromDateTime(day.UtcDateTime)),
             trend.Select(point => point.Date));
-        Assert.Equal([0m, 5m, 5m, 4m], trend.Select(point => point.AverageRating));
-        Assert.Equal([0, 1, 1, 2], trend.Select(point => point.ReviewCount));
-        Assert.Equal([1, 1, 2, 2], trend.Select(point => point.CompletedTaskCount));
+        Assert.Equal([0m, 3m], trend.Select(point => point.AverageRating));
+        Assert.Equal([0, 1], trend.Select(point => point.ReviewCount));
+        Assert.Equal([1, 1], trend.Select(point => point.CompletedTaskCount));
     }
 
     [Fact]
-    public async Task GetPublicProfileAsync_PopulatesReputationScore_FromCalculator()
+    public async Task GetPublicProfileAsync_ReputationScore_CountsOnlyHelperSideReviews()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateDbContext();
         var profile = CreateProfile("Helper");
+        // Display aggregates reflect ALL reviews received and are passed through
+        // unchanged (a task-giver still visibly "gets" the rating left for them)…
         profile.AverageRating = 4.8m;
         profile.ReviewCount = 12;
+        // …while the score's completed-task component uses the maintained counter.
         profile.CompletedTaskCount = 9;
         profile.PrivacySettings = new ProfilePrivacySettings
         {
@@ -460,7 +467,28 @@ public sealed class ProfilesControllerTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
-        db.Profiles.Add(profile);
+
+        var seeker = CreateProfile("Seeker");
+        var reviewer = CreateProfile("Reviewer");
+        var category = CreateCategory("repairs", "Repairs", "Wrench01Icon");
+        var now = DateTimeOffset.UtcNow;
+
+        // A task the profile completed AS THE HELPER — its reviews score.
+        var helperTask = CreateTask(
+            "Helped", seeker, profile, category, DomainTaskStatus.Completed, now.AddDays(-2), now.AddDays(-1));
+        // A task the profile posted AS THE SEEKER — its reviews are displayed but
+        // must NOT contribute reputation points.
+        var seekerTask = CreateTask(
+            "Posted", profile, seeker, category, DomainTaskStatus.Completed, now.AddDays(-2), now.AddDays(-1));
+
+        db.Profiles.AddRange(profile, seeker, reviewer);
+        db.Categories.Add(category);
+        db.Tasks.AddRange(helperTask, seekerTask);
+        db.Reviews.AddRange(
+            CreateReview(helperTask, reviewer, profile, 5, now),
+            CreateReview(helperTask, seeker, profile, 5, now),
+            // Seeker-side review — excluded from the score.
+            CreateReview(seekerTask, seeker, profile, 5, now));
         await db.SaveChangesAsync(cancellationToken);
 
         var controller = new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance);
@@ -468,11 +496,13 @@ public sealed class ProfilesControllerTests
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var response = Assert.IsType<PublicProfileResponse>(ok.Value);
-        // 9 x 10 + 4.8 x 12 x 2 = 205
-        Assert.Equal(205, response.ReputationScore);
-        Assert.Equal(profile.AverageRating, response.AverageRating);
-        Assert.Equal(profile.ReviewCount, response.ReviewCount);
-        Assert.Equal(profile.CompletedTaskCount, response.CompletedTaskCount);
+        // 9 x 10 (completed) + 5.00 avg x 2 helper-side reviews x 2 = 110.
+        // The seeker-side review is excluded, so it adds no points.
+        Assert.Equal(110, response.ReputationScore);
+        // Display aggregates pass through unchanged.
+        Assert.Equal(4.8m, response.AverageRating);
+        Assert.Equal(12, response.ReviewCount);
+        Assert.Equal(9, response.CompletedTaskCount);
     }
 
     [Fact]
@@ -499,6 +529,21 @@ public sealed class ProfilesControllerTests
         };
         profile.PrivacySettings = privacySettings;
         db.ProfilePrivacySettings.Add(privacySettings);
+
+        // Four reviews earned AS THE HELPER feed the score's review component.
+        var seeker = CreateProfile("Seeker");
+        var reviewer = CreateProfile("Reviewer");
+        var category = CreateCategory("repairs", "Repairs", "Wrench01Icon");
+        var now = DateTimeOffset.UtcNow;
+        var helperTask = CreateTask(
+            "Helped", seeker, profile, category, DomainTaskStatus.Completed, now.AddDays(-2), now.AddDays(-1));
+        db.Profiles.AddRange(seeker, reviewer);
+        db.Categories.Add(category);
+        db.Tasks.Add(helperTask);
+        for (var i = 0; i < 4; i++)
+        {
+            db.Reviews.Add(CreateReview(helperTask, reviewer, profile, 5, now));
+        }
         await db.SaveChangesAsync(cancellationToken);
 
         var controller = CreateProfilesController(db, userId);
@@ -506,8 +551,183 @@ public sealed class ProfilesControllerTests
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var response = Assert.IsType<OwnProfileResponse>(ok.Value);
-        // 3 x 10 + 5 x 4 x 2 = 70
+        // 3 x 10 (completed) + 5.00 avg x 4 helper-side reviews x 2 = 70
         Assert.Equal(70, response.ReputationScore);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsBalanceAsync_ReturnsSignedSumOfOwnEntries_IgnoringOtherProfiles()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
+        var other = CreateProfile("Other");
+
+        db.Profiles.Add(other);
+        var now = DateTimeOffset.UtcNow;
+        db.PointsLedger.AddRange(
+            CreateLedgerEntry(profileId, 10, now.AddMinutes(-3)),
+            CreateLedgerEntry(profileId, 15, now.AddMinutes(-2)),
+            // A redemption is a negative entry; the balance must net it out.
+            CreateLedgerEntry(profileId, -5, now.AddMinutes(-1), PointEntryType.Redemption),
+            // Another profile's entry must not leak into this user's balance.
+            CreateLedgerEntry(other.Id, 100, now));
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+        var result = await controller.GetOwnPointsBalanceAsync(cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<PointsBalanceResponse>(ok.Value);
+        Assert.Equal(profileId, response.ProfileId);
+        Assert.Equal(20, response.Balance);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsBalanceAsync_ReturnsZero_WhenNoEntries()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+        var result = await controller.GetOwnPointsBalanceAsync(cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<PointsBalanceResponse>(ok.Value);
+        Assert.Equal(profileId, response.ProfileId);
+        Assert.Equal(0, response.Balance);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsBalanceAsync_ReturnsNotFound_WhenUserHasNoProfile()
+    {
+        await using var db = CreateDbContext();
+        var controller = CreateProfilesController(db, Guid.NewGuid());
+
+        var result = await controller.GetOwnPointsBalanceAsync(TestContext.Current.CancellationToken);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsBalanceAsync_ReturnsUnauthorized_WhenNoClaim()
+    {
+        await using var db = CreateDbContext();
+        var controller = CreateProfilesControllerWithoutAuth(db);
+
+        var result = await controller.GetOwnPointsBalanceAsync(TestContext.Current.CancellationToken);
+
+        Assert.IsType<UnauthorizedResult>(result);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsLedgerAsync_ReturnsEntriesNewestFirst_ScopedToOwnProfile()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
+        var other = CreateProfile("Other");
+
+        db.Profiles.Add(other);
+        var now = DateTimeOffset.UtcNow;
+        db.PointsLedger.AddRange(
+            CreateLedgerEntry(profileId, 10, now.AddMinutes(-2), description: "older"),
+            CreateLedgerEntry(profileId, 15, now.AddMinutes(-1), description: "newer"),
+            CreateLedgerEntry(other.Id, 100, now, description: "other profile"));
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+        var result = await controller.GetOwnPointsLedgerAsync(page: 1, pageSize: 20, cancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var paged = Assert.IsType<PointsLedgerPagedResponse>(ok.Value);
+        Assert.Equal(2, paged.TotalCount);
+        Assert.Equal(1, paged.TotalPages);
+        Assert.Equal(["newer", "older"], paged.Items.Select(entry => entry.Description));
+        Assert.Equal(
+            nameof(PointEntryType.TaskCompletedReward),
+            paged.Items[0].EntryType);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsLedgerAsync_RespectsPaginationParameters()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, profileId) = await SeedProfileAsync(db, cancellationToken);
+
+        var now = DateTimeOffset.UtcNow;
+        for (var i = 0; i < 3; i++)
+        {
+            db.PointsLedger.Add(CreateLedgerEntry(profileId, 10, now.AddMinutes(i), description: $"entry {i}"));
+        }
+        await db.SaveChangesAsync(cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+
+        // Page 1, size 2 → newest 2.
+        var page1Result = await controller.GetOwnPointsLedgerAsync(page: 1, pageSize: 2, cancellationToken);
+        var page1 = Assert.IsType<PointsLedgerPagedResponse>(Assert.IsType<OkObjectResult>(page1Result).Value);
+        Assert.Equal(3, page1.TotalCount);
+        Assert.Equal(2, page1.TotalPages);
+        Assert.Equal(["entry 2", "entry 1"], page1.Items.Select(entry => entry.Description));
+
+        // Page 2, size 2 → oldest 1.
+        var page2Result = await controller.GetOwnPointsLedgerAsync(page: 2, pageSize: 2, cancellationToken);
+        var page2 = Assert.IsType<PointsLedgerPagedResponse>(Assert.IsType<OkObjectResult>(page2Result).Value);
+        Assert.Single(page2.Items);
+        Assert.Equal("entry 0", page2.Items[0].Description);
+    }
+
+    [Theory]
+    [InlineData(0, 20)]
+    [InlineData(-1, 20)]
+    [InlineData(1, 0)]
+    [InlineData(1, 101)]
+    public async Task GetOwnPointsLedgerAsync_InvalidPagination_ReturnsValidationProblem(int page, int pageSize)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateDbContext();
+        var (userId, _) = await SeedProfileAsync(db, cancellationToken);
+
+        var controller = CreateProfilesController(db, userId);
+        var result = await controller.GetOwnPointsLedgerAsync(page, pageSize, cancellationToken);
+
+        var problem = Assert.IsAssignableFrom<ObjectResult>(result);
+        Assert.IsAssignableFrom<ValidationProblemDetails>(problem.Value);
+    }
+
+    [Fact]
+    public async Task GetOwnPointsLedgerAsync_ReturnsNotFound_WhenUserHasNoProfile()
+    {
+        await using var db = CreateDbContext();
+        var controller = CreateProfilesController(db, Guid.NewGuid());
+
+        var result = await controller.GetOwnPointsLedgerAsync(
+            page: 1, pageSize: 20, TestContext.Current.CancellationToken);
+
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    private static PointsLedgerEntry CreateLedgerEntry(
+        Guid profileId,
+        int amount,
+        DateTimeOffset createdAt,
+        PointEntryType entryType = PointEntryType.TaskCompletedReward,
+        Guid? taskId = null,
+        string? description = null)
+    {
+        return new PointsLedgerEntry
+        {
+            Id = Guid.NewGuid(),
+            ProfileId = profileId,
+            TaskId = taskId,
+            Amount = amount,
+            EntryType = entryType,
+            Description = description,
+            CreatedAt = createdAt
+        };
     }
 
     private static async Task<(Guid userId, Guid profileId)> SeedProfileAsync(
@@ -551,6 +771,29 @@ public sealed class ProfilesControllerTests
             Icon = icon,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
+        };
+    }
+
+    private static Review CreateReview(
+        CommunityTask task,
+        UserProfile reviewer,
+        UserProfile reviewee,
+        int rating,
+        DateTimeOffset createdAt)
+    {
+        return new Review
+        {
+            Id = Guid.NewGuid(),
+            TaskId = task.Id,
+            Task = task,
+            ReviewerProfileId = reviewer.Id,
+            ReviewerProfile = reviewer,
+            RevieweeProfileId = reviewee.Id,
+            RevieweeProfile = reviewee,
+            Rating = rating,
+            Comment = "Review comment",
+            CreatedAt = createdAt,
+            UpdatedAt = createdAt
         };
     }
 
@@ -610,6 +853,20 @@ public sealed class ProfilesControllerTests
         };
 
         return controller;
+    }
+
+    private static ProfilesController CreateProfilesControllerWithoutAuth(AppDbContext db)
+    {
+        return new ProfilesController(db, new NullBlobStorageService(), NullLogger<ProfilesController>.Instance)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity())
+                }
+            }
+        };
     }
 
     private sealed class NullBlobStorageService : IBlobStorageService

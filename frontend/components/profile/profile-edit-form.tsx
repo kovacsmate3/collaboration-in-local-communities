@@ -10,6 +10,7 @@ import {
 import { useRouter } from "next/navigation"
 import type { ComponentProps, SubmitEvent } from "react"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -53,6 +54,7 @@ export function ProfileEditForm({
   selectedSkills,
   returnHref = "/profile",
 }: ProfileEditFormProps) {
+  const t = useTranslations("profile.editForm")
   const router = useRouter()
   const { refreshSession } = useAuth()
   const updateProfile = useUpdateOwnProfile()
@@ -108,13 +110,13 @@ export function ProfileEditForm({
 
     const displayName = form.displayName.trim()
     if (!displayName) {
-      toast.error("Full name is required.")
+      toast.error(t("fullNameRequired"))
       return
     }
 
     const { latitude, longitude } = form.location
     if ((latitude === undefined) !== (longitude === undefined)) {
-      toast.error("Latitude and longitude must be provided together.")
+      toast.error(t("latLngTogether"))
       return
     }
 
@@ -131,13 +133,11 @@ export function ProfileEditForm({
         skillIds: form.skillIds,
       })
       await refreshSession()
-      toast.success("Profile saved")
+      toast.success(t("savedToast"))
       router.push(returnHref)
       router.refresh()
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Unable to save profile."
-      )
+      toast.error(error instanceof Error ? error.message : t("saveError"))
     }
   }
 
@@ -155,14 +155,14 @@ export function ProfileEditForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
           id="displayName"
-          label="Full name"
+          label={t("fullName")}
           value={form.displayName}
           onChange={(e) => updateField("displayName", e.target.value)}
           required
         />
         <Field
           id="position"
-          label="Role"
+          label={t("role")}
           value={form.position}
           onChange={(e) => updateField("position", e.target.value)}
         />
@@ -171,13 +171,13 @@ export function ProfileEditForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
           id="workplace"
-          label="Workplace / school"
+          label={t("workplace")}
           value={form.workplace}
           onChange={(e) => updateField("workplace", e.target.value)}
         />
         <LocationInput
           id="location"
-          label="Location"
+          label={t("location")}
           value={form.location}
           onChange={updateLocation}
         />
@@ -185,13 +185,13 @@ export function ProfileEditForm({
 
       <Field
         id="availability"
-        label="Availability"
+        label={t("availability")}
         value={form.availability}
         onChange={(e) => updateField("availability", e.target.value)}
       />
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="bio">Bio</Label>
+        <Label htmlFor="bio">{t("bio")}</Label>
         <Textarea
           id="bio"
           rows={4}
@@ -201,7 +201,7 @@ export function ProfileEditForm({
       </div>
 
       <div className="flex flex-col gap-3">
-        <Label>Skills</Label>
+        <Label>{t("skills")}</Label>
         <SkillCombobox selectedIds={new Set(form.skillIds)} onAdd={addSkill} />
         {form.skillIds.length > 0 && (
           <ul className="flex flex-wrap gap-1.5">
@@ -226,7 +226,11 @@ export function ProfileEditForm({
                       type="button"
                       onClick={() => removeSkill(id)}
                       className="grid size-5 place-items-center rounded-full hover:bg-background"
-                      aria-label={`Remove ${skill?.name ?? "skill"}`}
+                      aria-label={
+                        skill?.name
+                          ? t("removeSkill", { name: skill.name })
+                          : t("removeSkillFallback")
+                      }
                     >
                       <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
                     </button>
@@ -238,8 +242,7 @@ export function ProfileEditForm({
         )}
         {hasPendingSkills && (
           <p className="text-xs text-muted-foreground">
-            Skills marked with a clock icon are awaiting admin approval. They
-            will appear on your profile once approved.
+            {t("pendingSkillsHint")}
           </p>
         )}
       </div>
@@ -251,10 +254,10 @@ export function ProfileEditForm({
           onClick={() => router.push(returnHref)}
           disabled={updateProfile.isPending}
         >
-          Cancel
+          {t("cancel")}
         </Button>
         <Button type="submit" disabled={updateProfile.isPending}>
-          {updateProfile.isPending ? "Saving..." : "Save changes"}
+          {updateProfile.isPending ? t("saving") : t("save")}
         </Button>
       </div>
     </form>
@@ -269,6 +272,7 @@ interface SkillComboboxProps {
 }
 
 function SkillCombobox({ selectedIds, onAdd }: SkillComboboxProps) {
+  const t = useTranslations("profile.editForm")
   const [query, setQuery] = React.useState("")
   const [open, setOpen] = React.useState(false)
   const [activeIndex, setActiveIndex] = React.useState(-1)
@@ -308,7 +312,7 @@ function SkillCombobox({ selectedIds, onAdd }: SkillComboboxProps) {
       setActiveIndex(-1)
       inputRef.current?.focus()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not add skill.")
+      toast.error(err instanceof Error ? err.message : t("skillAddError"))
     }
   }
 
@@ -348,7 +352,7 @@ function SkillCombobox({ selectedIds, onAdd }: SkillComboboxProps) {
       <Input
         ref={inputRef}
         value={query}
-        placeholder="Search skills, or type a name to add a new one…"
+        placeholder={t("skillSearchPlaceholder")}
         autoComplete="off"
         onChange={(e) => {
           setQuery(e.target.value)
@@ -365,18 +369,18 @@ function SkillCombobox({ selectedIds, onAdd }: SkillComboboxProps) {
       {showDropdown && (
         <div
           role="listbox"
-          aria-label="Skill suggestions"
+          aria-label={t("skillSuggestionsAria")}
           className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
         >
           {skillsQuery.isFetching && (
             <p className="px-3 py-2.5 text-sm text-muted-foreground">
-              Searching…
+              {t("skillSearching")}
             </p>
           )}
 
           {!skillsQuery.isFetching && available.length === 0 && !canCreate && (
             <p className="px-3 py-2.5 text-sm text-muted-foreground">
-              No skills found.
+              {t("skillsNoResults")}
             </p>
           )}
 
@@ -428,8 +432,8 @@ function SkillCombobox({ selectedIds, onAdd }: SkillComboboxProps) {
                 strokeWidth={2}
               />
               {createSkill.isPending
-                ? "Adding…"
-                : `Add "${trimmedQuery}" as a new skill`}
+                ? t("skillAdding")
+                : t("skillAddOption", { name: trimmedQuery })}
             </button>
           )}
         </div>

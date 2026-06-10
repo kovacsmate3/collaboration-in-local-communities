@@ -5,7 +5,11 @@ import * as signalR from "@microsoft/signalr"
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query"
 
 import { conversationKeys } from "@/lib/api/conversations"
-import type { ApiMessage, MessagesPage } from "@/lib/api/conversations"
+import type {
+  ApiConversationPreview,
+  ApiMessage,
+  MessagesPage,
+} from "@/lib/api/conversations"
 import { fetchSignalRToken } from "@/lib/signalr-token"
 
 export function useConversationHub(
@@ -49,7 +53,22 @@ export function useConversationHub(
           }
         }
       )
-      void qc.invalidateQueries({ queryKey: conversationKeys.list })
+
+      // Patch the inbox preview directly so the "last message" under each
+      // conversation updates instantly, instead of waiting for an invalidate
+      // → refetch round-trip (which is what made the preview lag in practice).
+      qc.setQueryData<ApiConversationPreview[]>(conversationKeys.list, (prev) =>
+        prev?.map((c) =>
+          c.id === conversationId
+            ? {
+                ...c,
+                lastMessageContent: message.content,
+                lastMessageAt: message.sentAt,
+                hasUnread: c.hasUnread || !message.isMine,
+              }
+            : c
+        )
+      )
     })
 
     connection.onreconnected(() => {
