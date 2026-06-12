@@ -317,8 +317,17 @@
       "historyEmptyBody": "Complete tasks to start earning points. They will show up here.",
       "entryType": {
         "taskCompletedReward": "Task completed",
+        "reviewQualityBonus": "Great review bonus",
         "manualAdjustment": "Manual adjustment",
         "redemption": "Redemption"
+      },
+      "earn": {
+        "label": "How it works",
+        "title": "How you earn points",
+        "intro": "You collect points by helping out. The exact reward depends on the task:",
+        "base": "{base} points for every task you complete, higher for more demanding categories.",
+        "voluntary": "{voluntary} bonus points when the task is voluntary, with no other compensation.",
+        "review": "{min}–{max} extra points when the seeker rates your help 4 or 5 stars."
       },
       "previous": "Previous",
       "next": "Next",
