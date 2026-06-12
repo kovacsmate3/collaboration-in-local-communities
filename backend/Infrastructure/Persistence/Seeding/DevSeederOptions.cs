@@ -37,6 +37,22 @@ public sealed class DevSeederOptions
         Workplace = "Neighbourhood",
         Position = "Community member",
     };
+
+    /// <summary>Gets or sets the sample marketplace-data seeding options.</summary>
+    public SampleTaskSeedOptions SampleTasks { get; set; } = new();
+}
+
+/// <summary>
+/// Controls seeding of the demo marketplace dataset — sample seeker accounts
+/// and the curated Budapest community tasks. Bound from the
+/// <c>DevSeed:SampleTasks</c> configuration section.
+/// </summary>
+public sealed class SampleTaskSeedOptions
+{
+    /// <summary>
+    /// Gets or sets a value indicating whether the sample-task seeder runs.
+    /// </summary>
+    public bool Enabled { get; set; } = true;
 }
 
 /// <summary>

@@ -1,8 +1,18 @@
 import Link from "next/link"
+import { getTranslations } from "next-intl/server"
 
 import { Button } from "@/components/ui/button"
 
-export default function NotFound() {
+/**
+ * Global 404 page rendered by Next.js for any route that doesn't match a
+ * page file (including the case where `notFound()` is called from a server
+ * component and there's no nearer `not-found.tsx`). Copy is localized via
+ * the `notFound` namespace so the page reads naturally in whichever locale
+ * the `NEXT_LOCALE` cookie selected.
+ */
+export default async function NotFound() {
+  const t = await getTranslations("notFound")
+
   return (
     <main className="flex min-h-svh items-center justify-center px-6">
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
@@ -10,13 +20,11 @@ export default function NotFound() {
           404
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">
-          We couldn&apos;t find that page
+          {t("heading")}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          The link may be broken or the page may have moved.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("body")}</p>
         <Button asChild>
-          <Link href="/feed">Back to the feed</Link>
+          <Link href="/feed">{t("backToFeed")}</Link>
         </Button>
       </div>
     </main>

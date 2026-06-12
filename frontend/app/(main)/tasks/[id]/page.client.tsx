@@ -22,6 +22,7 @@ import { SubmitCompletionButton } from "@/components/tasks/submit-completion-but
 import { TaskApplicationsPanel } from "@/components/tasks/task-applications-panel"
 import { TaskStatusBadge } from "@/components/tasks/task-status-badge"
 import { UserAvatar } from "@/components/shared/user-avatar"
+import { LoadingState } from "@/components/shared/loading-state"
 import { RichTextContent } from "@/components/shared/rich-text-content"
 import { formatRelativeTime } from "@/lib/format"
 import { normalizeTaskStatus } from "@/lib/task-status"
@@ -45,7 +46,7 @@ export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
   const { data: task, isLoading, isError } = useTask(id)
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">{t("loading")}</p>
+    return <LoadingState rows={5} />
   }
 
   if (isError || !task) {

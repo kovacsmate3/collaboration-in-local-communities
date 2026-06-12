@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="backend.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Features/Auth/EmailTemplates/VerifyEmail.html" />
     <!-- WithCulture=false: the ".hu" infix would otherwise be parsed as the
          Hungarian culture and the template emitted into a satellite assembly,

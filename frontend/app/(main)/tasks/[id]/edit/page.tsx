@@ -3,6 +3,7 @@
 import { notFound, useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 
+import { LoadingState } from "@/components/shared/loading-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { PostTaskForm } from "@/components/tasks/post-task-form"
 import { useAuth } from "@/lib/auth-context"
@@ -16,7 +17,7 @@ export default function EditTaskPage() {
   const { data: task, isLoading: isTaskLoading, isError } = useTask(id)
 
   if (isTaskLoading || isAuthLoading) {
-    return <p className="text-sm text-muted-foreground">{t("loading")}</p>
+    return <LoadingState rows={5} />
   }
 
   if (isError || !task) {

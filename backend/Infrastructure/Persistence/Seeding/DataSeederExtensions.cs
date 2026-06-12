@@ -32,6 +32,11 @@ public static partial class DataSeederExtensions
             .AddDataSeeder<DevelopmentAdminSeeder>()
             .AddDataSeeder<DevelopmentUserSeeder>();
 
+        if (options.SampleTasks.Enabled)
+        {
+            services.AddDataSeeder<SampleTaskSeeder>();
+        }
+
         return services;
     }
 

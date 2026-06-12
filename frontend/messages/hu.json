@@ -4,7 +4,18 @@
     "primaryNav": "Főmenü",
     "signedOutToast": "Kijelentkezve",
     "tagline": "Helyi segítség, megbízható közösségben.",
-    "goBack": "Vissza"
+    "goBack": "Vissza",
+    "states": {
+      "loading": "Betöltés…",
+      "loadErrorTitle": "Hiba történt",
+      "loadErrorBody": "Nem sikerült betölteni. Próbáld újra egy pillanat múlva.",
+      "tryAgain": "Próbáld újra"
+    }
+  },
+  "notFound": {
+    "heading": "Nem találtuk meg ezt az oldalt",
+    "body": "A link sérült lehet, vagy az oldalt áthelyezhették.",
+    "backToFeed": "Vissza a hírfolyamhoz"
   },
   "landing": {
     "signIn": "Bejelentkezés",
@@ -226,10 +237,12 @@
       "reviewsTabOwn": "Értékeléseim ({count})",
       "historyTab": "Előzmények ({count})",
       "historyTabOwn": "Feladataim ({count})",
+      "pointsTabOwn": "Pontjaim",
       "reviewsUnavailable": "Az értékelések nem elérhetők",
       "reviewsUnavailableOwn": "Az értékeléseid nem elérhetők",
       "taskHistoryUnavailable": "A feladatok előzményei nem elérhetők",
       "taskHistoryUnavailableOwn": "A feladataid előzményei nem elérhetők",
+      "pointsUnavailableOwn": "A pontjaid nem elérhetők",
       "tabErrorBody": "Ez a profilszakasz nem tölthető be. Próbáld újra rövidesen."
     },
     "editPage": {
@@ -296,6 +309,20 @@
       "emptyTitleOwn": "Még nincsenek korábbi feladataid",
       "emptyBody": "A befejezett és folyamatban lévő feladatok itt jelennek meg.",
       "emptyBodyOwn": "A befejezett és folyamatban lévő feladataid itt jelennek meg."
+    },
+    "points": {
+      "balanceLabel": "Pontegyenleg",
+      "unit": "pont",
+      "historyEmptyTitle": "Még nincsenek pontjaid",
+      "historyEmptyBody": "Teljesíts feladatokat, hogy pontokat gyűjthess. Itt fognak megjelenni.",
+      "entryType": {
+        "taskCompletedReward": "Teljesített feladat",
+        "manualAdjustment": "Kézi módosítás",
+        "redemption": "Beváltás"
+      },
+      "previous": "Előző",
+      "next": "Következő",
+      "pageOf": "{page}. oldal / {total}"
     },
     "emailBanner": {
       "title": "Az e-mail-címed nincs megerősítve",
@@ -400,7 +427,6 @@
       }
     },
     "detail": {
-      "loading": "Feladat betöltése…",
       "posted": "{relative} ezelőtt közzétéve",
       "description": "Leírás",
       "postedBy": "Közzétette",
@@ -500,8 +526,6 @@
       "title": "Helyi feladatok",
       "description": "Nyitott kérések a közösségedben. Segítségre van szükséged? Tegyél közzé egy feladatot pár másodperc alatt.",
       "postTask": "Feladat közzététele",
-      "loadingTasks": "Feladatok betöltése…",
-      "loadError": "Nem sikerült betölteni a feladatokat. Próbáld újra.",
       "emptyFilteredTitle": "Nincs a szűrőidnek megfelelő feladat",
       "emptyFilteredBody": "Próbáld kibővíteni a kategória, jutalom, távolság vagy időszak szűrőt.",
       "emptyTitle": "Nincsenek nyitott kérések jelenleg",
@@ -517,8 +541,6 @@
       "tabPosted": "Közzétett feladataid",
       "tabAccepted": "Elvállalt feladataid",
       "tabApplied": "Jelentkezések",
-      "loadError": "Nem sikerült betölteni a feladatokat. Próbáld újra.",
-      "loading": "Betöltés…",
       "emptyPostedTitle": "Még nem tettél közzé feladatot",
       "emptyPostedBody": "Tedd közzé az első kérésed, és kérj segítséget a közösség tagjaitól.",
       "emptyAcceptedTitle": "Nincs elvállalt feladat",
@@ -536,7 +558,6 @@
       "description": "Írd le, miben kérsz segítséget. Az egyértelmű feladatleírás és a megadott helyszín gyorsabb választ hoz."
     },
     "editPage": {
-      "loading": "Betöltés…",
       "title": "Feladat szerkesztése",
       "description": "Frissítsd a feladatod adatait."
     },
@@ -579,9 +600,7 @@
   "messages": {
     "page": {
       "title": "Üzenetek",
-      "description": "Itt találod a feladataiddal kapcsolatos beszélgetéseket.",
-      "loading": "Betöltés…",
-      "loadError": "Nem sikerült betölteni a beszélgetéseket. Próbáld meg újra."
+      "description": "Itt találod a feladataiddal kapcsolatos beszélgetéseket."
     },
     "list": {
       "emptyTitle": "Még nincs beszélgetés",
