@@ -317,8 +317,17 @@
       "historyEmptyBody": "Teljesíts feladatokat, hogy pontokat gyűjthess. Itt fognak megjelenni.",
       "entryType": {
         "taskCompletedReward": "Teljesített feladat",
+        "reviewQualityBonus": "Kiváló értékelés bónusz",
         "manualAdjustment": "Kézi módosítás",
         "redemption": "Beváltás"
+      },
+      "earn": {
+        "label": "Hogyan működik?",
+        "title": "Így gyűjthetsz pontokat",
+        "intro": "Segítéssel gyűjtesz pontokat. A pontos jutalom a feladattól függ:",
+        "base": "{base} pont minden teljesített feladatért, a nehezebb kategóriákban ennél több.",
+        "voluntary": "{voluntary} bónuszpont, ha a feladat önkéntes, és nincs más ellenszolgáltatás.",
+        "review": "{min}–{max} pluszpont, ha a kereső 4 vagy 5 csillagra értékeli a segítségedet."
       },
       "previous": "Előző",
       "next": "Következő",

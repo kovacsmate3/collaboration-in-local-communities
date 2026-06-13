@@ -1,4 +1,4 @@
-using Backend.Application.TaskCompletion;
+using Backend.Application.Reviews;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Infrastructure.Persistence;
@@ -8,47 +8,81 @@ using DomainTaskStatus = Backend.Domain.Enums.TaskStatus;
 
 namespace backend.Tests;
 
-public sealed class TaskCompletionRewardServiceTests
+public sealed class TaskReviewBonusServiceTests
 {
     [Fact]
-    public async Task StageCompletionRewardAsync_AddsExpectedLedgerEntry()
+    public async Task StageReviewBonusAsync_WhenSeekerReviewsHelper_AddsBonusEntry()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateInMemoryDbContext();
-        var task = SeedCompletedTask(db, CompensationType.Voluntary);
+        var task = SeedCompletedTask(db);
         await db.SaveChangesAsync(cancellationToken);
 
-        var service = new TaskCompletionRewardService(db, new CategoryWeightedTaskCompletionPointsCalculator());
+        var service = new TaskReviewBonusService(db, new ReviewQualityBonusCalculator());
 
-        var awarded = await service.StageCompletionRewardAsync(task, cancellationToken);
+        var awarded = await service.StageReviewBonusAsync(task, task.SeekerProfileId, 5, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
-        Assert.Equal(
-            CategoryWeightedTaskCompletionPointsCalculator.BasePoints
-                + CategoryWeightedTaskCompletionPointsCalculator.VoluntaryBonusPoints,
-            awarded);
+        Assert.Equal(2 * ReviewQualityBonusCalculator.PointsPerStar, awarded);
 
         var entry = Assert.Single(db.PointsLedger);
-        Assert.Equal(task.Id, entry.TaskId);
         Assert.Equal(task.AcceptedHelperProfileId, entry.ProfileId);
-        Assert.Equal(PointEntryType.TaskCompletedReward, entry.EntryType);
+        Assert.Equal(task.Id, entry.TaskId);
+        Assert.Equal(PointEntryType.ReviewQualityBonus, entry.EntryType);
         Assert.Equal(awarded, entry.Amount);
     }
 
     [Fact]
-    public async Task StageCompletionRewardAsync_IsIdempotent_WhenAwardIsStagedInSameContext()
+    public async Task StageReviewBonusAsync_WhenHelperReviewsSeeker_AwardsNothing()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateInMemoryDbContext();
-        var task = SeedCompletedTask(db, CompensationType.Voluntary);
+        var task = SeedCompletedTask(db);
         await db.SaveChangesAsync(cancellationToken);
 
-        var service = new TaskCompletionRewardService(db, new CategoryWeightedTaskCompletionPointsCalculator());
+        var service = new TaskReviewBonusService(db, new ReviewQualityBonusCalculator());
 
-        var firstAward = await service.StageCompletionRewardAsync(task, cancellationToken);
-        // No SaveChanges between calls — the second call must see the change-tracker
-        // entry, not just the persisted DB rows.
-        var secondAward = await service.StageCompletionRewardAsync(task, cancellationToken);
+        // The helper rating the seeker says nothing about the helper's own work.
+        var awarded = await service.StageReviewBonusAsync(
+            task, task.AcceptedHelperProfileId!.Value, 5, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+
+        Assert.Null(awarded);
+        Assert.Empty(db.PointsLedger);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public async Task StageReviewBonusAsync_WhenRatingNotAboveNeutral_AwardsNothing(int rating)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var task = SeedCompletedTask(db);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var service = new TaskReviewBonusService(db, new ReviewQualityBonusCalculator());
+
+        var awarded = await service.StageReviewBonusAsync(task, task.SeekerProfileId, rating, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+
+        Assert.Null(awarded);
+        Assert.Empty(db.PointsLedger);
+    }
+
+    [Fact]
+    public async Task StageReviewBonusAsync_IsIdempotent_WhenAwardIsStagedInSameContext()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var db = CreateInMemoryDbContext();
+        var task = SeedCompletedTask(db);
+        await db.SaveChangesAsync(cancellationToken);
+
+        var service = new TaskReviewBonusService(db, new ReviewQualityBonusCalculator());
+
+        var firstAward = await service.StageReviewBonusAsync(task, task.SeekerProfileId, 4, cancellationToken);
+        var secondAward = await service.StageReviewBonusAsync(task, task.SeekerProfileId, 4, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
         Assert.NotNull(firstAward);
@@ -57,25 +91,25 @@ public sealed class TaskCompletionRewardServiceTests
     }
 
     [Fact]
-    public async Task StageCompletionRewardAsync_IsIdempotent_WhenAwardAlreadyExists()
+    public async Task StageReviewBonusAsync_IsIdempotent_WhenAwardAlreadyExists()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateInMemoryDbContext();
-        var task = SeedCompletedTask(db, CompensationType.Paid);
+        var task = SeedCompletedTask(db);
         db.PointsLedger.Add(new PointsLedgerEntry
         {
             Id = Guid.NewGuid(),
             ProfileId = task.AcceptedHelperProfileId!.Value,
             TaskId = task.Id,
-            Amount = 10,
-            EntryType = PointEntryType.TaskCompletedReward,
+            Amount = 6,
+            EntryType = PointEntryType.ReviewQualityBonus,
             CreatedAt = DateTimeOffset.UtcNow
         });
         await db.SaveChangesAsync(cancellationToken);
 
-        var service = new TaskCompletionRewardService(db, new CategoryWeightedTaskCompletionPointsCalculator());
+        var service = new TaskReviewBonusService(db, new ReviewQualityBonusCalculator());
 
-        var awarded = await service.StageCompletionRewardAsync(task, cancellationToken);
+        var awarded = await service.StageReviewBonusAsync(task, task.SeekerProfileId, 5, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
         Assert.Null(awarded);
@@ -83,38 +117,24 @@ public sealed class TaskCompletionRewardServiceTests
     }
 
     [Fact]
-    public async Task StageCompletionRewardAsync_Throws_WhenTaskNotCompleted()
+    public async Task StageReviewBonusAsync_WhenNoAcceptedHelper_AwardsNothing()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
         await using var db = CreateInMemoryDbContext();
-        var task = SeedCompletedTask(db, CompensationType.Paid);
-        task.Status = DomainTaskStatus.InProgress;
-        await db.SaveChangesAsync(cancellationToken);
-
-        var service = new TaskCompletionRewardService(db, new CategoryWeightedTaskCompletionPointsCalculator());
-
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.StageCompletionRewardAsync(task, cancellationToken));
-        Assert.Empty(db.PointsLedger);
-    }
-
-    [Fact]
-    public async Task StageCompletionRewardAsync_Throws_WhenAcceptedHelperMissing()
-    {
-        var cancellationToken = TestContext.Current.CancellationToken;
-        await using var db = CreateInMemoryDbContext();
-        var task = SeedCompletedTask(db, CompensationType.Paid);
+        var task = SeedCompletedTask(db);
         task.AcceptedHelperProfileId = null;
         await db.SaveChangesAsync(cancellationToken);
 
-        var service = new TaskCompletionRewardService(db, new CategoryWeightedTaskCompletionPointsCalculator());
+        var service = new TaskReviewBonusService(db, new ReviewQualityBonusCalculator());
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => service.StageCompletionRewardAsync(task, cancellationToken));
+        var awarded = await service.StageReviewBonusAsync(task, task.SeekerProfileId, 5, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+
+        Assert.Null(awarded);
         Assert.Empty(db.PointsLedger);
     }
 
-    private static CommunityTask SeedCompletedTask(AppDbContext db, CompensationType compensationType)
+    private static CommunityTask SeedCompletedTask(AppDbContext db)
     {
         var categoryId = Guid.NewGuid();
         var seekerId = Guid.NewGuid();
@@ -151,13 +171,13 @@ public sealed class TaskCompletionRewardServiceTests
         var task = new CommunityTask
         {
             Id = Guid.NewGuid(),
-            PublicCode = "TASK-TEST-000001",
+            PublicCode = "TASK-TEST-000002",
             SeekerProfileId = seekerId,
             AcceptedHelperProfileId = helperId,
             CategoryId = categoryId,
             Title = "Sample task",
             Description = "Test seed task.",
-            CompensationType = compensationType,
+            CompensationType = CompensationType.Voluntary,
             Status = DomainTaskStatus.Completed,
             CreatedAt = now,
             UpdatedAt = now,

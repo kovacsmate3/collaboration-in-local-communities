@@ -1,4 +1,5 @@
 using System.Data;
+using Backend.Application.Reviews;
 using Backend.Domain.Entities;
 using Backend.Domain.Enums;
 using Backend.Features.Profiles;
@@ -19,7 +20,8 @@ namespace Backend.Features.Reviews;
 [Authorize]
 public sealed partial class ReviewsController(
     AppDbContext db,
-    IBlobStorageService blobStorage) : ControllerBase
+    IBlobStorageService blobStorage,
+    ITaskReviewBonusService reviewBonusService) : ControllerBase
 {
     /// <summary>
     /// Submit a review for the other participant in a completed task.
@@ -119,13 +121,25 @@ public sealed partial class ReviewsController(
 
                 db.Reviews.Add(review);
 
+                // Reward the helper for a well-rated job. Only the seeker's review of the
+                // helper earns this; staged in the same transaction so it commits atomically
+                // with the review and is rolled back if the review insert conflicts.
+                var awardedBonus = await reviewBonusService.StageReviewBonusAsync(
+                    task, profile.Id, request.Rating, cancellationToken);
+
                 db.AddActivityEvent(
                     profile.UserId,
                     profile.Id,
                     ActivityEventType.ReviewSubmitted,
                     nameof(Review),
                     review.Id,
-                    new { TaskId = taskId, RevieweeProfileId = revieweeProfileId, request.Rating });
+                    new
+                    {
+                        TaskId = taskId,
+                        RevieweeProfileId = revieweeProfileId,
+                        request.Rating,
+                        AwardedBonus = awardedBonus,
+                    });
 
                 db.AddAuditEvent(
                     profile.UserId,
@@ -138,6 +152,7 @@ public sealed partial class ReviewsController(
                         ReviewerProfileId = profile.Id,
                         RevieweeProfileId = revieweeProfileId,
                         request.Rating,
+                        AwardedBonus = awardedBonus,
                     });
 
                 try
