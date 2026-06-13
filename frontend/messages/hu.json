@@ -436,7 +436,7 @@
       }
     },
     "detail": {
-      "posted": "{relative} ezelőtt közzétéve",
+      "posted": "Közzétéve {relative}",
       "description": "Leírás",
       "postedBy": "Közzétette",
       "editTask": "Feladat szerkesztése",

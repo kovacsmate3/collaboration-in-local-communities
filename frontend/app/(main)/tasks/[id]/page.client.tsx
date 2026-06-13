@@ -108,7 +108,7 @@ export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
 
 function TaskActions({ task }: { task: ApiTask }) {
   const t = useTranslations("tasks.detail")
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
   const { mutate: updateTask, isPending: isCancelling } = useUpdateTask(task.id)
   const { data: myApplications = [], isLoading: isLoadingMyApplications } =
@@ -170,7 +170,10 @@ function TaskActions({ task }: { task: ApiTask }) {
             <ApplicationControls
               taskId={task.id}
               application={currentApplication}
-              isLoadingApplication={isLoadingMyApplications}
+              // Keep Apply disabled until auth resolves: until we know the
+              // viewer's profile we can't tell if they own this task, and the
+              // owner must never see an actionable Apply button.
+              isLoadingApplication={isLoadingMyApplications || isAuthLoading}
             />
           ) : (
             <>
