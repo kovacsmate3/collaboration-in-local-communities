@@ -12,8 +12,8 @@
 ## 1. Marketing material for end users
 
 > **Deliverable:** short feature presentation/flier + a ≤2-minute product video.
-> **Video:** ‹link to the ≤2-minute demo video — fill in before submission›
-> **Flier / slide deck:** ‹link or `docs/results/2gather-flier.pdf` — fill in before submission›
+> **Video:** Attached to the submission
+> **Flier / slide deck:** Attached to the submission
 
 ### Why you need 2gather (end-user pitch)
 
@@ -33,8 +33,8 @@ You need a shelf mounted, a sofa moved, an hour of maths tutoring — and you do
 
 ## 2. Link to the testable product + how to try it
 
-- **Live app:** ‹production URL — fill in / confirm before submission (brand domain: 2gather.hu)›
-- **Admin KPI dashboard:** `‹live URL›/admin` (admin role required — read-only metrics)
+- **Live app:** [https://collaboration-in-local-communities.vercel.app/](https://collaboration-in-local-communities.vercel.app/)
+- **Admin KPI dashboard:** [https://collaboration-in-local-communities.vercel.app/admin](https://collaboration-in-local-communities.vercel.app/admin) (admin role required — read-only metrics)
 
 ### How to try it
 1. Open the live app and click **Register** (email + password, or social login).
