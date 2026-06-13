@@ -2,6 +2,15 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/*
+ * Tailwind Typography (the `prose` family of classes). Used by
+ * <RichTextContent> so user-authored HTML (terms, task descriptions,
+ * admin previews) renders with consistent heading sizes, list bullets,
+ * blockquotes, code blocks etc. without us having to hand-roll the
+ * selectors in component CSS. See issue #244.
+ */
+@plugin "@tailwindcss/typography";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { RichTextContent } from "@/components/shared/rich-text-content"
 
 interface TermsContentViewDialogProps {
   version: AdminTermsVersionDetail | null
@@ -31,10 +32,7 @@ export function TermsContentViewDialog({
         {version && (
           <div className="max-h-[70vh] overflow-y-auto">
             {version.content ? (
-              <div
-                className="prose prose-sm dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: version.content }}
-              />
+              <RichTextContent html={version.content} />
             ) : version.contentUrl ? (
               <p className="text-sm text-muted-foreground">
                 Content hosted at:{" "}
