@@ -51,7 +51,7 @@ You need a shelf mounted, a sofa moved, an hour of maths tutoring — and you do
 # Full stack: backend + frontend + Postgres + Cosmos emulator
 docker compose up
 ```
-See the repository [`README.md`](../../README.md) for prerequisites and IDE-based workflows.
+See the repository [`README.md`](https://github.com/kovacsmate3/collaboration-in-local-communities/blob/development/README.md) for prerequisites and IDE-based workflows.
 
 ---
 
@@ -119,7 +119,6 @@ The MVP scope (Assignment 2) selected **10 user stories** (9 Must-Have + 1 Shoul
 
 **10 / 10 MVP stories addressed; 9 fully implemented, 1 (US-10) partially** (points are earned and ledgered, but the user-facing balance/history view and the configurable reward algorithm are still open). All 7 planned modules are usable end-to-end: a user can register, post or find a task, chat, complete it, and leave a review.
 
-> **Action before submission:** decide whether to (a) finish US-10's points page (#53/#64/#237) to reach a clean 10/10, or (b) submit as-is and report US-10 as "earning implemented, viewing/redeeming deferred." Either is defensible; (a) maximises the MVP Realization Ratio rubric score.
 
 ### 4.2 User statistics & KPI calculation vs. original target
 
