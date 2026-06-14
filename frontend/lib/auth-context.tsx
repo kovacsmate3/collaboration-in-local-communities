@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import type { ReactNode } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 
 import type {
   AuthUser,
@@ -42,12 +43,17 @@ const MIN_REFRESH_DELAY_MS = 1_000
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null | undefined>(null)
   const [expiresAt, setExpiresAt] = React.useState<string | null>(null)
+  const queryClient = useQueryClient()
 
   // Single in-flight refresh promise — every caller (proactive timer, 401
   // retry, visibilitychange, login) shares the same Promise, so the backend
   // sees exactly one refresh request per logical refresh moment. This is the
   // single point that prevents the atomic-rotation race.
   const inFlightRefresh = React.useRef<Promise<boolean> | null>(null)
+
+  // Latched on logout so performRefresh stops minting tokens until the next
+  // login. Cleared again in login().
+  const loggedOutRef = React.useRef(false)
 
   // Refs so imperative handlers (visibilitychange, bridge) can read the latest
   // values without re-registering listeners on every state change.
@@ -89,6 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     inFlightRefresh.current = (async () => {
       try {
+        // After an explicit logout, never mint fresh tokens until the next
+        // login — a scheduled proactive refresh or an in-flight 401 retry
+        // firing post-logout would re-issue the refresh cookie, which the
+        // middleware would read as "still signed in".
+        if (loggedOutRef.current) {
+          return false
+        }
+
         const response = await fetch(AUTH_API_PATHS.refresh, {
           method: "POST",
           cache: "no-store",
@@ -109,6 +123,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const data = (await response.json()) as RefreshResponse
         setExpiresAt(data.expiresAt ?? null)
+
+        // Re-sync the user after a background rotation so server-side changes
+        // (e.g. a newly granted admin role) are reflected without a full
+        // reload. Skip if a logout raced in while we were rotating.
+        if (!loggedOutRef.current) {
+          const session = await fetchSession()
+          if (!loggedOutRef.current && session.user) {
+            setUser(session.user)
+            setExpiresAt(session.expiresAt)
+          }
+        }
         return true
       } catch {
         // Network error — same as transient: don't log out.
@@ -119,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })()
 
     return inFlightRefresh.current
-  }, [])
+  }, [fetchSession])
 
   // Public refreshSession: ensures we have a valid session. Tries the session
   // endpoint first; if that 401s, attempts a refresh and re-fetches.
@@ -203,6 +228,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = React.useCallback(
     async (input: LoginInput) => {
+      // Clear the logout latch so this fresh session can rotate tokens again.
+      loggedOutRef.current = false
       await authMutation(AUTH_API_PATHS.login, input)
       const nextUser = await refreshSession()
 
@@ -229,6 +256,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = React.useCallback(async () => {
+    // Latch the guard first so any concurrent/scheduled refresh becomes a
+    // no-op, then drain an already in-flight rotation before revoking — that
+    // way logout clears whatever cookies the rotation may have just minted.
+    loggedOutRef.current = true
+    const pending = inFlightRefresh.current
+    if (pending) {
+      await pending.catch(() => {})
+    }
+
     try {
       await fetch(AUTH_API_PATHS.logout, {
         method: "POST",
@@ -237,8 +273,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setUser(undefined)
       setExpiresAt(null)
+      // Drop every cached query so the next account to sign in on this tab
+      // never sees the previous user's tasks, profile, or conversations.
+      queryClient.clear()
     }
-  }, [])
+  }, [queryClient])
 
   return (
     <AuthContext.Provider
