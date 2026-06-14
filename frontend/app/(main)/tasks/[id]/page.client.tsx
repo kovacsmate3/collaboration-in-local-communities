@@ -65,7 +65,7 @@ export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
       </div>
 
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{task.title}</h1>
+        <h1 className="font-heading text-page-title">{task.title}</h1>
         <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {task.locationText ? (
             <li className="flex items-center gap-1.5">

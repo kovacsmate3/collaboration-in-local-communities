@@ -52,9 +52,7 @@ export default async function TermsPage() {
         <TermsAcceptancePanel />
       </Suspense>
 
-      <h1 className="mb-2 text-3xl font-semibold tracking-tight">
-        {t("heading")}
-      </h1>
+      <h1 className="mb-2 font-heading text-page-title">{t("heading")}</h1>
       {activeTerms && (
         <p className="mb-10 text-sm text-muted-foreground">
           {t("versionLine", {
