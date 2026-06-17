@@ -87,8 +87,8 @@ export function TaskFilters({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-[1fr_auto_auto_auto_auto]">
-        <div className="relative">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="relative lg:flex-1">
           <HugeiconsIcon
             icon={Search01Icon}
             aria-hidden="true"
@@ -104,84 +104,95 @@ export function TaskFilters({
           />
         </div>
 
-        <Select
-          value={value.category}
-          onValueChange={(v) => update({ category: v })}
-        >
-          <SelectTrigger aria-label={t("categoryAria")} className="lg:w-44">
-            <SelectValue placeholder={t("categoryPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("allCategories")}</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {tCategories.has(c.code) ? tCategories(c.code) : c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={value.compensation}
-          onValueChange={(v) =>
-            update({ compensation: v as TaskFiltersState["compensation"] })
-          }
-        >
-          <SelectTrigger aria-label={t("rewardAria")} className="lg:w-40">
-            <SelectValue placeholder={t("rewardPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("anyReward")}</SelectItem>
-            {COMPENSATION_OPTIONS.map((value) => (
-              <SelectItem key={value} value={value}>
-                {tCompensation(value)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={value.radius}
-          onValueChange={(v) =>
-            update({ radius: v as TaskFiltersState["radius"] })
-          }
-          disabled={!hasOrigin}
-        >
-          <SelectTrigger
-            aria-label={t("distanceAria")}
-            aria-describedby={!hasOrigin ? "radius-helper" : undefined}
-            className="lg:w-40"
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:flex lg:gap-2">
+          <Select
+            value={value.category}
+            onValueChange={(v) => update({ category: v })}
           >
-            <SelectValue placeholder={t("distancePlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            {RADIUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.km == null
-                  ? t("anyDistance")
-                  : t("within", { km: opt.km })}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              aria-label={t("categoryAria")}
+              className="w-full lg:w-44"
+            >
+              <SelectValue placeholder={t("categoryPlaceholder")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("allCategories")}</SelectItem>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {tCategories.has(c.code) ? tCategories(c.code) : c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select
-          value={value.recency}
-          onValueChange={(v) =>
-            update({ recency: v as TaskFiltersState["recency"] })
-          }
-        >
-          <SelectTrigger aria-label={t("recencyAria")} className="lg:w-40">
-            <SelectValue placeholder={t("recencyPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            {RECENCY_OPTIONS.map((value) => (
-              <SelectItem key={value} value={value}>
-                {t(`recencyOptions.${value}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select
+            value={value.compensation}
+            onValueChange={(v) =>
+              update({ compensation: v as TaskFiltersState["compensation"] })
+            }
+          >
+            <SelectTrigger
+              aria-label={t("rewardAria")}
+              className="w-full lg:w-40"
+            >
+              <SelectValue placeholder={t("rewardPlaceholder")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("anyReward")}</SelectItem>
+              {COMPENSATION_OPTIONS.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {tCompensation(value)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={value.radius}
+            onValueChange={(v) =>
+              update({ radius: v as TaskFiltersState["radius"] })
+            }
+            disabled={!hasOrigin}
+          >
+            <SelectTrigger
+              aria-label={t("distanceAria")}
+              aria-describedby={!hasOrigin ? "radius-helper" : undefined}
+              className="w-full lg:w-40"
+            >
+              <SelectValue placeholder={t("distancePlaceholder")} />
+            </SelectTrigger>
+            <SelectContent>
+              {RADIUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.km == null
+                    ? t("anyDistance")
+                    : t("within", { km: opt.km })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={value.recency}
+            onValueChange={(v) =>
+              update({ recency: v as TaskFiltersState["recency"] })
+            }
+          >
+            <SelectTrigger
+              aria-label={t("recencyAria")}
+              className="w-full lg:w-40"
+            >
+              <SelectValue placeholder={t("recencyPlaceholder")} />
+            </SelectTrigger>
+            <SelectContent>
+              {RECENCY_OPTIONS.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {t(`recencyOptions.${value}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       {!hasOrigin ? (
         <p id="radius-helper" className="text-xs text-muted-foreground">

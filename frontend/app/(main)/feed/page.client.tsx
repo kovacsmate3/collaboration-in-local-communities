@@ -25,7 +25,7 @@ import { RECENCY_OPTIONS } from "@/lib/constants"
 
 type RecencyValue = (typeof RECENCY_OPTIONS)[number]
 
-const QUERY_DEBOUNCE_MS = 250
+const QUERY_DEBOUNCE_MS = 450
 
 /**
  * Canonical task-discovery feed. Replaces the former Seeker (#37) and

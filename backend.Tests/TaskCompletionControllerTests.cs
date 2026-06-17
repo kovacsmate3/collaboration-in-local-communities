@@ -117,8 +117,8 @@ public sealed class TaskCompletionControllerTests
         Assert.Equal(scenario.HelperProfileId, entry.ProfileId);
         Assert.Equal(scenario.TaskId, entry.TaskId);
         Assert.Equal(
-            FlatTaskCompletionPointsCalculator.BasePoints
-                + FlatTaskCompletionPointsCalculator.VoluntaryBonusPoints,
+            CategoryWeightedTaskCompletionPointsCalculator.BasePoints
+                + CategoryWeightedTaskCompletionPointsCalculator.VoluntaryBonusPoints,
             entry.Amount);
 
         Assert.Contains(db.ActivityEvents, a => a.EventType == ActivityEventType.TaskCompleted);
@@ -165,7 +165,7 @@ public sealed class TaskCompletionControllerTests
 
         Assert.IsType<OkObjectResult>(result);
         var entry = Assert.Single(db.PointsLedger);
-        Assert.Equal(FlatTaskCompletionPointsCalculator.BasePoints, entry.Amount);
+        Assert.Equal(CategoryWeightedTaskCompletionPointsCalculator.BasePoints, entry.Amount);
 
         // Paid amount on the task is preserved and lives outside the points economy.
         var reloaded = await db.Tasks.AsNoTracking().FirstAsync(t => t.Id == scenario.TaskId, cancellationToken);
@@ -298,7 +298,7 @@ public sealed class TaskCompletionControllerTests
 
     private static TaskCompletionController CreateController(AppDbContext db, Guid userId)
     {
-        var rewardService = new TaskCompletionRewardService(db, new FlatTaskCompletionPointsCalculator());
+        var rewardService = new TaskCompletionRewardService(db, new CategoryWeightedTaskCompletionPointsCalculator());
         return new TaskCompletionController(db, rewardService)
         {
             ControllerContext = new ControllerContext

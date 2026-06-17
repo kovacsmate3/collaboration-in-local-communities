@@ -13,4 +13,6 @@ public sealed record UpdateCategoryRequest(
     string Icon,
     [StringLength(500)]
     string? Description,
-    int SortOrder);
+    int SortOrder,
+    [Range(0.1, 10.0)]
+    decimal PointsWeight = 1.0m);

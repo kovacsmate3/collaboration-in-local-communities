@@ -6,6 +6,7 @@ import {
   TermsAcceptancePanel,
   TermsBackLink,
 } from "@/components/legal/terms-acceptance-panel"
+import { RichTextContent } from "@/components/shared/rich-text-content"
 import {
   DEFAULT_BACKEND_API_URL,
   BACKEND_TERMS_PATHS,
@@ -51,9 +52,7 @@ export default async function TermsPage() {
         <TermsAcceptancePanel />
       </Suspense>
 
-      <h1 className="mb-2 text-3xl font-semibold tracking-tight">
-        {t("heading")}
-      </h1>
+      <h1 className="mb-2 font-heading text-page-title">{t("heading")}</h1>
       {activeTerms && (
         <p className="mb-10 text-sm text-muted-foreground">
           {t("versionLine", {
@@ -66,10 +65,7 @@ export default async function TermsPage() {
       )}
 
       {activeTerms?.content ? (
-        <div
-          className="prose prose-neutral dark:prose-invert flex flex-col gap-4 text-sm leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: activeTerms.content }}
-        />
+        <RichTextContent html={activeTerms.content} />
       ) : (
         <StaticPlaceholderContent />
       )}
@@ -90,7 +86,7 @@ async function StaticPlaceholderContent() {
   ] as const
 
   return (
-    <div className="prose prose-neutral dark:prose-invert flex flex-col gap-8 text-sm leading-relaxed">
+    <div className="prose flex flex-col gap-8 text-sm leading-relaxed prose-neutral dark:prose-invert">
       {sections.map((id) => (
         <section key={id} className="flex flex-col gap-2">
           <h2 className="text-base font-semibold">{t(`${id}.title`)}</h2>

@@ -83,6 +83,7 @@ public sealed partial class AdminCategoriesController(
             Icon = icon,
             Description = description,
             SortOrder = request.SortOrder,
+            PointsWeight = request.PointsWeight,
             IsActive = true
         };
 
@@ -131,6 +132,7 @@ public sealed partial class AdminCategoriesController(
         category.Icon = icon;
         category.Description = description;
         category.SortOrder = request.SortOrder;
+        category.PointsWeight = request.PointsWeight;
         category.UpdatedAt = DateTimeOffset.UtcNow;
 
         AddAuditEvent(GetActorUserId(), "admin.category_updated", "Category", category.Id, new { category.Code, category.Name });

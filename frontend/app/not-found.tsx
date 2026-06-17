@@ -16,13 +16,11 @@ export default async function NotFound() {
   return (
     <main className="flex min-h-svh items-center justify-center px-6">
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
-        <p className="font-mono text-xs tracking-[0.25em] text-muted-foreground uppercase">
+        <p className="font-mono text-caption tracking-[0.25em] text-muted-foreground uppercase">
           404
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t("heading")}
-        </h1>
-        <p className="text-sm text-muted-foreground">{t("body")}</p>
+        <h1 className="font-heading text-page-title">{t("heading")}</h1>
+        <p className="text-body-sm text-muted-foreground">{t("body")}</p>
         <Button asChild>
           <Link href="/feed">{t("backToFeed")}</Link>
         </Button>

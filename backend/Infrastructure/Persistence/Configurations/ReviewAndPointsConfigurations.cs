@@ -95,9 +95,19 @@ internal sealed class PointsLedgerEntryConfiguration : IEntityTypeConfiguration<
         builder.HasIndex(entry => entry.TaskId)
             .HasDatabaseName("ix_points_ledger_task_id");
 
-        builder.HasIndex(entry => new { entry.TaskId, entry.ProfileId, entry.EntryType })
+        // Two partial unique indexes on the same columns must be declared with the named
+        // HasIndex overload; otherwise EF treats the second call as reconfiguring the first
+        // (same column set) and only one index survives in the model.
+        builder.HasIndex(
+                entry => new { entry.TaskId, entry.ProfileId, entry.EntryType },
+                "ux_points_ledger_task_reward_once")
             .IsUnique()
-            .HasFilter("entry_type = 'TaskCompletedReward'")
-            .HasDatabaseName("ux_points_ledger_task_reward_once");
+            .HasFilter("entry_type = 'TaskCompletedReward'");
+
+        builder.HasIndex(
+                entry => new { entry.TaskId, entry.ProfileId, entry.EntryType },
+                "ux_points_ledger_task_review_bonus_once")
+            .IsUnique()
+            .HasFilter("entry_type = 'ReviewQualityBonus'");
     }
 }

@@ -65,7 +65,7 @@ export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
       </div>
 
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{task.title}</h1>
+        <h1 className="font-heading text-page-title">{task.title}</h1>
         <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           {task.locationText ? (
             <li className="flex items-center gap-1.5">
@@ -108,7 +108,7 @@ export function TaskDetailPageClient({ id }: TaskDetailPageClientProps) {
 
 function TaskActions({ task }: { task: ApiTask }) {
   const t = useTranslations("tasks.detail")
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
   const { mutate: updateTask, isPending: isCancelling } = useUpdateTask(task.id)
   const { data: myApplications = [], isLoading: isLoadingMyApplications } =
@@ -170,7 +170,10 @@ function TaskActions({ task }: { task: ApiTask }) {
             <ApplicationControls
               taskId={task.id}
               application={currentApplication}
-              isLoadingApplication={isLoadingMyApplications}
+              // Keep Apply disabled until auth resolves: until we know the
+              // viewer's profile we can't tell if they own this task, and the
+              // owner must never see an actionable Apply button.
+              isLoadingApplication={isLoadingMyApplications || isAuthLoading}
             />
           ) : (
             <>
