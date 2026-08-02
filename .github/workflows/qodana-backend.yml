@@ -25,7 +25,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Qodana Scan
-              uses: JetBrains/qodana-action@v2026.1
+              uses: JetBrains/qodana-action@v2026.2
               with:
                   args: --config qodana-backend.yaml
                   pr-mode: ${{ github.event_name == 'pull_request' }}

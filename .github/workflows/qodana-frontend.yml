@@ -35,7 +35,7 @@ jobs:
               working-directory: frontend
 
             - name: Qodana Scan
-              uses: JetBrains/qodana-action@v2026.1
+              uses: JetBrains/qodana-action@v2026.2
               with:
                   args: --config qodana-frontend.yaml -d frontend
                   pr-mode: ${{ github.event_name == 'pull_request' }}
