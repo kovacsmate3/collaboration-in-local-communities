@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Placeholder from "@tiptap/extension-placeholder"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 import { cn } from "@/lib/utils"
 
@@ -25,6 +25,7 @@ export function RichTextEditor({
   maxLength,
 }: RichTextEditorProps) {
   const t = useTranslations("editor")
+  const locale = useLocale()
   const resolvedPlaceholder = placeholder ?? t("placeholder")
   const charCount = value.length
   const isEditorUpdateRef = useRef(false)
@@ -133,7 +134,8 @@ export function RichTextEditor({
                 : "text-muted-foreground"
           )}
         >
-          {charCount.toLocaleString()} / {maxLength.toLocaleString()}
+          {charCount.toLocaleString(locale)} /{" "}
+          {maxLength.toLocaleString(locale)}
         </div>
       )}
     </div>

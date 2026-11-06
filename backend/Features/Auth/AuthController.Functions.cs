@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using Backend.Common;
 using Backend.Domain.Entities;
 using Backend.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
@@ -12,10 +13,6 @@ namespace Backend.Features.Auth;
 
 public sealed partial class AuthController
 {
-    // Supported email locales and fallback (see ResolveEmailLocale).
-    private const string DefaultEmailLocale = "en";
-    private static readonly string[] _supportedEmailLocales = ["en", "hu"];
-
     private static AuthResponse ToResponse(ApplicationUser user, AuthTokenResult tokens)
     {
         return new AuthResponse(
@@ -51,41 +48,6 @@ public sealed partial class AuthController
     private static string PasswordResetEmailSubject(string locale) => locale == "hu"
         ? "2gather – Új jelszó beállítása"
         : "2gather - Set a new password";
-
-    // Email language mirrors the frontend's locale resolution. The Next.js
-    // proxy sets Accept-Language to the user's chosen locale (the NEXT_LOCALE
-    // cookie) when present; otherwise the browser's Accept-Language flows
-    // through. We best-fit match here and fall back to English.
-    private string ResolveEmailLocale()
-    {
-        var languages = Request.GetTypedHeaders().AcceptLanguage;
-        if (languages.Count == 0)
-        {
-            return DefaultEmailLocale;
-        }
-
-        foreach (var language in languages.OrderByDescending(l => l.Quality ?? 1.0))
-        {
-            var tag = language.Value.ToString().ToLowerInvariant();
-            if (tag.Length == 0 || tag == "*")
-            {
-                continue;
-            }
-
-            if (_supportedEmailLocales.Contains(tag))
-            {
-                return tag;
-            }
-
-            var primary = tag.Split('-')[0];
-            if (_supportedEmailLocales.Contains(primary))
-            {
-                return primary;
-            }
-        }
-
-        return DefaultEmailLocale;
-    }
 
     private void SetTokenResponseHeaders()
     {
@@ -206,7 +168,7 @@ public sealed partial class AuthController
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var link = $"{emailOptions.Value.FrontendBaseUrl}/reset-password?userId={user.Id}&token={encodedToken}";
 
-        var locale = ResolveEmailLocale();
+        var locale = RequestLocale.Resolve(Request);
         await emailSender.SendEmailAsync(
             user.Email!,
             PasswordResetEmailSubject(locale),
@@ -220,7 +182,7 @@ public sealed partial class AuthController
         var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var link = $"{emailOptions.Value.FrontendBaseUrl}/verify-email?userId={user.Id}&token={encodedToken}";
 
-        var locale = ResolveEmailLocale();
+        var locale = RequestLocale.Resolve(Request);
         await emailSender.SendEmailAsync(
             user.Email!,
             VerificationEmailSubject(locale),

@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Add01Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { useLocale } from "next-intl"
 
 import {
   type AdminTermsVersionListItem,
@@ -80,6 +81,7 @@ function computeAllowedNextVersions(
 }
 
 export function TermsManager() {
+  const locale = useLocale()
   const { data, isLoading, isError, error, refetch } = useAdminTermsList()
 
   const [createOpen, setCreateOpen] = React.useState(false)
@@ -206,7 +208,7 @@ export function TermsManager() {
             <CardTitle className="text-sm font-medium">
               Acceptances by version
               <span className="ml-2 font-normal text-muted-foreground">
-                ({totalAcceptances.toLocaleString()} total)
+                ({totalAcceptances.toLocaleString(locale)} total)
               </span>
             </CardTitle>
           </CardHeader>

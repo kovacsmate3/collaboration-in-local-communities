@@ -8,6 +8,7 @@ import {
   Upload01Icon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { useLocale } from "next-intl"
 
 import type { AdminTermsVersionListItem } from "@/lib/api/admin/terms"
 import { Badge } from "@/components/ui/badge"
@@ -158,6 +159,7 @@ function TermsVersionRow({
   onView: (id: string) => void
   onDelete: (v: AdminTermsVersionListItem) => void
 }) {
+  const locale = useLocale()
   const rowBg =
     status === "active"
       ? "bg-success/5"
@@ -173,10 +175,10 @@ function TermsVersionRow({
       <TableCell className="font-mono text-sm">{version.version}</TableCell>
       <TableCell className="text-sm">{version.title}</TableCell>
       <TableCell className="text-sm text-muted-foreground">
-        {new Date(version.effectiveFrom).toLocaleDateString()}
+        {new Date(version.effectiveFrom).toLocaleDateString(locale)}
       </TableCell>
       <TableCell className="text-right text-sm tabular-nums">
-        {version.acceptanceCount.toLocaleString()}
+        {version.acceptanceCount.toLocaleString(locale)}
       </TableCell>
       <TableCell>
         <DropdownMenu>

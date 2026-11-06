@@ -7,6 +7,7 @@ import {
   SearchIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { useLocale } from "next-intl"
 
 import {
   useAdminUsers,
@@ -121,6 +122,7 @@ type ConfirmAction = {
 }
 
 export function UsersManager() {
+  const locale = useLocale()
   const [page, setPage] = React.useState(1)
   const [searchInput, setSearchInput] = React.useState("")
   const [roleFilter, setRoleFilter] = React.useState<string>("")
@@ -281,7 +283,7 @@ export function UsersManager() {
                       />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {user.joinedAt ? formatDate(user.joinedAt) : "—"}
+                      {user.joinedAt ? formatDate(user.joinedAt, locale) : "—"}
                     </TableCell>
                     <TableCell className="pr-4 text-right">
                       {isAdmin ? (

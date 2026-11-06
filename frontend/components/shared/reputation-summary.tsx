@@ -1,5 +1,6 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Award01Icon, TaskDone01Icon } from "@hugeicons/core-free-icons"
+import { useLocale } from "next-intl"
 
 import { RatingStars } from "@/components/shared/rating-stars"
 import { cn } from "@/lib/utils"
@@ -48,6 +49,7 @@ export function ReputationSummary({
   showScore = true,
   className,
 }: ReputationSummaryProps) {
+  const locale = useLocale()
   const sizeCx = SIZES[size]
   const safeScore = Number.isFinite(score) ? Math.max(0, Math.round(score)) : 0
 
@@ -74,7 +76,7 @@ export function ReputationSummary({
             className={sizeCx.icon}
             strokeWidth={1.5}
           />
-          {safeScore.toLocaleString()}
+          {safeScore.toLocaleString(locale)}
         </span>
       ) : null}
       <RatingStars
@@ -93,7 +95,7 @@ export function ReputationSummary({
           className={sizeCx.icon}
           strokeWidth={1.5}
         />
-        {completedTaskCount.toLocaleString()}
+        {completedTaskCount.toLocaleString(locale)}
       </span>
     </div>
   )
