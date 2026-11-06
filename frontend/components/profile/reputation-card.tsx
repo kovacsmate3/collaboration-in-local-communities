@@ -11,7 +11,7 @@ import {
   StarIcon,
   TaskDone01Icon,
 } from "@hugeicons/core-free-icons"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -74,6 +74,7 @@ export function ReputationCard({
   className,
 }: ReputationCardProps) {
   const t = useTranslations("profile.reputation")
+  const locale = useLocale()
   const breakdown = reputationScoreBreakdown({
     score,
     averageRating,
@@ -105,7 +106,7 @@ export function ReputationCard({
             label={t("score")}
             value={
               <span className="font-heading text-2xl font-semibold tracking-tight tabular-nums">
-                {breakdown.total.toLocaleString()}
+                {breakdown.total.toLocaleString(locale)}
               </span>
             }
             hint={
@@ -144,7 +145,7 @@ export function ReputationCard({
             label={t("completedTasks")}
             value={
               <span className="font-heading text-2xl font-semibold tracking-tight tabular-nums">
-                {breakdown.completedTaskCount.toLocaleString()}
+                {breakdown.completedTaskCount.toLocaleString(locale)}
               </span>
             }
             hint={t("completedTasksHint", {
@@ -284,6 +285,7 @@ function NextTierProgress({
   nextTierMin,
 }: NextTierProgressProps) {
   const t = useTranslations("profile.reputation")
+  const locale = useLocale()
   const nextTierLabel = t(`tiers.${nextTierId}` as const)
   const ratio =
     nextTierMin > 0 ? Math.min(1, Math.max(0, currentScore / nextTierMin)) : 1
@@ -296,7 +298,7 @@ function NextTierProgress({
         <span>
           {remaining > 0
             ? t("nextTierProgress", {
-                remaining: remaining.toLocaleString(),
+                remaining: remaining.toLocaleString(locale),
                 tier: nextTierLabel,
               })
             : t("nextTierReady", { tier: nextTierLabel })}
@@ -322,6 +324,7 @@ function NextTierProgress({
 
 function TrendPanel({ trend }: { trend: readonly ReputationTrendPoint[] }) {
   const t = useTranslations("profile.reputation")
+  const locale = useLocale()
   const points = normalizeTrend(trend)
 
   if (points.length === 0) {
@@ -334,9 +337,9 @@ function TrendPanel({ trend }: { trend: readonly ReputationTrendPoint[] }) {
   const delta = last.score - comparisonScore
   const deltaLabel =
     delta > 0
-      ? `+${delta.toLocaleString()}`
+      ? `+${delta.toLocaleString(locale)}`
       : delta < 0
-        ? `-${Math.abs(delta).toLocaleString()}`
+        ? `-${Math.abs(delta).toLocaleString(locale)}`
         : t("trendNoChange")
 
   return (
@@ -359,10 +362,12 @@ function TrendPanel({ trend }: { trend: readonly ReputationTrendPoint[] }) {
           </p>
           <p className="text-xs text-muted-foreground">
             {first.date === last.date
-              ? t("trendSinceDate", { date: formatShortDate(first.date) })
+              ? t("trendSinceDate", {
+                  date: formatShortDate(first.date, locale),
+                })
               : t("trendDateRange", {
-                  start: formatShortDate(first.date),
-                  end: formatShortDate(last.date),
+                  start: formatShortDate(first.date, locale),
+                  end: formatShortDate(last.date, locale),
                 })}
           </p>
         </div>
@@ -374,6 +379,7 @@ function TrendPanel({ trend }: { trend: readonly ReputationTrendPoint[] }) {
 
 function Sparkline({ points }: { points: readonly ReputationTrendPoint[] }) {
   const t = useTranslations("profile.reputation")
+  const locale = useLocale()
   const width = 176
   const height = 56
   const padding = 4
@@ -411,8 +417,8 @@ function Sparkline({ points }: { points: readonly ReputationTrendPoint[] }) {
     <svg
       role="img"
       aria-label={t("trendAria", {
-        start: formatShortDate(points[0].date),
-        end: formatShortDate(points[points.length - 1].date),
+        start: formatShortDate(points[0].date, locale),
+        end: formatShortDate(points[points.length - 1].date, locale),
       })}
       viewBox={`0 0 ${width} ${height}`}
       className="h-14 w-full text-reputation"
@@ -489,14 +495,14 @@ function normalizeTrend(
     .sort((a, b) => a.date.localeCompare(b.date))
 }
 
-function formatShortDate(date: string) {
+function formatShortDate(date: string, locale: string) {
   const parsed = new Date(`${date}T00:00:00Z`)
 
   if (Number.isNaN(parsed.getTime())) {
     return date
   }
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "short",
   }).format(parsed)

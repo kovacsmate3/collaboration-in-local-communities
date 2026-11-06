@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { useLocale } from "next-intl"
 
 import {
   AlertDialog,
@@ -22,7 +23,10 @@ interface PublishTermsDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
-function getDialogCopy(version: AdminTermsVersionListItem | null): {
+function getDialogCopy(
+  version: AdminTermsVersionListItem | null,
+  locale: string
+): {
   title: string
   description: ReactNode
   action: string
@@ -55,7 +59,7 @@ function getDialogCopy(version: AdminTermsVersionListItem | null): {
         <>
           Version <strong>{version.version}</strong> will become active on{" "}
           <strong>
-            {new Date(version.effectiveFrom).toLocaleString(undefined, {
+            {new Date(version.effectiveFrom).toLocaleString(locale, {
               dateStyle: "medium",
               timeStyle: "short",
             })}
@@ -85,8 +89,9 @@ export function PublishTermsDialog({
   version,
   onOpenChange,
 }: PublishTermsDialogProps) {
+  const locale = useLocale()
   const publish = usePublishTermsVersion()
-  const copy = getDialogCopy(version)
+  const copy = getDialogCopy(version, locale)
 
   function handleConfirm() {
     if (!version) return
