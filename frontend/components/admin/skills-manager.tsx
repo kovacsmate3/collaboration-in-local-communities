@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner"
 import { Loading03Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { useLocale } from "next-intl"
 
 import {
   useAdminSkills,
@@ -263,6 +264,7 @@ function SkillsTableSkeleton() {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function SkillsManager() {
+  const locale = useLocale()
   const [statusFilter, setStatusFilter] = React.useState<
     "all" | "Pending" | "Approved"
   >("all")
@@ -342,7 +344,7 @@ export function SkillsManager() {
         cell: ({ row }) =>
           row.original.approvedAt ? (
             <span className="text-sm tabular-nums">
-              {formatDate(row.original.approvedAt)}
+              {formatDate(row.original.approvedAt, locale)}
             </span>
           ) : (
             <span className="text-sm text-muted-foreground">—</span>
@@ -353,7 +355,7 @@ export function SkillsManager() {
         header: "Created",
         cell: ({ row }) => (
           <span className="text-sm tabular-nums">
-            {formatDate(row.original.createdAt)}
+            {formatDate(row.original.createdAt, locale)}
           </span>
         ),
       },
@@ -366,7 +368,7 @@ export function SkillsManager() {
         enableSorting: false,
       },
     ],
-    []
+    [locale]
   )
 
   // eslint-disable-next-line react-hooks/incompatible-library

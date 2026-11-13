@@ -1,6 +1,7 @@
 "use client"
 
 import { type ChangeEvent, useState, useEffect, useRef } from "react"
+import { useLocale } from "next-intl"
 import {
   type AuditLogEntry,
   type AuditLogParams,
@@ -85,10 +86,12 @@ function TableSkeleton() {
 }
 
 function AuditLogRow({ entry }: { entry: AuditLogEntry }) {
+  const locale = useLocale()
+
   return (
     <TableRow>
       <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
-        {formatDatetime(entry.createdAt)}
+        {formatDatetime(entry.createdAt, locale)}
       </TableCell>
       <TableCell>
         <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">

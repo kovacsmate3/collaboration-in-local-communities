@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Xunit;
@@ -60,6 +61,44 @@ public sealed class LocationsControllerTests
         Assert.Equal("Budapest, Hungary", suggestion.LocationText);
         Assert.Equal(47.4979, suggestion.Latitude, precision: 4);
         Assert.Equal(19.0402, suggestion.Longitude, precision: 4);
+    }
+
+    [Theory]
+    [InlineData(null, "en")]
+    [InlineData("hu", "hu")]
+    [InlineData("hu-HU,hu;q=0.9,en;q=0.8", "hu")]
+    [InlineData("en-GB,en;q=0.9,hu;q=0.8", "en")]
+    [InlineData("de-DE,de;q=0.9", "en")]
+    public async Task SearchAsync_SendsUiLanguageToNominatim(string? acceptLanguage, string expectedLanguage)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var requestedUris = new List<Uri>();
+        var controller = CreateController(
+            HttpStatusCode.OK,
+            "[]",
+            acceptLanguage: acceptLanguage,
+            requestedUris: requestedUris);
+
+        await controller.SearchAsync("Budapest", ct);
+
+        var requestUri = Assert.Single(requestedUris);
+        Assert.Equal(expectedLanguage, GetQueryValue(requestUri, "accept-language"));
+    }
+
+    [Fact]
+    public async Task SearchAsync_CachesResultsPerLanguage()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        var requestedUris = new List<Uri>();
+
+        await CreateController(HttpStatusCode.OK, "[]", "hu", cache, requestedUris).SearchAsync("Budapest", ct);
+        await CreateController(HttpStatusCode.OK, "[]", "en", cache, requestedUris).SearchAsync("Budapest", ct);
+        await CreateController(HttpStatusCode.OK, "[]", "hu-HU", cache, requestedUris).SearchAsync("budapest", ct);
+
+        Assert.Equal(
+            new string?[] { "hu", "en" },
+            requestedUris.Select(uri => GetQueryValue(uri, "accept-language")).ToArray());
     }
 
     [Theory]
@@ -154,13 +193,59 @@ public sealed class LocationsControllerTests
         Assert.Equal(19.0, body.Location.Longitude);
     }
 
-    private static LocationsController CreateController(HttpStatusCode statusCode, string responseBody)
+    [Theory]
+    [InlineData(null, "en")]
+    [InlineData("hu", "hu")]
+    [InlineData("en-GB", "en")]
+    public async Task ReverseAsync_SendsUiLanguageToNominatim(string? acceptLanguage, string expectedLanguage)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var requestedUris = new List<Uri>();
+        var controller = CreateController(
+            HttpStatusCode.OK,
+            "{}",
+            acceptLanguage: acceptLanguage,
+            requestedUris: requestedUris);
+
+        await controller.ReverseAsync(47.4979, 19.0402, ct);
+
+        var requestUri = Assert.Single(requestedUris);
+        Assert.Equal(expectedLanguage, GetQueryValue(requestUri, "accept-language"));
+    }
+
+    [Fact]
+    public async Task ReverseAsync_CachesResultsPerLanguage()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        var requestedUris = new List<Uri>();
+
+        await CreateController(HttpStatusCode.OK, "{}", "hu", cache, requestedUris).ReverseAsync(47.4979, 19.0402, ct);
+        await CreateController(HttpStatusCode.OK, "{}", "en", cache, requestedUris).ReverseAsync(47.4979, 19.0402, ct);
+        await CreateController(HttpStatusCode.OK, "{}", "hu", cache, requestedUris).ReverseAsync(47.4979, 19.0402, ct);
+
+        Assert.Equal(
+            new string?[] { "hu", "en" },
+            requestedUris.Select(uri => GetQueryValue(uri, "accept-language")).ToArray());
+    }
+
+    private static LocationsController CreateController(
+        HttpStatusCode statusCode,
+        string responseBody,
+        string? acceptLanguage = null,
+        IMemoryCache? cache = null,
+        List<Uri>? requestedUris = null)
     {
         var httpContext = new DefaultHttpContext();
+        if (acceptLanguage is not null)
+        {
+            httpContext.Request.Headers.AcceptLanguage = acceptLanguage;
+        }
+
         var controller = new LocationsController(
-            new FakeHttpClientFactory(statusCode, responseBody),
+            new FakeHttpClientFactory(statusCode, responseBody, requestedUris),
             new ConfigurationBuilder().Build(),
-            new MemoryCache(new MemoryCacheOptions()))
+            cache ?? new MemoryCache(new MemoryCacheOptions()))
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext },
             ProblemDetailsFactory = new FakeProblemDetailsFactory()
@@ -168,25 +253,35 @@ public sealed class LocationsControllerTests
         return controller;
     }
 
-    private sealed class FakeHttpClientFactory(HttpStatusCode statusCode, string body)
+    private static string? GetQueryValue(Uri uri, string key)
+        => QueryHelpers.ParseQuery(uri.Query).TryGetValue(key, out var value) ? value.ToString() : null;
+
+    private sealed class FakeHttpClientFactory(HttpStatusCode statusCode, string body, List<Uri>? requestedUris)
         : IHttpClientFactory
     {
         public HttpClient CreateClient(string name)
-            => new(new FakeMessageHandler(statusCode, body))
+            => new(new FakeMessageHandler(statusCode, body, requestedUris))
             {
                 BaseAddress = new Uri("https://nominatim.openstreetmap.org/")
             };
     }
 
-    private sealed class FakeMessageHandler(HttpStatusCode statusCode, string body)
+    private sealed class FakeMessageHandler(HttpStatusCode statusCode, string body, List<Uri>? requestedUris)
         : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
-            => Task.FromResult(new HttpResponseMessage(statusCode)
+        {
+            if (request.RequestUri is not null)
+            {
+                requestedUris?.Add(request.RequestUri);
+            }
+
+            return Task.FromResult(new HttpResponseMessage(statusCode)
             {
                 Content = new StringContent(body, Encoding.UTF8, "application/json")
             });
+        }
     }
 
     private sealed class FakeProblemDetailsFactory : ProblemDetailsFactory

@@ -1,3 +1,4 @@
+using Backend.Common;
 using Backend.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +27,8 @@ public sealed partial class LocationsController(
             return Ok(new LocationSearchResponse([]));
         }
 
-        var cacheKey = $"locations:search:{query.ToUpperInvariant()}";
+        var language = RequestLocale.Resolve(Request);
+        var cacheKey = $"locations:search:{language}:{query.ToUpperInvariant()}";
         if (cache.TryGetValue<LocationSearchResponse>(cacheKey, out var cachedResponse))
         {
             return Ok(cachedResponse);
@@ -37,7 +39,8 @@ public sealed partial class LocationsController(
             ["q"] = query,
             ["format"] = "jsonv2",
             ["addressdetails"] = "1",
-            ["limit"] = "5"
+            ["limit"] = "5",
+            ["accept-language"] = language
         };
         AddConfiguredEmail(parameters);
 
@@ -87,7 +90,8 @@ public sealed partial class LocationsController(
             return ValidationProblem(ModelState);
         }
 
-        var cacheKey = $"locations:reverse:{FormatCoordinate(lat)},{FormatCoordinate(lon)}";
+        var language = RequestLocale.Resolve(Request);
+        var cacheKey = $"locations:reverse:{language}:{FormatCoordinate(lat)},{FormatCoordinate(lon)}";
         if (cache.TryGetValue<LocationReverseResponse>(cacheKey, out var cachedResponse))
         {
             return Ok(cachedResponse);
@@ -98,7 +102,8 @@ public sealed partial class LocationsController(
             ["lat"] = FormatCoordinate(lat),
             ["lon"] = FormatCoordinate(lon),
             ["format"] = "jsonv2",
-            ["zoom"] = "18"
+            ["zoom"] = "18",
+            ["accept-language"] = language
         };
         AddConfiguredEmail(parameters);
 
