@@ -1,11 +1,11 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 COPY backend.csproj Directory.Build.props stylecop.json ./
 RUN dotnet restore -p:AllowMissingPrunePackageData=true
 COPY . .
 RUN dotnet publish -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dev
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS dev
 WORKDIR /src
 COPY backend.csproj Directory.Build.props stylecop.json ./
 RUN dotnet restore
